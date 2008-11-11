@@ -142,7 +142,7 @@ int __stdcall GetPluginInfo(int infono, LPSTR buf, int buflen)
 {
     std::vector<std::string> vsPluginInfo;
     vsPluginInfo.push_back("00AM");
-    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57 (C) Makito Miyano / patched by Yak!");
+    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57 y1 (C) Makito Miyano / patched by Yak!"); 
     if (s_nEnable7z) {
         vsPluginInfo.push_back("*.7z");
         vsPluginInfo.push_back("7-zip files");

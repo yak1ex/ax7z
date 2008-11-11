@@ -263,7 +263,13 @@ int GetArchiveInfoEx(LPSTR filename, long len, HLOCAL *lphInf)
             s = s.Left(199);
         }
         strcpy(pinfo->filename, (LPCSTR)s);
+
 		pinfo->crc = 0;
+        if (S_OK == archiveHandler->GetProperty(i, kpidCRC, &property)) {
+	        if (property.vt == VT_UI4) {
+	            pinfo->crc = property.ulVal;
+	        }
+        }
     }
 
 	/* 出力用のメモリの割り当て(ファイル数+1だけの領域が必要)、0で初期化しておく */
@@ -420,6 +426,11 @@ static int GetArchiveInfoWEx_impl(LPCWSTR filename, std::vector<fileInfoW>& vFil
         }
         wcscpy(pinfo->filename, (LPCWSTR)s);
 		pinfo->crc = 0;
+        if (S_OK == archiveHandler->GetProperty(i, kpidCRC, &property)) {
+	        if (property.vt == VT_UI4) {
+	            pinfo->crc = property.ulVal;
+	        }
+        }
     }
     return SPI_ALL_RIGHT;
 }
