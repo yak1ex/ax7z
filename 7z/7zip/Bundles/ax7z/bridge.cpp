@@ -31,11 +31,8 @@ HINSTANCE g_hInstance = 0;
 using namespace NWindows;
 using namespace NFile;
 
-static bool MyOpenArchive(const UString &archiveName, 
+static bool MyOpenArchive(CCodecs *cc, const UString &archiveName, 
                          const NFind::CFileInfoW &archiveFileInfo,
-#ifndef EXCLUDE_COM
-                         HMODULE *module,
-#endif
                          IInArchive **archiveHandler,
                          UString &defaultItemName,
                          bool &passwordEnabled, 
@@ -56,13 +53,10 @@ static bool MyOpenArchive(const UString &archiveName,
         fullName.Left(fileNamePartStartIndex), 
         fullName.Mid(fileNamePartStartIndex));
 
-    CArchiverInfo archiverInfo;
-    HRESULT result = OpenArchive(archiveName, 
-#ifndef EXCLUDE_COM
-        module,
-#endif
+    int dummy;
+    HRESULT result = OpenArchive(cc, archiveName, 
         archiveHandler, 
-        archiverInfo, 
+        dummy,
         defaultItemName,
         openCallback);
     if (result == S_FALSE) {
@@ -143,9 +137,15 @@ int GetArchiveInfoEx(LPSTR filename, long len, HLOCAL *lphInf)
         return SPI_FILE_READ_ERROR;
     }
 
-#ifndef EXCLUDE_COM
-    NDLL::CLibrary library;
-#endif
+  CCodecs *codecs = new CCodecs;
+  CMyComPtr<
+    #ifdef EXTERNAL_CODECS
+    ICompressCodecsInfo
+    #else
+    IUnknown
+    #endif
+    > compressCodecsInfo = codecs;
+  HRESULT result0 = codecs->Load();
 
     bool passwordEnabled = false;
     UString password;
@@ -153,10 +153,7 @@ int GetArchiveInfoEx(LPSTR filename, long len, HLOCAL *lphInf)
 
     // èëå…ÇäJÇ≠
     CMyComPtr<IInArchive> archiveHandler;
-    if (!MyOpenArchive(archiveName, archiveFileInfo, 
-#ifndef EXCLUDE_COM
-        &library,
-#endif
+    if (!MyOpenArchive(codecs, archiveName, archiveFileInfo, 
         &archiveHandler, 
         defaultItemName, passwordEnabled, password)) {
         return SPI_FILE_READ_ERROR;
@@ -297,9 +294,15 @@ static int GetArchiveInfoWEx_impl(LPCWSTR filename, std::vector<fileInfoW>& vFil
         return SPI_FILE_READ_ERROR;
     }
 
-#ifndef EXCLUDE_COM
-    NDLL::CLibrary library;
-#endif
+    CCodecs *codecs = new CCodecs;
+    CMyComPtr<
+        #ifdef EXTERNAL_CODECS
+        ICompressCodecsInfo
+        #else
+        IUnknown
+        #endif
+    > compressCodecsInfo = codecs;
+    HRESULT result = codecs->Load();
 
     bool passwordEnabled = false;
     UString password;
@@ -307,10 +310,7 @@ static int GetArchiveInfoWEx_impl(LPCWSTR filename, std::vector<fileInfoW>& vFil
 
     // èëå…ÇäJÇ≠
     CMyComPtr<IInArchive> archiveHandler;
-    if (!MyOpenArchive(archiveName, archiveFileInfo, 
-#ifndef EXCLUDE_COM
-        &library,
-#endif
+    if (!MyOpenArchive(codecs, archiveName, archiveFileInfo, 
         &archiveHandler, 
         defaultItemName, passwordEnabled, password)) {
         return SPI_FILE_READ_ERROR;
@@ -461,9 +461,15 @@ int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinf
         return SPI_FILE_READ_ERROR;
     }
 
-#ifndef EXCLUDE_COM
-    NDLL::CLibrary library;
-#endif
+    CCodecs *codecs = new CCodecs;
+    CMyComPtr<
+        #ifdef EXTERNAL_CODECS
+        ICompressCodecsInfo
+        #else
+        IUnknown
+        #endif
+    > compressCodecsInfo = codecs;
+    HRESULT result0 = codecs->Load();
 
     bool passwordEnabled = false;
     UString password;
@@ -471,10 +477,7 @@ int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinf
 
     CMyComPtr<IInArchive> archiveHandler;
 
-    if (!MyOpenArchive(archiveName, archiveFileInfo, 
-#ifndef EXCLUDE_COM
-        &library,
-#endif
+    if (!MyOpenArchive(codecs, archiveName, archiveFileInfo, 
         &archiveHandler, 
         defaultItemName, passwordEnabled, password)) {
             return SPI_FILE_READ_ERROR;
@@ -533,9 +536,15 @@ int GetFileWEx(wchar_t *filename, HLOCAL *dest, const wchar_t* pOutFile, fileInf
         return SPI_FILE_READ_ERROR;
     }
 
-#ifndef EXCLUDE_COM
-    NDLL::CLibrary library;
-#endif
+    CCodecs *codecs = new CCodecs;
+    CMyComPtr<
+        #ifdef EXTERNAL_CODECS
+        ICompressCodecsInfo
+        #else
+        IUnknown
+        #endif
+    > compressCodecsInfo = codecs;
+    HRESULT result0 = codecs->Load();
 
     bool passwordEnabled = false;
     UString password;
@@ -543,10 +552,7 @@ int GetFileWEx(wchar_t *filename, HLOCAL *dest, const wchar_t* pOutFile, fileInf
 
     CMyComPtr<IInArchive> archiveHandler;
 
-    if (!MyOpenArchive(archiveName, archiveFileInfo, 
-#ifndef EXCLUDE_COM
-        &library,
-#endif
+    if (!MyOpenArchive(codecs, archiveName, archiveFileInfo, 
         &archiveHandler, 
         defaultItemName, passwordEnabled, password)) {
             return SPI_FILE_READ_ERROR;
@@ -621,9 +627,15 @@ int ExtractSolidArchiveEx(LPCWSTR filename, SPI_OnWriteCallback pCallback)
         return SPI_FILE_READ_ERROR;
     }
 
-#ifndef EXCLUDE_COM
-    NDLL::CLibrary library;
-#endif
+    CCodecs *codecs = new CCodecs;
+    CMyComPtr<
+        #ifdef EXTERNAL_CODECS
+        ICompressCodecsInfo
+        #else
+        IUnknown
+        #endif
+    > compressCodecsInfo = codecs;
+    HRESULT result0 = codecs->Load();
 
     bool passwordEnabled = false;
     UString password;
@@ -631,10 +643,7 @@ int ExtractSolidArchiveEx(LPCWSTR filename, SPI_OnWriteCallback pCallback)
 
     CMyComPtr<IInArchive> archiveHandler;
 
-    if (!MyOpenArchive(archiveName, archiveFileInfo, 
-#ifndef EXCLUDE_COM
-        &library,
-#endif
+    if (!MyOpenArchive(codecs, archiveName, archiveFileInfo, 
         &archiveHandler, 
         defaultItemName, passwordEnabled, password)) {
             return SPI_FILE_READ_ERROR;

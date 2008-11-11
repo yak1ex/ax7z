@@ -5,7 +5,7 @@
 #ifndef __EXTRACTCALLBACK_H
 #define __EXTRACTCALLBACK_H
 
-#include "Common/String.h"
+//#include "Common/String.h"
 #include "../../Common/FileStreams.h"
 #include "../../IPassword.h"
 #include "../../Archive/IArchive.h"

@@ -25,7 +25,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories=".,7z"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MY00AM_EXPORTS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MY00AM_EXPORTS;EXTERNAL_CODECS"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="TRUE"
@@ -90,7 +90,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories=".,7z"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MY00AM_EXPORTS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MY00AM_EXPORTS;EXTERNAL_CODECS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -107,7 +107,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="F:\projects\hamana\Hamana\target\DefaultSPIs\ax7z.spi"
+				OutputFile="$(OutDir)/ax7z.spi"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				ModuleDefinitionFile=".\ax7z.def"
@@ -250,6 +250,18 @@
 					RelativePath=".\7z\Common\MyCom.h">
 				</File>
 				<File
+					RelativePath=".\7z\common\MyString.cpp">
+				</File>
+				<File
+					RelativePath=".\7z\common\MyString.h">
+				</File>
+				<File
+					RelativePath=".\7z\common\MyVector.cpp">
+				</File>
+				<File
+					RelativePath=".\7z\common\MyVector.h">
+				</File>
+				<File
 					RelativePath=".\7z\Common\StdInStream.cpp">
 					<FileConfiguration
 						Name="Release|Win32">
@@ -308,26 +320,6 @@
 					RelativePath=".\7z\7zip\Common\StreamUtils.h">
 				</File>
 				<File
-					RelativePath=".\7z\Common\String.cpp">
-					<FileConfiguration
-						Name="Release|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\7z\Common\String.h">
-				</File>
-				<File
 					RelativePath="7z\Common\StringConvert.cpp">
 					<FileConfiguration
 						Name="Release|Win32">
@@ -373,26 +365,6 @@
 					RelativePath=".\7z\Common\StringToInt.h">
 				</File>
 				<File
-					RelativePath=".\7z\Common\Vector.cpp">
-					<FileConfiguration
-						Name="Release|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\7z\Common\Vector.h">
-				</File>
-				<File
 					RelativePath=".\7z\Common\Wildcard.cpp">
 					<FileConfiguration
 						Name="Release|Win32">
@@ -432,7 +404,7 @@
 							Name="VCCLCompilerTool"
 							Optimization="0"
 							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;MY00AM_EXPORTS;$(NoInherit)"
+							PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;MY00AM_EXPORTS;$(NoInherit);EXTERNAL_CODECS"
 							BasicRuntimeChecks="3"
 							UsePrecompiledHeader="0"
 							BrowseInformation="1"/>
@@ -454,7 +426,7 @@
 							Name="VCCLCompilerTool"
 							Optimization="0"
 							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;MY00AM_EXPORTS;$(NoInherit)"
+							PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;MY00AM_EXPORTS;$(NoInherit);EXTERNAL_CODECS"
 							BasicRuntimeChecks="3"
 							UsePrecompiledHeader="0"
 							BrowseInformation="1"/>
@@ -479,7 +451,7 @@
 							Name="VCCLCompilerTool"
 							Optimization="0"
 							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;MY00AM_EXPORTS;$(NoInherit)"
+							PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;MY00AM_EXPORTS;$(NoInherit);EXTERNAL_CODECS"
 							BasicRuntimeChecks="3"
 							UsePrecompiledHeader="0"
 							BrowseInformation="1"/>
@@ -500,6 +472,7 @@
 						Name="Debug|Win32">
 						<Tool
 							Name="VCCLCompilerTool"
+							PreprocessorDefinitions="EXTERNAL_CODECS"
 							UsePrecompiledHeader="0"/>
 					</FileConfiguration>
 				</File>
@@ -713,26 +686,6 @@
 					RelativePath=".\7z\7zip\Ui\Common\ArchiveOpenCallback.h">
 				</File>
 				<File
-					RelativePath=".\7z\7zip\Ui\Common\ArchiverInfo.cpp">
-					<FileConfiguration
-						Name="Release|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="0"
-							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\7z\7zip\Ui\Common\ArchiverInfo.h">
-				</File>
-				<File
 					RelativePath=".\7z\7zip\Ui\Common\DefaultName.cpp">
 					<FileConfiguration
 						Name="Release|Win32">
@@ -751,6 +704,12 @@
 				</File>
 				<File
 					RelativePath=".\7z\7zip\Ui\Common\DefaultName.h">
+				</File>
+				<File
+					RelativePath=".\7z\7zip\ui\common\LoadCodecs.cpp">
+				</File>
+				<File
+					RelativePath=".\7z\7zip\ui\common\LoadCodecs.h">
 				</File>
 				<File
 					RelativePath=".\7z\7zip\Ui\Common\OpenArchive.cpp">

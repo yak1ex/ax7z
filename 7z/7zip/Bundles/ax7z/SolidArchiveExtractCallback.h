@@ -5,7 +5,7 @@
 #ifndef __SOLIDARCHIVEEXTRACTCALLBACK_H
 #define __SOLIDARCHIVEEXTRACTCALLBACK_H
 
-#include "Common/String.h"
+//#include "Common/String.h"
 #include "../../Common/FileStreams.h"
 #include "../../IPassword.h"
 #include "../../Archive/IArchive.h"

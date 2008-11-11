@@ -95,7 +95,14 @@ if (ret) {
 					ret = SPI_NOT_SUPPORT;
 					break;
 				}
-				if (lstrcmpi(ptmp->filename, pinfo->filename) == 0) break;
+				// complete path relative to archive root
+				char path[sizeof(ptmp->path)+sizeof(ptmp->filename)];
+				strcpy(path, ptmp->path);
+				size_t len = strlen(path);
+				if(len && path[len-1] != '/' && path[len-1] != '\\') // need delimiter
+					strcat(path, "\\");
+				strcat(path, ptmp->filename);
+				if (lstrcmpi(path, pinfo->filename) == 0) break;
 				ptmp++;
 			}
 		} else {
@@ -216,7 +223,14 @@ int InfoCacheW::Dupli(wchar_t *filepath, HLOCAL *ph, fileInfoW *pinfo)
                         ret = SPI_NOT_SUPPORT;
                         break;
                     }
-                    if (wcsicmp(ptmp->filename, pinfo->filename) == 0) break;
+					// complete path relative to archive root
+					wchar_t path[sizeof(ptmp->path)+sizeof(ptmp->filename)];
+					wcscpy(path, ptmp->path);
+					size_t len = wcslen(path);
+					if(len && path[len-1] != L'/' && path[len-1] != L'\\') // need delimiter
+						wcscat(path, L"\\");
+					wcscat(path, ptmp->filename);
+					if (wcsicmp(path, pinfo->filename) == 0) break;
                     ptmp++;
                 }
             } else {

@@ -22,6 +22,18 @@ static int s_nEnableArj = 1;
 static int s_nEnableLzh = 1;
 static HANDLE s_hInstance;
 
+#ifndef _UNICODE
+bool g_IsNT = false;
+static inline bool IsItWindowsNT()
+{
+    OSVERSIONINFO versionInfo;
+    versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
+    if (!::GetVersionEx(&versionInfo)) 
+        return false;
+    return (versionInfo.dwPlatformId == VER_PLATFORM_WIN32_NT);
+}
+#endif
+
 void SetParamDefault()
 {
     s_nEnable7z = 1;
@@ -83,6 +95,9 @@ BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpR
     bool bInitPath = false;
 	switch (ul_reason_for_call) {
 		case DLL_PROCESS_ATTACH:
+#ifndef _UNICODE
+            g_IsNT = IsItWindowsNT();
+#endif
             CoInitialize(NULL);
             SetIniFileName(hModule);
             LoadFromIni();
@@ -127,7 +142,7 @@ int __stdcall GetPluginInfo(int infono, LPSTR buf, int buflen)
 {
     std::vector<std::string> vsPluginInfo;
     vsPluginInfo.push_back("00AM");
-    vsPluginInfo.push_back("7z extract library v0.7 (C) Makito Miyano");
+    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57 (C) Makito Miyano / patched by Yak!");
     if (s_nEnable7z) {
         vsPluginInfo.push_back("*.7z");
         vsPluginInfo.push_back("7-zip files");
@@ -261,7 +276,14 @@ int GetArchiveInfoCache(char *filename, long len, HLOCAL *phinfo, fileInfo *pinf
         if (pinfo->filename[0] != '\0') {
             for (;;) {
                 if (ptmp->method[0] == '\0') return SPI_NO_FUNCTION;
-                if (lstrcmpi(ptmp->filename, pinfo->filename) == 0) break;
+				// complete path relative to archive root
+				char path[sizeof(ptmp->path)+sizeof(ptmp->filename)];
+				strcpy(path, ptmp->path);
+				size_t len = strlen(path);
+				if(len && path[len-1] != '/' && path[len-1] != '\\') // need delimiter
+					strcat(path, "\\");
+				strcat(path, ptmp->filename);
+				if (lstrcmpi(path, pinfo->filename) == 0) break;
                 ptmp++;
             }
         } else {
@@ -302,8 +324,15 @@ int GetArchiveInfoCacheW(wchar_t *filename, long len, HLOCAL *phinfo, fileInfoW 
         if (pinfo->filename[0] != L'\0') {
             for (;;) {
                 if (ptmp->method[0] == '\0') return SPI_NO_FUNCTION;
-                if (wcsicmp(ptmp->filename, pinfo->filename) == 0) break;
-                ptmp++;
+				// complete path relative to archive root
+				wchar_t path[sizeof(ptmp->path)+sizeof(ptmp->filename)];
+				wcscpy(path, ptmp->path);
+				size_t len = wcslen(path);
+				if(len && path[len-1] != L'/' && path[len-1] != L'\\') // need delimiter
+					wcscat(path, L"\\");
+				wcscat(path, ptmp->filename);
+				if (wcsicmp(path, pinfo->filename) == 0) break;
+	            ptmp++;
             }
         } else {
             for (;;) {
