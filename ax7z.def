@@ -1,0 +1,12 @@
+EXPORTS
+	GetPluginInfo
+	IsSupported
+	GetArchiveInfo
+	GetFileInfo
+	GetFile
+	IsSupportedW
+	GetArchiveInfoW
+	GetFileInfoW
+	GetFileW
+	ConfigurationDlg
+    ExtractSolidArchive
