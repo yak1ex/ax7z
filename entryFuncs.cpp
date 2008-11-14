@@ -92,31 +92,26 @@ void SetIniFileName(HANDLE hModule)
 /* エントリポイント */
 BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
-OutputDebugString("SpiEntryPoint");
     bool bInitPath = false;
 	switch (ul_reason_for_call) {
 		case DLL_PROCESS_ATTACH:
 #ifndef _UNICODE
             g_IsNT = IsItWindowsNT();
 #endif
-OutputDebugString("SpiEntryPoint: process attach");
             CoInitialize(NULL);
             SetIniFileName(hModule);
             LoadFromIni();
             bInitPath = true;
 			break;
 		case DLL_THREAD_ATTACH:
-OutputDebugString("SpiEntryPoint: thread attach");
             CoInitialize(NULL);
             SetIniFileName(hModule);
             LoadFromIni();
             break;
 		case DLL_THREAD_DETACH:
-OutputDebugString("SpiEntryPoint: thread detach");
             CoUninitialize();
 			break;
 		case DLL_PROCESS_DETACH:
-OutputDebugString("SpiEntryPoint: process detach");
             CoUninitialize();
 			break;
 	}
@@ -128,11 +123,9 @@ OutputDebugString("SpiEntryPoint: process detach");
 /* エントリポイント */
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
-OutputDebugString("DllMain called");
     int a = sizeof(fileInfoW);
 	switch (ul_reason_for_call) {
 		case DLL_PROCESS_DETACH:
-OutputDebugString("DllMain called: detach");
 			infocache.Clear();
             infocacheW.Clear();
 			break;

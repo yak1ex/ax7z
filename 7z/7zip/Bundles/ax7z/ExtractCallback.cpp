@@ -21,7 +21,7 @@ void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize,
   m_fp = fp;
   m_nBufSize = nBufSize;
   m_nIndex = index;
-m_cache = cache;
+  m_cache = cache;
 }
 
 bool CExtractCallbackImp::IsEncrypted(UINT32 index)
@@ -80,10 +80,7 @@ STDMETHODIMP CMemOutStream::Write(const void *data, UINT32 size, UINT32 *process
         processedSize = &dummy;
     }
     
-    if(!m_cache->IsCached(m_index)) m_cache->Append(m_index, data, size);
-char buf[2048];
-//wsprintf(buf, "Write: %d %p", m_buffer->size(), &(*m_buffer)[0]);
-//OutputDebugString(buf);
+    if(m_cache && !m_cache->IsCached(m_index)) m_cache->Append(m_index, data, size);
 
     if (!m_bValid) {
         *processedSize = size;

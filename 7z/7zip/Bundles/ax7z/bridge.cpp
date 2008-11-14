@@ -465,6 +465,72 @@ int GetArchiveInfoWEx(LPWSTR filename, long len, HLOCAL *lphInf)
 	return SPI_ALL_RIGHT;
 }
 
+int GetFileExImp_Cached(HLOCAL *dest, const char* pOutFile, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidCache scCache)
+{
+    FILE* fp = NULL;
+    if (dest) {
+        *dest = LocalAlloc(LMEM_FIXED, static_cast<size_t>(unpackSize));
+        if (*dest == NULL) {
+            return SPI_NO_MEMORY;
+        }
+
+		scCache.GetContent(iExtractFileIndex, *dest, unpackSize);
+    } else {
+        fp = fopen(pOutFile, "wb");
+        if (fp == NULL) {
+            return SPI_FILE_WRITE_ERROR;
+        }
+		scCache.OutputContent(iExtractFileIndex, unpackSize, fp);
+	}
+
+    if (fp) {
+        fclose(fp);
+    }
+
+	return SPI_ALL_RIGHT;
+}
+
+int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidCache *scCache)
+{
+	CExtractCallbackImp *extractCallbackSpec = new CExtractCallbackImp;
+    CMyComPtr<IArchiveExtractCallback> extractCallback(extractCallbackSpec);
+
+    FILE* fp = NULL;
+    if (dest) {
+        *dest = LocalAlloc(LMEM_FIXED, static_cast<size_t>(unpackSize));
+        if (*dest == NULL) {
+            return SPI_NO_MEMORY;
+        }
+		extractCallbackSpec->Init(archiveHandler, (char*)*dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex, scCache);
+    } else {
+        fp = fopen(pOutFile, "wb");
+        if (fp == NULL) {
+            return SPI_FILE_WRITE_ERROR;
+        }
+		extractCallbackSpec->Init(archiveHandler, NULL, static_cast<UINT32>(unpackSize), fp, iExtractFileIndex, scCache);
+	}
+
+	if(scCache) {
+		std::vector<UINT32> v(iExtractFileIndex+1);
+		for(int i=0;i<v.size();++i) v[i]=i;
+		HRESULT result = archiveHandler->Extract(&v[0], v.size(), false, extractCallback);
+		for(int i=0;i<v.size();++i) scCache->Cached(i);
+	} else {
+	    HRESULT result = archiveHandler->Extract(&iExtractFileIndex, 1, false, extractCallback);
+	}
+
+	if (fp) {
+        fclose(fp);
+    }
+
+    if (extractCallbackSpec->m_NumErrors != 0) {
+        ::DeleteFile(pOutFile);
+        return SPI_FILE_READ_ERROR;
+    }
+
+	return SPI_ALL_RIGHT;
+}
+
 int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinfo,
 			SPI_PROGRESS lpPrgressCallback, long lData)
 {
@@ -508,69 +574,20 @@ OutputDebugString("GetFileEx");
     if (!GetUINT64Value(archiveHandler, iExtractFileIndex, kpidSize, unpackSize)) {
         return SPI_FILE_READ_ERROR;
     }
-char buf[2048];
-wsprintf(buf, "GetFileEx: %d %s %d", iExtractFileIndex, pinfo->filename, (UINT32)unpackSize);
-OutputDebugString(buf);
 
     // ‰ð“€
-    CExtractCallbackImp *extractCallbackSpec = new CExtractCallbackImp;
-    CMyComPtr<IArchiveExtractCallback> extractCallback(extractCallbackSpec);
-
-	SolidCache scCache = SolidCache::GetFileCache(filename);
-	bool fCached = !lstrcmp((char*)pinfo->method, "7zip_s") && scCache.IsCached(iExtractFileIndex);
-    FILE* fp = NULL;
-    if (dest) {
-        *dest = LocalAlloc(LMEM_FIXED, static_cast<size_t>(unpackSize));
-        if (*dest == NULL) {
-            return SPI_NO_MEMORY;
-        }
-
-if(fCached) {
-//wsprintf(buf, "GetFileEx: cached memory %d %p", table[filename][iExtractFileIndex].size(), &table[filename][iExtractFileIndex][0]);
-//OutputDebugString(buf);
-scCache.GetContent(iExtractFileIndex, *dest, unpackSize);
-} else {
-OutputDebugString("GetFileEx: uncached for memory");
-	extractCallbackSpec->Init(archiveHandler, (char*)*dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex, &scCache);
-}
-    } else {
-        fp = fopen(pOutFile, "wb");
-        if (fp == NULL) {
-            return SPI_FILE_WRITE_ERROR;
-        }
-if(fCached) {
-//wsprintf(buf, "GetFileEx: cached memory %d %p", table[filename][iExtractFileIndex].size(), &table[filename][iExtractFileIndex][0]);
-//OutputDebugString(buf);
-scCache.OutputContent(iExtractFileIndex, unpackSize, fp);
-} else {
-OutputDebugString("GetFileEx: uncached for file");
-	extractCallbackSpec->Init(archiveHandler, NULL, static_cast<UINT32>(unpackSize), fp, iExtractFileIndex, &scCache);
-}
+	if(!lstrcmp((char*)pinfo->method, "7zip_s")) {
+		SolidCache scCache = SolidCache::GetFileCache(filename);
+		if(scCache.IsCached(iExtractFileIndex)) { // Cached
+			return GetFileExImp_Cached(dest, pOutFile, iExtractFileIndex, unpackSize, scCache);
+		} else { // with Cache
+			return GetFileExImp_Normal(archiveHandler, dest, pOutFile, iExtractFileIndex, unpackSize, &scCache);
+		}
+	} else { // Normal
+		return GetFileExImp_Normal(archiveHandler, dest, pOutFile, iExtractFileIndex, unpackSize, NULL);
 	}
-
-if(!fCached) {
-if(!lstrcmp((char*)pinfo->method, "7zip_s")) {
-std::vector<UINT32> v(iExtractFileIndex+1);
-for(int i=0;i<v.size();++i) v[i]=i;
-HRESULT result = archiveHandler->Extract(&v[0], v.size(), false, extractCallback);
-for(int i=0;i<v.size();++i) scCache.Cached(i);
-} else {
-    HRESULT result = archiveHandler->Extract(&iExtractFileIndex, 1, false, extractCallback);
 }
-}
-    if (fp) {
-        fclose(fp);
-    }
 
-    if (!fCached && extractCallbackSpec->m_NumErrors != 0) {
-OutputDebugString("GetFileEx: error");
-        ::DeleteFile(pOutFile);
-        return SPI_FILE_READ_ERROR;
-    }
-
-OutputDebugString("GetFileEx: success");
-	return SPI_ALL_RIGHT;
-}
 int GetFileWEx(wchar_t *filename, HLOCAL *dest, const wchar_t* pOutFile, fileInfoW *pinfo,
 			SPI_PROGRESS lpPrgressCallback, long lData)
 {
