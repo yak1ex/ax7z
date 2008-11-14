@@ -12,6 +12,8 @@
 #include "../../UI/Common/ZipRegistry.h"
 #include <stdio.h>
 
+#include "SolidCache.h"
+
 class CExtractCallbackImp: 
   public IArchiveExtractCallback,
   public ICryptoGetTextPassword,
@@ -39,13 +41,14 @@ private:
 
   bool IsEncrypted(UINT32 index);
 public:
-  void Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index);
+  void Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index, SolidCache *cache);
 
   UINT64 m_NumErrors;
   char* m_pBuf;
   FILE* m_fp;
   UINT32 m_nBufSize;
   UINT32 m_nIndex;
+  SolidCache *m_cache;
 };
 
 #endif

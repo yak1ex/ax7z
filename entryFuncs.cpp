@@ -92,26 +92,31 @@ void SetIniFileName(HANDLE hModule)
 /* エントリポイント */
 BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
+OutputDebugString("SpiEntryPoint");
     bool bInitPath = false;
 	switch (ul_reason_for_call) {
 		case DLL_PROCESS_ATTACH:
 #ifndef _UNICODE
             g_IsNT = IsItWindowsNT();
 #endif
+OutputDebugString("SpiEntryPoint: process attach");
             CoInitialize(NULL);
             SetIniFileName(hModule);
             LoadFromIni();
             bInitPath = true;
 			break;
 		case DLL_THREAD_ATTACH:
+OutputDebugString("SpiEntryPoint: thread attach");
             CoInitialize(NULL);
             SetIniFileName(hModule);
             LoadFromIni();
             break;
 		case DLL_THREAD_DETACH:
+OutputDebugString("SpiEntryPoint: thread detach");
             CoUninitialize();
 			break;
 		case DLL_PROCESS_DETACH:
+OutputDebugString("SpiEntryPoint: process detach");
             CoUninitialize();
 			break;
 	}
@@ -123,9 +128,11 @@ BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpR
 /* エントリポイント */
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
+OutputDebugString("DllMain called");
     int a = sizeof(fileInfoW);
 	switch (ul_reason_for_call) {
 		case DLL_PROCESS_DETACH:
+OutputDebugString("DllMain called: detach");
 			infocache.Clear();
             infocacheW.Clear();
 			break;
@@ -389,6 +396,7 @@ int __stdcall GetFile(LPSTR src, long len,
 			   LPSTR dest, unsigned int flag,
 			   SPI_PROGRESS lpPrgressCallback, long lData)
 {
+OutputDebugString("GetFile");
 	//メモリ入力には対応しない
 	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
@@ -400,6 +408,8 @@ int __stdcall GetFile(LPSTR src, long len,
         CoUninitialize();
         return ret;
     }
+OutputDebugString(info.path);
+OutputDebugString(info.filename);
 
     int nRet;
     if ((flag & 0x700) == 0) {

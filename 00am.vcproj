@@ -479,6 +479,12 @@
 				<File
 					RelativePath=".\7z\7zip\Bundles\ax7z\SolidArchiveExtractCallback.h">
 				</File>
+				<File
+					RelativePath=".\7z\7zip\Bundles\ax7z\SolidCache.cpp">
+				</File>
+				<File
+					RelativePath=".\7z\7zip\Bundles\ax7z\SolidCache.h">
+				</File>
 			</Filter>
 			<Filter
 				Name="7-zip Common"

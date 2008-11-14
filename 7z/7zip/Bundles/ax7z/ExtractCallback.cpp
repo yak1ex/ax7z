@@ -1,5 +1,8 @@
 // ExtractCallback.h
 #include <windows.h>
+#include <map>
+#include <string>
+#include <vector>
 #include "ExtractCallback.h"
 #include "Common/StringConvert.h"
 #include "Windows/FileDir.h"
@@ -9,7 +12,7 @@
 
 using namespace NWindows;
 
-void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index)
+void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index, SolidCache *cache)
 {
   assert(!pBuf || !fp);
   m_NumErrors = 0;
@@ -18,6 +21,7 @@ void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize,
   m_fp = fp;
   m_nBufSize = nBufSize;
   m_nIndex = index;
+m_cache = cache;
 }
 
 bool CExtractCallbackImp::IsEncrypted(UINT32 index)
@@ -46,7 +50,15 @@ class CMemOutStream:
 {
 public:
     CMemOutStream() : m_iPos(0), m_pBuf(NULL), m_nBufSize(0) {}
-    void Init(char* pBuf, UINT32 nBufSize, FILE* fp, bool bValid) { m_pBuf = pBuf; m_fp = fp; m_nBufSize = nBufSize; m_bValid = bValid; }
+    void Init(char* pBuf, UINT32 nBufSize, FILE* fp, bool bValid, SolidCache *cache, UINT32 nIndex)
+	{
+		m_pBuf = pBuf;
+		m_fp = fp;
+		m_nBufSize = nBufSize;
+		m_bValid = bValid;
+		m_cache = cache;
+		m_index = nIndex;
+	}
   MY_UNKNOWN_IMP
 
   STDMETHOD(Write)(const void *data, UINT32 size, UINT32 *processedSize);
@@ -57,20 +69,27 @@ protected:
     FILE* m_fp;
     UINT32 m_nBufSize;
     bool m_bValid;
+	SolidCache *m_cache;
+	UINT32 m_index;
 };
 
 STDMETHODIMP CMemOutStream::Write(const void *data, UINT32 size, UINT32 *processedSize)
 {
-    if (!m_bValid) {
-        *processedSize = size;
-        return S_OK;
-    }
-
     UINT32 dummy;
     if (processedSize == NULL) {
         processedSize = &dummy;
     }
     
+    if(!m_cache->IsCached(m_index)) m_cache->Append(m_index, data, size);
+char buf[2048];
+//wsprintf(buf, "Write: %d %p", m_buffer->size(), &(*m_buffer)[0]);
+//OutputDebugString(buf);
+
+    if (!m_bValid) {
+        *processedSize = size;
+        return S_OK;
+    }
+
     if (m_nBufSize < m_iPos + size) {
         // 念のためチェック
         return S_FALSE;
@@ -96,8 +115,11 @@ STDMETHODIMP CExtractCallbackImp::GetStream(UINT32 index,
 {
     CMemOutStream* pRealStream = new CMemOutStream;
     pRealStream->AddRef();
-    pRealStream->Init(m_pBuf, m_nBufSize, m_fp, index == m_nIndex);
+    pRealStream->Init(m_pBuf, m_nBufSize, m_fp, index == m_nIndex, m_cache, index);
     *outStream = pRealStream;
+char buf[2048];
+wsprintf(buf, "GetStream: %d %d", index, m_nIndex);
+OutputDebugString(buf);
     return S_OK;
 }
 
