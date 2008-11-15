@@ -3,6 +3,7 @@ ax7z entry funcs
 */
 
 #include <windows.h>
+#include <commctrl.h>
 #include <vector>
 #include <algorithm>
 #include "entryFuncs.h"
@@ -20,7 +21,7 @@ static int s_nEnableCbr = 1;
 static int s_nEnableCab = 1;
 static int s_nEnableArj = 1;
 static int s_nEnableLzh = 1;
-static HANDLE s_hInstance;
+HINSTANCE g_hInstance;
 
 #ifndef _UNICODE
 bool g_IsNT = false;
@@ -93,12 +94,14 @@ void SetIniFileName(HANDLE hModule)
 BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     bool bInitPath = false;
+	INITCOMMONCONTROLSEX ice = { sizeof(INITCOMMONCONTROLSEX), ICC_PROGRESS_CLASS };
 	switch (ul_reason_for_call) {
 		case DLL_PROCESS_ATTACH:
 #ifndef _UNICODE
             g_IsNT = IsItWindowsNT();
 #endif
             CoInitialize(NULL);
+			InitCommonControlsEx(&ice);
             SetIniFileName(hModule);
             LoadFromIni();
             bInitPath = true;
@@ -130,7 +133,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserve
             infocacheW.Clear();
 			break;
 	}
-    s_hInstance = hModule;
+    g_hInstance = (HINSTANCE)hModule;
     return SpiEntryPoint(hModule, ul_reason_for_call, lpReserved);
 }
 
@@ -389,7 +392,6 @@ int __stdcall GetFile(LPSTR src, long len,
 			   LPSTR dest, unsigned int flag,
 			   SPI_PROGRESS lpPrgressCallback, long lData)
 {
-OutputDebugString("GetFile");
 	//ÉÅÉÇÉäì¸óÕÇ…ÇÕëŒâûÇµÇ»Ç¢
 	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
@@ -401,8 +403,6 @@ OutputDebugString("GetFile");
         CoUninitialize();
         return ret;
     }
-OutputDebugString(info.path);
-OutputDebugString(info.filename);
 
     int nRet;
     if ((flag & 0x700) == 0) {
@@ -535,9 +535,9 @@ int __stdcall ConfigurationDlg(HWND parent, int fnc)
 {
     if (fnc == 0) {
         //about
-        DialogBox((HINSTANCE)s_hInstance, MAKEINTRESOURCE(IDD_ABOUT_DIALOG), parent, (DLGPROC)AboutDlgProc);
+        DialogBox((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_ABOUT_DIALOG), parent, (DLGPROC)AboutDlgProc);
     } else {
-        DialogBox((HINSTANCE)s_hInstance, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), parent, (DLGPROC)ConfigDlgProc);
+        DialogBox((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), parent, (DLGPROC)ConfigDlgProc);
     }
     return 0;
 }

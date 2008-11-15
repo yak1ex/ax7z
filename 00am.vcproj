@@ -42,6 +42,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="comctl32.lib"
 				OutputFile="Release/ax7z.spi"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
@@ -107,6 +108,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="comctl32.lib"
 				OutputFile="$(OutDir)/ax7z.spi"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"

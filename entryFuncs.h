@@ -51,7 +51,9 @@ typedef struct fileInfoW
 /*-------------------------------------------------------------------------*/
 // '00AM'関数のプロトタイプ宣言
 /*-------------------------------------------------------------------------*/
-typedef int (CALLBACK *SPI_PROGRESS)(int, int, long);
+// Wrong calling convention
+typedef int (PASCAL *SPI_PROGRESS)(int nNum,int nDenom,long lData);
+//typedef int (CALLBACK *SPI_PROGRESS)(int, int, long);
 typedef void (CALLBACK *SPI_OnWriteCallback)(const void *data, UINT32 size, UINT32 processed, const fileInfoW* pFileInfo, UCHAR* pbStop);
 extern "C" {
 	int __declspec(dllexport) __stdcall GetPluginInfo

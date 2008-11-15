@@ -12,7 +12,7 @@
 
 using namespace NWindows;
 
-void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index, SolidCache *cache)
+void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index, SolidCache *cache, SPI_PROGRESS lpPrgressCallback, long lData)
 {
   assert(!pBuf || !fp);
   m_NumErrors = 0;
@@ -22,6 +22,8 @@ void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize,
   m_nBufSize = nBufSize;
   m_nIndex = index;
   m_cache = cache;
+  m_lpPrgressCallback = lpPrgressCallback;
+  m_lData = lData;
 }
 
 bool CExtractCallbackImp::IsEncrypted(UINT32 index)
@@ -114,9 +116,9 @@ STDMETHODIMP CExtractCallbackImp::GetStream(UINT32 index,
     pRealStream->AddRef();
     pRealStream->Init(m_pBuf, m_nBufSize, m_fp, index == m_nIndex, m_cache, index);
     *outStream = pRealStream;
-char buf[2048];
-wsprintf(buf, "GetStream: %d %d", index, m_nIndex);
-OutputDebugString(buf);
+// TODO: support abort?
+	if(m_lpPrgressCallback && m_cache)
+		m_lpPrgressCallback(m_cache->GetProgress(index), m_cache->GetProgressDenom(index), m_lData);
     return S_OK;
 }
 
