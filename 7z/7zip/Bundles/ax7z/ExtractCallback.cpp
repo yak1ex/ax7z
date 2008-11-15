@@ -1,8 +1,5 @@
 // ExtractCallback.h
 #include <windows.h>
-#include <map>
-#include <string>
-#include <vector>
 #include "ExtractCallback.h"
 #include "Common/StringConvert.h"
 #include "Windows/FileDir.h"
