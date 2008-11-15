@@ -29,3 +29,4 @@ ax7z.txt
 ax7z.aps
 *.BAK
 *.patch
+*.zip

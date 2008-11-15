@@ -1,15 +1,15 @@
 VER = 0.7-457y2b0
 DIR = ax7z-$(VER)
 
-dist: release mkpatch
+dist: build mkpatch
 	rm -rf $(DIR)
 	mkdir -p $(DIR)
 	cp Release/ax7z.spi ax7z.txt $(DIR)
 	(cd $(DIR); zip ../$(DIR).zip *)
 	rm -rf $(DIR)
 	
-release:
-	/cygdrive/c/Program\ Files/Application/Microsoft\ Visual\ Studio\ .NET\ 2003/Common7/IDE/devenv.exe ./00am.sln /Build Release
+build:
+	/cygdrive/c/Program\ Files/Application/Microsoft\ Visual\ Studio\ .NET\ 2003/Common7/IDE/devenv.exe ./00am.sln /Rebuild Release
 
 mkpatch:
 	rm -f $(DIR).patch
