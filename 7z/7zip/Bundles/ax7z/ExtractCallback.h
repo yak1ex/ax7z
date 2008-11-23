@@ -42,14 +42,14 @@ private:
 
   bool IsEncrypted(UINT32 index);
 public:
-  void Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index, SolidCache *cache, SPI_PROGRESS lpPrgressCallback, long lData);
+  void Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index, SolidFileCache *cache, SPI_PROGRESS lpPrgressCallback, long lData);
 
   UINT64 m_NumErrors;
   char* m_pBuf;
   FILE* m_fp;
   UINT32 m_nBufSize;
   UINT32 m_nIndex;
-  SolidCache *m_cache;
+  SolidFileCache *m_cache;
   SPI_PROGRESS m_lpPrgressCallback;
   long m_lData;
 };

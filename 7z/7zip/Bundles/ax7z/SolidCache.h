@@ -24,8 +24,11 @@ static void OutputDebugPrintf(char* format, ...)
 	va_end(ap);
 }
 
-class SolidCache
+class SolidCache;
+
+class SolidFileCache
 {
+	friend class SolidCache;
 private:
 	struct Entry
 	{
@@ -34,17 +37,12 @@ private:
 		Entry():fCached(false) {}
 	};
 	typedef std::map<unsigned int, Entry> FileCache;
-	static std::map<std::string, FileCache> table;
-	SolidCache(const std::string& filename) : m_cache(table[filename])
+	SolidFileCache(FileCache& cache) : m_cache(cache)
 	{
 	}
 	FileCache& m_cache;
 	UINT32 m_nMaxNum;
 public:
-	static SolidCache GetFileCache(const std::string& filename)
-	{
-		return SolidCache(filename);
-	}
 	bool IsCached(unsigned int index) const
 	{
 		return m_cache.count(index) > 0 && m_cache[index].fCached;
@@ -93,5 +91,17 @@ public:
 	}
 };
 
+class SolidCache
+{
+private:
+	SolidCache() {}
+	static std::map<std::string, SolidFileCache::FileCache> table;
+public:
+	static SolidCache& GetInstance();
+	static SolidFileCache GetFileCache(const std::string& filename)
+	{
+		return SolidFileCache(table[filename]);
+	}
+};
 
 #endif

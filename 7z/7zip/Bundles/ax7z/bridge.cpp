@@ -500,7 +500,7 @@ int GetArchiveInfoWEx(LPWSTR filename, long len, HLOCAL *lphInf)
     return SPI_ALL_RIGHT;
 }
 
-int GetFileExImp_Cached(HLOCAL *dest, const char* pOutFile, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidCache scCache)
+int GetFileExImp_Cached(HLOCAL *dest, const char* pOutFile, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache scCache)
 {
     FILE* fp = NULL;
     if (dest) {
@@ -556,7 +556,7 @@ int PASCAL ProgressFunc(int nNum, int nDenom, long lData)
 }
 
 
-int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidCache *scCache)
+int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache *scCache)
 {
     CExtractCallbackImp *extractCallbackSpec = new CExtractCallbackImp;
     CMyComPtr<IArchiveExtractCallback> extractCallback(extractCallbackSpec);
@@ -658,7 +658,7 @@ OutputDebugPrintf("GetFileEx %s %d %d", pinfo->filename, iExtractFileIndex, (UIN
     if(!lstrcmp((char*)pinfo->method, "7zip_s")
         && ((pinfo->method[7] == 'R' && g_nSolidEnableRar)
             || (pinfo->method[7] == '7' && g_nSolidEnable7z))) {
-        SolidCache scCache = SolidCache::GetFileCache(filename);
+        SolidFileCache scCache = SolidCache::GetFileCache(filename);
         if(scCache.IsCached(iExtractFileIndex)) { // Cached
             return GetFileExImp_Cached(dest, pOutFile, iExtractFileIndex, unpackSize, scCache);
         } else { // with Cache

@@ -9,7 +9,7 @@
 
 using namespace NWindows;
 
-void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index, SolidCache *cache, SPI_PROGRESS lpPrgressCallback, long lData)
+void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index, SolidFileCache *cache, SPI_PROGRESS lpPrgressCallback, long lData)
 {
   assert(!pBuf || !fp);
   m_NumErrors = 0;
@@ -49,7 +49,7 @@ class CMemOutStream:
 {
 public:
     CMemOutStream() : m_iPos(0), m_pBuf(NULL), m_nBufSize(0) {}
-    void Init(char* pBuf, UINT32 nBufSize, FILE* fp, bool bValid, SolidCache *cache, UINT32 nIndex)
+    void Init(char* pBuf, UINT32 nBufSize, FILE* fp, bool bValid, SolidFileCache *cache, UINT32 nIndex)
 	{
 		m_pBuf = pBuf;
 		m_fp = fp;
@@ -68,7 +68,7 @@ protected:
     FILE* m_fp;
     UINT32 m_nBufSize;
     bool m_bValid;
-	SolidCache *m_cache;
+	SolidFileCache *m_cache;
 	UINT32 m_index;
 };
 
