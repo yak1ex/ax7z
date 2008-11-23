@@ -4,6 +4,7 @@ ax7z entry funcs
 
 #include <windows.h>
 #include <commctrl.h>
+#include <shlobj.h>
 #include <vector>
 #include <algorithm>
 #include "entryFuncs.h"
@@ -578,6 +579,18 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
                     break;
                 case IDCANCEL:
                     EndDialog(hDlgWnd, IDCANCEL);
+                    break;
+				case IDC_BROWSE_BUTTON:
+				{
+					char buf[MAX_PATH];
+					BROWSEINFO bwi = { hDlgWnd, NULL, buf, "Specify cache folder", BIF_RETURNONLYFSDIRS };
+					LPITEMIDLIST piid = SHBrowseForFolder(&bwi);
+					if(piid) {
+						SHGetPathFromIDList(piid, buf);
+						SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
+						CoTaskMemFree(piid);
+					}
+				}
                     break;
                 default:
                     return FALSE;
