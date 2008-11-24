@@ -94,13 +94,44 @@ public:
 class SolidCache
 {
 private:
-	SolidCache() {}
+	SolidCache():m_nMaxLookAhead(-1),m_nMaxMemory(-1),m_nMaxDisk(-1),m_sCacheFolder("") {}
 	static std::map<std::string, SolidFileCache::FileCache> table;
+	int m_nMaxLookAhead;
+	int m_nMaxMemory;
+	int m_nMaxDisk;
+	std::string m_sCacheFolder;
 public:
 	static SolidCache& GetInstance();
 	static SolidFileCache GetFileCache(const std::string& filename)
 	{
 		return SolidFileCache(table[filename]);
+	}
+	int GetMaxLookAhead() const { return m_nMaxLookAhead; }
+	int SetMaxLookAhead(int nNew)
+	{
+		int nOld = m_nMaxLookAhead;
+		m_nMaxLookAhead = nNew;
+		return nOld;
+	}
+	int GetMaxMemory() const { return m_nMaxMemory; }
+	int SetMaxMemory(int nNew)
+	{
+		int nOld = m_nMaxMemory;
+		m_nMaxMemory = nNew;
+		return nOld;
+	}
+	int GetMaxDisk() const { return m_nMaxDisk; }
+	int SetMaxDisk(int nNew)
+	{
+		int nOld = m_nMaxDisk;
+		m_nMaxDisk = nNew;
+		return nOld;
+	}
+	const std::string& GetCacheFolder() const { return m_sCacheFolder; }
+	std::string SetCacheFolder(std::string sNew)
+	{
+		std::swap(sNew, m_sCacheFolder);
+		return sNew;
 	}
 };
 

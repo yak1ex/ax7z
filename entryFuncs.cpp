@@ -11,6 +11,7 @@ ax7z entry funcs
 #include "infcache.h"
 #include <sstream>
 #include "resource.h"
+#include "7z/7zip/Bundles/ax7z/SolidCache.h"
 
 //グローバル変数
 static InfoCache infocache; //アーカイブ情報キャッシュクラス
@@ -25,10 +26,6 @@ static int s_nEnableLzh = 1;
 HINSTANCE g_hInstance;
 int g_nSolidEnable7z = 1;
 int g_nSolidEnableRar = 1;
-int g_nMaxLookAhead = -1;
-int g_nMaxMemory = -1;
-int g_nMaxDisk = -1;
-std::string g_sCacheFolder = "";
 
 #ifndef _UNICODE
 bool g_IsNT = false;
@@ -53,12 +50,15 @@ void SetParamDefault()
 
     g_nSolidEnable7z = 1;
     g_nSolidEnableRar = 1;
-    g_nMaxLookAhead = -1;
-    g_nMaxMemory = -1;
-    g_nMaxDisk = -1;
+
+	SolidCache& sc = SolidCache::GetInstance();
+
+	sc.SetMaxLookAhead(-1);
+	sc.SetMaxMemory(-1);
+	sc.SetMaxDisk(-1);
     char buf[2048];
     GetTempPath(sizeof(buf), buf);
-    g_sCacheFolder = buf;
+	sc.SetCacheFolder(buf);
 }
 
 std::string GetIniFileName()
@@ -79,15 +79,17 @@ void LoadFromIni()
     s_nEnableArj = GetPrivateProfileInt("ax7z", "arj", s_nEnableArj, sIniFileName.c_str());
     s_nEnableLzh = GetPrivateProfileInt("ax7z", "lzh", s_nEnableLzh, sIniFileName.c_str());
 
+	SolidCache& sc = SolidCache::GetInstance();
+
     g_nSolidEnable7z = GetPrivateProfileInt("ax7z", "solid7z", g_nSolidEnable7z, sIniFileName.c_str());
     g_nSolidEnableRar = GetPrivateProfileInt("ax7z", "solidrar", g_nSolidEnableRar, sIniFileName.c_str());
-    g_nMaxLookAhead = GetPrivateProfileInt("ax7z", "lookahead", g_nMaxLookAhead, sIniFileName.c_str());
-    g_nMaxMemory = GetPrivateProfileInt("ax7z", "memory", g_nMaxMemory, sIniFileName.c_str());
-    g_nMaxDisk = GetPrivateProfileInt("ax7z", "disk", g_nMaxDisk, sIniFileName.c_str());
+	sc.SetMaxLookAhead(GetPrivateProfileInt("ax7z", "lookahead", sc.GetMaxLookAhead(), sIniFileName.c_str()));
+    sc.SetMaxMemory(GetPrivateProfileInt("ax7z", "memory", sc.GetMaxMemory(), sIniFileName.c_str()));
+    sc.SetMaxDisk(GetPrivateProfileInt("ax7z", "disk", sc.GetMaxDisk(), sIniFileName.c_str()));
     char buf[2048], buf2[2048];
     GetTempPath(sizeof(buf2), buf2);
     GetPrivateProfileString("ax7z", "folder", buf2, buf, sizeof(buf), sIniFileName.c_str());
-    g_sCacheFolder = buf;
+    sc.SetCacheFolder(buf);
 }
 
 void SaveToIni()
@@ -104,13 +106,15 @@ void SaveToIni()
     char buf[2048];
     WritePrivateProfileString("ax7z", "solid7z", g_nSolidEnable7z ? "1" : "0", sIniFileName.c_str());
     WritePrivateProfileString("ax7z", "solidrar", g_nSolidEnableRar ? "1" : "0", sIniFileName.c_str());
-    wsprintf(buf, "%d", g_nMaxLookAhead);
+
+	SolidCache& sc = SolidCache::GetInstance();
+	wsprintf(buf, "%d", sc.GetMaxLookAhead());
     WritePrivateProfileString("ax7z", "lookahead", buf, sIniFileName.c_str());
-    wsprintf(buf, "%d", g_nMaxMemory);
+    wsprintf(buf, "%d", sc.GetMaxMemory());
     WritePrivateProfileString("ax7z", "memory", buf, sIniFileName.c_str());
-    wsprintf(buf, "%d", g_nMaxDisk);
+    wsprintf(buf, "%d", sc.GetMaxDisk());
     WritePrivateProfileString("ax7z", "disk", buf, sIniFileName.c_str());
-    WritePrivateProfileString("ax7z", "folder", g_sCacheFolder.c_str(), sIniFileName.c_str());
+    WritePrivateProfileString("ax7z", "folder", sc.GetCacheFolder().c_str(), sIniFileName.c_str());
 }
 
 void SetIniFileName(HANDLE hModule)
@@ -512,14 +516,15 @@ static void UpdateSolidDialogItem(HWND hDlgWnd)
     SendDlgItemMessage(hDlgWnd, IDC_SOLID_7Z_CHECK, BM_SETCHECK, (WPARAM)g_nSolidEnable7z, 0L);
     SendDlgItemMessage(hDlgWnd, IDC_SOLID_RAR_CHECK, BM_SETCHECK, (WPARAM)g_nSolidEnableRar, 0L);
 
+	SolidCache& sc = SolidCache::GetInstance();
     char buf[2048];
-    wsprintf(buf, "%d", g_nMaxLookAhead);
+    wsprintf(buf, "%d", sc.GetMaxLookAhead());
     SendDlgItemMessage(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    wsprintf(buf, "%d", g_nMaxMemory);
+    wsprintf(buf, "%d", sc.GetMaxMemory());
     SendDlgItemMessage(hDlgWnd, IDC_MAX_MEMORY_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    wsprintf(buf, "%d", g_nMaxDisk);
+    wsprintf(buf, "%d", sc.GetMaxDisk());
     SendDlgItemMessage(hDlgWnd, IDC_MAX_DISK_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_SETTEXT, 0, (LPARAM)g_sCacheFolder.c_str());
+    SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_SETTEXT, 0, (LPARAM)sc.GetCacheFolder().c_str());
 }
 
 static bool IsChecked2(HWND hDlgWnd, int nID, int &nVar)
@@ -533,13 +538,13 @@ static bool IsChecked2(HWND hDlgWnd, int nID, int &nVar)
     return (nVar != nOldVar);
 }
 
-static bool GetIntValue(HWND hDlgWnd, int nID, int &nVar)
+static bool GetIntValue(HWND hDlgWnd, int nID, int (SolidCache::*mfGetter)() const, int (SolidCache::*mfSetter)(int))
 {
     char buf[2048];
     SendDlgItemMessage(hDlgWnd, nID, WM_GETTEXT, sizeof(buf), (LPARAM)buf);
     int nTempVar = atoi(buf);
-    if(nTempVar != nVar) {
-        nVar = nTempVar;
+	if(nTempVar != (SolidCache::GetInstance().*mfGetter)()) {
+		(SolidCache::GetInstance().*mfSetter)(nTempVar);
         return true;
     }
     return false;
@@ -550,14 +555,14 @@ static bool UpdateSolidValue(HWND hDlgWnd)
     bool fChanged = false;
     fChanged |= IsChecked2(hDlgWnd, IDC_SOLID_7Z_CHECK, g_nSolidEnable7z);
     fChanged |= IsChecked2(hDlgWnd, IDC_SOLID_RAR_CHECK, g_nSolidEnableRar);
-    fChanged |= GetIntValue(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT, g_nMaxLookAhead);
-    fChanged |= GetIntValue(hDlgWnd, IDC_MAX_MEMORY_EDIT, g_nMaxMemory);
-    fChanged |= GetIntValue(hDlgWnd, IDC_MAX_DISK_EDIT, g_nMaxDisk);
+	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT, SolidCache::GetMaxLookAhead, SolidCache::SetMaxLookAhead);
+	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_MEMORY_EDIT, SolidCache::GetMaxMemory, SolidCache::SetMaxMemory);
+	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_DISK_EDIT, SolidCache::GetMaxDisk, SolidCache::SetMaxDisk);
     char buf[2048];
     SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_GETTEXT, sizeof(buf), (LPARAM)buf);
-    if(!lstrcmp(buf, g_sCacheFolder.c_str())) {
+	if(lstrcmp(buf, SolidCache::GetInstance().GetCacheFolder().c_str())) {
         fChanged = true;
-        g_sCacheFolder = buf;
+		SolidCache::GetInstance().SetCacheFolder(buf);
     }
 
     return fChanged;
