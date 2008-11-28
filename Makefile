@@ -22,3 +22,5 @@ retag:
 	svn remove https://yak.myhome.cx/repos/source/ax7z/tags/$(DIR)
 	svn copy . https://yak.myhome.cx/repos/source/ax7z/tags/$(DIR)
 
+test:
+	g++ -Wall -o test test.cpp sqlite3/sqlite3.o
