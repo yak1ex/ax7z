@@ -175,12 +175,24 @@ void append(sqlite3 *db, const char* archive, int idx, const void *data, int siz
 	}
 }
 
+void mark(sqlite3 *db, const char* archive, int idx)
+{
+	sqlite3_stmt *stmt;
+	sqlite3_prepare_v2(db, "update entry set completed = 1 where idx = ? and aidx = (select idx from archive where path = ?)", -1, &stmt, NULL);
+	sqlite3_bind_int(stmt, 1, idx);
+	sqlite3_bind_text(stmt, 2, archive, -1, SQLITE_TRANSIENT);
+	sqlite3_step(stmt);
+	sqlite3_finalize(stmt);
+}
+
 int main(void)
 {
     sqlite3 *db;
     sqlite3_open("test.db", &db);
     init_db(db);
     append(db, "hoge.rar", 0, "TEXT", 4);
+    append(db, "hoge.rar", 0, "TEXT", 4);
+    mark(db, "hoge.rar", 0);
     append(db, "hoge.rar", 0, "TEXT", 4);
     append(db, "hoge.rar", 1, "FOO", 3);
     append(db, "hoge2.rar", 0, "TEXT", 4);
