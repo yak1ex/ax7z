@@ -27,53 +27,111 @@ if(cur_in_disk) {
 cur_in_disk && marked || cur_in_memory && marked
 #endif
 
+// Tiny wrapper to sqlite3_stmt
+class Statement
+{
+private:
+	sqlite3_stmt *m_stmt;
+	Statement& operator=(const Statement&);
+	Statement(const Statement&);
+public:
+	Statement(sqlite3 *db, const char* sql)
+	{
+		sqlite3_prepare_v2(db, sql, -1, &m_stmt, NULL);
+	}
+	Statement& reprepare(sqlite3 *db, const char* sql)
+	{
+		sqlite3_finalize(m_stmt);
+		sqlite3_prepare_v2(db, sql, -1, &m_stmt, NULL);
+		return *this;
+	}
+	~Statement()
+	{
+		sqlite3_finalize(m_stmt);
+	}
+	Statement& bind(int idx, int value)
+	{
+		sqlite3_bind_int(m_stmt, idx, value);
+		return *this;
+	}
+	Statement& bind(int idx, const char* value)
+	{
+		sqlite3_bind_text(m_stmt, idx, value, -1, SQLITE_TRANSIENT);
+		return *this;
+	}
+	Statement& bind(int idx, const void* value, int size, void (*func)(void*) = SQLITE_TRANSIENT)
+	{
+		sqlite3_bind_blob(m_stmt, idx, value, size, func);
+		return *this;
+	}
+	bool operator()()
+	{
+// TODO: catch error on prepare()
+		return sqlite3_step(m_stmt) == SQLITE_ROW;
+	}
+	int get_int(int idx)
+	{
+		return sqlite3_column_int(m_stmt, idx);
+	}
+	double get_double(int idx)
+	{
+		return sqlite3_column_double(m_stmt, idx);
+	}
+	const char* get_text(int idx)
+	{
+		return static_cast<const char*>(static_cast<const void*>(sqlite3_column_text(m_stmt, idx)));
+	}
+	const void* get_blob(int idx)
+	{
+		return sqlite3_column_blob(m_stmt, idx);
+	}
+	int get_bytes(int idx)
+	{
+		return sqlite3_column_bytes(m_stmt, idx);
+	}
+	const char* get_name(int idx)
+	{
+		return sqlite3_column_name(m_stmt, idx);
+	}
+	int get_type(int idx)
+	{
+		return sqlite3_column_type(m_stmt, idx);
+	}
+	int get_count()
+	{
+		return sqlite3_column_count(m_stmt);
+	}
+};
+
 void dump_table(sqlite3 *db, char *name)
 {
-	sqlite3_stmt *stmt;
 	char buf[2048];
 	sqlite3_snprintf(sizeof(buf), buf, "select * from %s", name);
-	std::cout << sqlite3_prepare_v2(db, buf, -1, &stmt, NULL) << std::endl;
-//	sqlite3_bind_text(stmt, 1, name, -1, SQLITE_TRANSIENT);
-	if(stmt) {
-		while(sqlite3_step(stmt) == SQLITE_ROW) {
-			int nColumn = sqlite3_column_count(stmt);
-			for(int i=0;i<nColumn;++i) {
-				std::cout << sqlite3_column_name(stmt, i) << ':';
-				switch(sqlite3_column_type(stmt, i)) {
-				case SQLITE_INTEGER:
-					std::cout << sqlite3_column_int64(stmt, i);
-					break;
-				case SQLITE_FLOAT:
-					std::cout << sqlite3_column_double(stmt, i);
-					break;
-				case SQLITE_TEXT:
-					std::cout << sqlite3_column_text(stmt, i);
-					break;
-				case SQLITE_BLOB:
-					std::cout << '(' << sqlite3_column_bytes(stmt, i) << ')';
-					break;
-				case SQLITE_NULL:
-					std::cout << "NULL";
-					break;
-				}
-				std::cout << std::endl;
+	Statement stmt(db, buf);
+	while(stmt()) {
+		int nColumn = stmt.get_count();
+		for(int i=0;i<nColumn;++i) {
+			std::cout << stmt.get_name(i) << ':';
+			switch(stmt.get_type(i)) {
+			case SQLITE_INTEGER:
+				std::cout << stmt.get_int(i);
+				break;
+			case SQLITE_FLOAT:
+				std::cout << stmt.get_double(i);
+				break;
+			case SQLITE_TEXT:
+				std::cout << stmt.get_text(i);
+				break;
+			case SQLITE_BLOB:
+				std::cout << '(' << stmt.get_bytes(i) << ')';
+				break;
+			case SQLITE_NULL:
+				std::cout << "NULL";
+				break;
 			}
+			std::cout << std::endl;
 		}
 	}
-}
-
-int count(sqlite3 *db, char *sql)
-{
-	sqlite3_stmt *stmt;
-	sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-	int result = -1;
-	if(stmt) {
-		if(sqlite3_step(stmt) == SQLITE_ROW) {
-			result = sqlite3_column_int(stmt, 0);
-		}
-	}
-	sqlite3_finalize(stmt);
-	return result;
 }
 
 void init_db(sqlite3 *db)
@@ -84,81 +142,49 @@ void init_db(sqlite3 *db)
 
 bool exists_archive(sqlite3 *db, const char* archive)
 {
-	sqlite3_stmt *stmt;
-	sqlite3_prepare_v2(db, "select count(*) from archive where path = ?", -1, &stmt, NULL);
-	sqlite3_bind_text(stmt, 1, archive, -1, SQLITE_TRANSIENT);
-	bool fResult = sqlite3_step(stmt) == SQLITE_ROW && sqlite3_column_int(stmt, 0) > 0;
-	sqlite3_finalize(stmt);
-	return fResult;
+	Statement stmt(db, "select count(*) from archive where path = ?");
+	stmt.bind(1, archive);
+	return stmt() && stmt.get_int(0) > 0;
 }
 
 void add_archive(sqlite3 *db, const char* archive, int time)
 {
-	sqlite3_stmt *stmt;
-	sqlite3_prepare_v2(db, "insert into archive (path, atime) values (?, ?)", -1, &stmt, NULL);
-	sqlite3_bind_text(stmt, 1, archive, -1, SQLITE_TRANSIENT);
-	sqlite3_bind_int(stmt, 2, time);
-	sqlite3_step(stmt);
-	sqlite3_finalize(stmt);
+	Statement(db, "insert into archive (path, atime) values (?, ?)").bind(1, archive).bind(2, time)();
 }
 
 int get_archive_idx(sqlite3 *db, const char* archive)
 {
-	sqlite3_stmt *stmt;
-	sqlite3_prepare_v2(db, "select idx from archive where path = ?", -1, &stmt, NULL);
-	sqlite3_bind_text(stmt, 1, archive, -1, SQLITE_TRANSIENT);
-// TODO: assert
-	sqlite3_step(stmt);
-	int aidx = sqlite3_column_int(stmt, 0);
-	sqlite3_finalize(stmt);
-	return aidx;
+	Statement stmt(db, "select idx from archive where path = ?");
+	stmt.bind(1, archive)();
+	return stmt.get_int(0);
 }
 
 bool exists_entry(sqlite3 *db, int aidx, int idx)
 {
-	sqlite3_stmt *stmt;
-	sqlite3_prepare_v2(db, "select count(*) from entry where aidx = ? and idx = ?", -1, &stmt, NULL);
-	sqlite3_bind_int(stmt, 1, aidx);
-	sqlite3_bind_int(stmt, 2, idx);
-	bool fResult = sqlite3_step(stmt) == SQLITE_ROW && sqlite3_column_int(stmt, 0) > 0;
-	sqlite3_finalize(stmt);
-	return fResult;
+	Statement stmt(db, "select count(*) from entry where aidx = ? and idx = ?");
+	stmt.bind(1, aidx).bind(2, idx);
+	return stmt() && stmt.get_int(0) > 0;
 }
 
 void append_entry(sqlite3 *db, int aidx, int idx, const void* data, int size)
 {
-	sqlite3_stmt *stmt;
-	sqlite3_prepare_v2(db, "select data, completed from entry where aidx = ? and idx = ?", -1, &stmt, NULL);
-	sqlite3_bind_int(stmt, 1, aidx);
-	sqlite3_bind_int(stmt, 2, idx);
-	sqlite3_step(stmt);
-	if(sqlite3_column_int(stmt, 1) == 0) {
-		int old_size = sqlite3_column_bytes(stmt, 0);
+	Statement stmt(db, "select data, completed from entry where aidx = ? and idx = ?");
+	stmt.bind(1, aidx).bind(2, idx)();
+	if(stmt.get_int(1) == 0) {
+		int old_size = stmt.get_bytes(0);
 		char *store = static_cast<char*>(sqlite3_malloc(old_size + size));
-		memcpy(store, sqlite3_column_blob(stmt, 0), old_size);
+		memcpy(store, stmt.get_blob(0), old_size);
 		memcpy(store + old_size, data, size);
-		sqlite3_finalize(stmt);
 
-		sqlite3_prepare_v2(db, "update entry set data = ? where aidx = ? and idx = ?", -1, &stmt, NULL);
-		sqlite3_bind_blob(stmt, 1, store, old_size + size, sqlite3_free);
-		sqlite3_bind_int(stmt, 2, aidx);
-		sqlite3_bind_int(stmt, 3, idx);
-		sqlite3_step(stmt);
-		sqlite3_finalize(stmt);
-	} else {
-		sqlite3_finalize(stmt);
+		stmt.reprepare(db, "update entry set data = ? where aidx = ? and idx = ?")
+		    .bind(1, store, old_size + size, sqlite3_free).bind(2, aidx).bind(3, idx)();
 	}
 }
 
 void add_entry(sqlite3 *db, int aidx, int idx, const void *data, int size)
 {
-	sqlite3_stmt *stmt;
-	sqlite3_prepare_v2(db, "insert into entry (aidx, idx, data, completed) values (?, ?, ?, 0)", -1, &stmt, NULL);
-	sqlite3_bind_int(stmt, 1, aidx);
-	sqlite3_bind_int(stmt, 2, idx);
-	sqlite3_bind_blob(stmt, 3, data, size, SQLITE_TRANSIENT);
-	sqlite3_step(stmt);
-	sqlite3_finalize(stmt);
+	Statement(db, "insert into entry (aidx, idx, data, completed) values (?, ?, ?, 0)")
+	    .bind(1, aidx).bind(2, idx).bind(3, data, size)();
 }
 
 void append(sqlite3 *db, const char* archive, int idx, const void *data, int size)
@@ -177,12 +203,8 @@ void append(sqlite3 *db, const char* archive, int idx, const void *data, int siz
 
 void mark(sqlite3 *db, const char* archive, int idx)
 {
-	sqlite3_stmt *stmt;
-	sqlite3_prepare_v2(db, "update entry set completed = 1 where idx = ? and aidx = (select idx from archive where path = ?)", -1, &stmt, NULL);
-	sqlite3_bind_int(stmt, 1, idx);
-	sqlite3_bind_text(stmt, 2, archive, -1, SQLITE_TRANSIENT);
-	sqlite3_step(stmt);
-	sqlite3_finalize(stmt);
+	Statement(db, "update entry set completed = 1 where idx = ? and aidx = (select idx from archive where path = ?)")
+	    .bind(1, idx).bind(2, archive)();
 }
 
 int main(void)
