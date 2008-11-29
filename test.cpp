@@ -1,4 +1,5 @@
 #include <iostream>
+#include <ctime>
 #include "sqlite3/sqlite3.h"
 
 #if 0
@@ -105,6 +106,7 @@ public:
 
 void dump_table(sqlite3 *db, char *name)
 {
+	std::cout << '[' << name << ']' << std::endl;
 	char buf[2048];
 	sqlite3_snprintf(sizeof(buf), buf, "select * from %s", name);
 	Statement stmt(db, buf);
@@ -129,8 +131,9 @@ void dump_table(sqlite3 *db, char *name)
 				std::cout << "NULL";
 				break;
 			}
-			std::cout << std::endl;
+			std::cout << '\t';
 		}
+		std::cout << std::endl;
 	}
 }
 
@@ -147,9 +150,9 @@ bool exists_archive(sqlite3 *db, const char* archive)
 	return stmt() && stmt.get_int(0) > 0;
 }
 
-void add_archive(sqlite3 *db, const char* archive, int time)
+void add_archive(sqlite3 *db, const char* archive)
 {
-	Statement(db, "insert into archive (path, atime) values (?, ?)").bind(1, archive).bind(2, time)();
+	Statement(db, "insert into archive (path, atime) values (?, 0)").bind(1, archive)();
 }
 
 int get_archive_idx(sqlite3 *db, const char* archive)
@@ -190,7 +193,7 @@ void add_entry(sqlite3 *db, int aidx, int idx, const void *data, int size)
 void append(sqlite3 *db, const char* archive, int idx, const void *data, int size)
 {
 	if(!exists_archive(db, archive)) {
-		add_archive(db, archive, 0);
+		add_archive(db, archive);
 	}
 
 	int aidx = get_archive_idx(db, archive);
@@ -207,17 +210,111 @@ void mark(sqlite3 *db, const char* archive, int idx)
 	    .bind(1, idx).bind(2, archive)();
 }
 
+void purge_unreferenced(sqlite3 *db)
+{
+	sqlite3_exec(db, "delete from archive where idx not in (select aidx from entry)", NULL, NULL, NULL);
+}
+
+void purge_unmarked(sqlite3 *db, const char *archive)
+{
+	Statement(db, "delete from entry where completed = 0 and aidx = (select idx from archive where path = ?)")
+	    .bind(1, archive)();
+	purge_unreferenced(db);
+}
+
+void purge_unmarked_all(sqlite3 *db)
+{
+	sqlite3_exec(db, "delete from entry where completed = 0", NULL, NULL, NULL);
+	purge_unreferenced(db);
+}
+
+int get_size(sqlite3 *db)
+{
+	Statement stmt(db, "select sum(length(data)) from entry");
+	stmt();
+	return stmt.get_int(0);
+}
+
+void reduce_size_with_archive(sqlite3 *db, const char* archive, int size)
+{
+	Statement stmt(db,
+	    "delete from entry where aidx = (select idx from archive where path = ?) and "
+	        "idx <= (select idx from "
+	            "(select t1.*,sum(length(t2.data)) cutsize from entry t1, entry t2 "
+	                "where t1.aidx = "
+	                    "(select idx from archive where path = ?1) "
+	                    "and t2.aidx = t1.aidx and t2.idx <= t1.idx group by t1.idx) "
+	            "order by cutsize - ?2 < 0, abs(cutsize - ?2) limit 1)");
+	stmt.bind(1, archive).bind(2, size)();
+	purge_unreferenced(db);
+}
+
+void reduce_size_with_aidx(sqlite3 *db, int aidx, int size)
+{
+	Statement stmt(db,
+	    "delete from entry where aidx = ? and "
+	        "idx <= (select idx from "
+	            "(select t1.*,sum(length(t2.data)) cutsize from entry t1, entry t2 "
+	                "where t1.aidx = ?1 "
+	                    "and t2.aidx = t1.aidx and t2.idx <= t1.idx group by t1.idx) "
+	            "order by cutsize - ?2 < 0, abs(cutsize - ?2) limit 1)");
+	stmt.bind(1, aidx).bind(2, size)();
+	purge_unreferenced(db);
+}
+
+void reduce_size(sqlite3 *db, int size)
+{
+	int cur_size = get_size(db);
+	while(size > 0 && cur_size != 0) {
+		Statement stmt(db, "select idx from archive order by atime limit 1");
+		if(stmt()) {
+			int aidx = stmt.get_int(0);
+			reduce_size_with_aidx(db, aidx, size);
+			int new_size = get_size(db);
+			size -= (cur_size - new_size);
+			cur_size = new_size;
+		} else break;
+	}
+}
+
+void access_archive(sqlite3 *db, const char* archive)
+{
+	std::time_t atime;
+	std::time(&atime);
+	Statement(db, "update archive set atime = ? where path = ?")
+	    .bind(1, (int)atime).bind(2, archive)();
+}
+
+bool exists(sqlite3 *db, const char* archive, int idx)
+{
+	Statement stmt(db, "select count(*) from archive, entry where entry.aidx = archive.idx and archive.path = ? and entry.idx = ?");
+	stmt.bind(1, archvie).bind(2, idx);
+	return stmt() && stmt.get_int(0) > 0;
+}
+
 int main(void)
 {
     sqlite3 *db;
     sqlite3_open("test.db", &db);
     init_db(db);
-    append(db, "hoge.rar", 0, "TEXT", 4);
-    append(db, "hoge.rar", 0, "TEXT", 4);
+    access_archive(db, "hoge.rar");
+    append(db, "hoge.rar", 0, "TEXTTEXT", 8);
+    append(db, "hoge.rar", 0, "TEXTTEXT", 8);
     mark(db, "hoge.rar", 0);
     append(db, "hoge.rar", 0, "TEXT", 4);
-    append(db, "hoge.rar", 1, "FOO", 3);
-    append(db, "hoge2.rar", 0, "TEXT", 4);
+    append(db, "hoge.rar", 1, "FOOFOO", 6);
+    append(db, "hoge.rar", 1, "FOOFOO", 6);
+    append(db, "hoge.rar", 2, "BARFOO", 6);
+    append(db, "hoge.rar", 2, "BARFOO", 6);
+    access_archive(db, "hoge2.rar");
+    append(db, "hoge2.rar", 0, "TEXTTEXT", 8);
+    append(db, "hoge2.rar", 0, "TEXTTEXT", 8);
+    append(db, "hoge2.rar", 0, "TEXTTEXT", 8);
+//    access_archive(db, "hoge.rar");
+    dump_table(db, "archive");
+    dump_table(db, "entry");
+//    purge_unmarked(db, "hoge2.rar");
+	reduce_size(db, 100);
     dump_table(db, "archive");
     dump_table(db, "entry");
     sqlite3_close(db);
