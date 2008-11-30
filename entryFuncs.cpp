@@ -56,9 +56,9 @@ void SetParamDefault()
 	sc.SetMaxLookAhead(-1);
 	sc.SetMaxMemory(-1);
 	sc.SetMaxDisk(-1);
-    char buf[2048];
-    GetTempPath(sizeof(buf), buf);
-	sc.SetCacheFolder(buf);
+//    char buf[2048];
+//    GetTempPath(sizeof(buf), buf);
+//	sc.SetCacheFolder(buf);
 }
 
 std::string GetIniFileName()

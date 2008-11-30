@@ -1,9 +1,9 @@
 #include "SolidCache.h"
 
-std::map<std::string, SolidFileCache::FileCache> SolidCache::table;
+std::map<std::string, SolidFileCacheMemory::FileCache> SolidCacheMemory::table;
 
-SolidCache& SolidCache::GetInstance()
+SolidCacheMemory& SolidCacheMemory::GetInstance()
 {
-	static SolidCache scSingleton;
+	static SolidCacheMemory scSingleton;
 	return scSingleton;
 }

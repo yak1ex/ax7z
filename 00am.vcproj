@@ -487,6 +487,9 @@
 				<File
 					RelativePath=".\7z\7zip\Bundles\ax7z\SolidCache.h">
 				</File>
+				<File
+					RelativePath=".\7z\7zip\Bundles\ax7z\SolidCacheDisk.cpp">
+				</File>
 			</Filter>
 			<Filter
 				Name="7-zip Common"
@@ -744,6 +747,19 @@
 		<Filter
 			Name="Resource Files"
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+		</Filter>
+		<Filter
+			Name="sqlite3"
+			Filter="">
+			<File
+				RelativePath=".\sqlite3\sqlite3.c">
+			</File>
+			<File
+				RelativePath=".\sqlite3\sqlite3.h">
+			</File>
+			<File
+				RelativePath=".\sqlite3\sqlite3helper.h">
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\ax7z.txt">

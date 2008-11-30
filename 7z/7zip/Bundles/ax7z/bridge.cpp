@@ -549,6 +549,11 @@ int PASCAL ProgressFunc(int nNum, int nDenom, long lData)
     char buf[1024];
     wsprintf(buf, "%d / %d", nNum, nDenom);
     SendDlgItemMessage(pArg->hwnd, IDC_PROGRESSTEXT, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(buf));
+    MSG msg;
+    if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg); 
+        DispatchMessage(&msg); 
+    }
     if(pArg->procTrueProgress)
         return (pArg->procTrueProgress)(nNum, nDenom, pArg->lTrueData);
     else
