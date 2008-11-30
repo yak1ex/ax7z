@@ -549,11 +549,12 @@ int PASCAL ProgressFunc(int nNum, int nDenom, long lData)
     char buf[1024];
     wsprintf(buf, "%d / %d", nNum, nDenom);
     SendDlgItemMessage(pArg->hwnd, IDC_PROGRESSTEXT, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(buf));
-    MSG msg;
-    if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-        TranslateMessage(&msg); 
-        DispatchMessage(&msg); 
-    }
+	RedrawWindow(pArg->hwnd, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+//    MSG msg;
+//    if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+//        TranslateMessage(&msg); 
+//        DispatchMessage(&msg); 
+//    }
     if(pArg->procTrueProgress)
         return (pArg->procTrueProgress)(nNum, nDenom, pArg->lTrueData);
     else
@@ -593,11 +594,14 @@ int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, cons
             return SPI_FILE_READ_ERROR;
         }
         std::vector<UINT32> v;
+// TODO: may need to call PurgeUnmarkedAll() somewhere
+		scCache->PurgeUnmarked();
         scCache->GetExtractVector(v, iExtractFileIndex, 10, numItems);
         pa.hwnd = CreateDialog(g_hInstance, MAKEINTRESOURCE(IDD_PROGRESS), NULL, ProgressDlgProc);
         ProgressFunc(0, scCache->GetProgressDenom(0), reinterpret_cast<long>(&pa));
         HRESULT result = archiveHandler->Extract(&v[0], v.size(), false, extractCallback);
         for(UINT32 i=0;i<v.size();++i) scCache->Cached(v[i]);
+		scCache->PurgeUnmarked();
         DestroyWindow(pa.hwnd);
     } else {
         HRESULT result = archiveHandler->Extract(&iExtractFileIndex, 1, false, extractCallback);

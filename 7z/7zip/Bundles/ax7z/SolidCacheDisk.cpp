@@ -126,13 +126,18 @@ void SolidCacheDisk::AddEntry(int aidx, int idx, const void *data, int size)
 
 void SolidCacheDisk::Append(const char* archive, unsigned int idx, const void* data, unsigned int size)
 {
+	OutputDebugPrintf("Append: archive %s idx %d size %d", archive, idx, size);
 	if(!ExistsArchive(archive)) {
 		AddArchive(archive);
 	}
 
 	int aidx = GetArchiveIdx(archive);
 	if(m_nMaxDisk >= 0 && (GetSize() + size)/1024/1024 >= m_nMaxDisk) {
-		ReduceSize(GetSize() + size - m_nMaxDisk * 1024 * 1024);
+// TODO: enable configuration for delete size at a time
+		PurgeUnmarkedOther(aidx);
+		if(m_nMaxDisk >= 0 && (GetSize() + size)/1024/1024 >= m_nMaxDisk) {
+			ReduceSize(std::max(10U * 1024 * 1024, GetSize() + size - m_nMaxDisk * 1024 * 1024), aidx);
+		}
 	}
 	if(ExistsEntry(aidx, idx)) {
 		AppendEntry(aidx, idx, data, size);
@@ -165,6 +170,12 @@ void SolidCacheDisk::PurgeUnmarkedAll()
 	PurgeUnreferenced();
 }
 
+void SolidCacheDisk::PurgeUnmarkedOther(int aidx)
+{
+	Statement(m_db, "delete from entry where aidx <> ? and completed = 0").bind(1,aidx)();
+	PurgeUnreferenced();
+}
+
 int SolidCacheDisk::GetSize()
 {
 	Statement stmt(m_db, "select sum(length(data)) from entry");
@@ -190,23 +201,27 @@ void SolidCacheDisk::ReduceSizeWithArchive(const char* archive, int size)
 void SolidCacheDisk::ReduceSizeWithAIdx(int aidx, int size)
 {
 	OutputDebugPrintf("ReduceSizeWithAidx: aidx %d size %d", aidx, size);
-	Statement stmt(m_db,
-	    "delete from entry where aidx = ? and "
-	        "idx <= (select idx from "
-	            "(select t1.*,sum(length(t2.data)) cutsize from entry t1, entry t2 "
-	                "where t1.aidx = ?1 and t1.completed = 1 and t2.completed = 1 "
-	                    "and t2.aidx = t1.aidx and t2.idx <= t1.idx group by t1.idx) "
-	            "order by cutsize - ?2 < 0, abs(cutsize - ?2) limit 1)");
-	stmt.bind(1, aidx).bind(2, size)();
+	unsigned int total = 0;
+	int idx = -1;
+	Statement stmt(m_db, "select idx, length(data) from entry where aidx = ? and completed = 1 order by idx");
+	stmt.bind(1, aidx);
+	while(stmt()) {
+		idx = stmt.get_int(0);
+		total += stmt.get_int(1);
+		if(total >= size) break;
+	}
+	stmt.reprepare(m_db, "delete from entry where completed = 1 and idx <= ?");
+	stmt.bind(1, idx)();
 	PurgeUnreferenced();
 }
 
-void SolidCacheDisk::ReduceSize(int size)
+void SolidCacheDisk::ReduceSize(int size, int exclude_aidx)
 {
-	OutputDebugPrintf("ReduceSize: %d", size);
+	OutputDebugPrintf("ReduceSize: size %d exclude_aidx %d", size, exclude_aidx);
 	int cur_size = GetSize();
 	while(size > 0 && cur_size != 0) {
-		Statement stmt(m_db, "select archive.idx from archive, entry where archive.idx = entry.aidx and entry.completed = 1 group by archive.idx having count(entry.idx) > 0 order by atime limit 1");
+		Statement stmt(m_db, "select archive.idx from archive, entry where archive.idx <> ? and archive.idx = entry.aidx and entry.completed = 1 group by archive.idx having count(entry.idx) > 0 order by atime limit 1");
+		stmt.bind(1, exclude_aidx);
 		if(stmt()) {
 			int aidx = stmt.get_int(0);
 			ReduceSizeWithAIdx(aidx, size);

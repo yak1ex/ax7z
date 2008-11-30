@@ -35,6 +35,7 @@ public:
 	bool IsCached(unsigned int index) const;
 	void Append(unsigned int index, const void* data, unsigned int size);
 	void Cached(unsigned int index);
+	void PurgeUnmarked();
 	void GetContent(unsigned int index, void* dest, unsigned int size) const;
 	void OutputContent(unsigned int index, unsigned int size, FILE* fp) const;
 	void GetExtractVector(std::vector<UINT32> &v, UINT32 index, UINT32 num, UINT32 max_num);
@@ -65,18 +66,19 @@ private:
 	void AppendEntry(int aidx, int idx, const void* data, int size);
 	void AddEntry(int aidx, int idx, const void *data, int size);
 	void PurgeUnreferenced();
-	void PurgeUnmarked(const char *archive);
 	void PurgeUnmarkedAll();
+	void PurgeUnmarkedOther(int aidx);
 	int GetSize();
 	void ReduceSizeWithArchive(const char* archive, int size);
 	void ReduceSizeWithAIdx(int aidx, int size);
-	void ReduceSize(int size);
+	void ReduceSize(int size, int exclude_aidx);
 	void AccessArchive(const char* archive);
 public:
 	~SolidCacheDisk();
 	bool IsCached(const char* archive, unsigned int index) const;
 	void Append(const char* archive, unsigned int index, const void* data, unsigned int size);
 	void Cached(const char* archive, unsigned int index);
+	void PurgeUnmarked(const char *archive);
 	void GetContent(const char* archive, unsigned int index, void* dest, unsigned int size) const;
 	void OutputContent(const char* archive, unsigned int index, unsigned int size, FILE* fp) const;
 	static SolidCacheDisk& GetInstance();
@@ -130,6 +132,10 @@ public:
 	{
 		m_scd.Cached(m_sArchive.c_str(), index);
 	}
+	void PurgeUnmarked()
+	{
+		m_scd.PurgeUnmarked(m_sArchive.c_str());
+	}
 	void GetContent(unsigned int index, void* dest, unsigned int size) const
 	{
 		m_scd.GetContent(m_sArchive.c_str(), index, dest, size);
@@ -140,6 +146,7 @@ public:
 	}
 	void GetExtractVector(std::vector<UINT32> &v, UINT32 index, UINT32 num, UINT32 max_num)
 	{
+// TODO: Exclude cached files.
 		UINT32 start = 0;
 		m_nMaxNum = max_num;
 		UINT32 end = m_nMaxNum - 1;
