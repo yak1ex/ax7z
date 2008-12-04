@@ -2,7 +2,9 @@
 ax7z entry funcs
 */
 
+#define NOMINMAX
 #include <windows.h>
+#undef NOMINMAX
 #include <commctrl.h>
 #include <shlobj.h>
 #include <vector>

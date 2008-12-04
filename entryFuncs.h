@@ -1,7 +1,9 @@
 #ifndef spi00am_h
 #define spi00am_h
 
+#define NOMINMAX
 #include <windows.h>
+#undef NOMINMAX
 
 /*-------------------------------------------------------------------------*/
 // ファイル情報構造体

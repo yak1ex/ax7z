@@ -5,14 +5,13 @@
 #ifndef SOLIDCACHE_H
 #define SOLIDCACHE_H
 
+#define NOMINMAX
 #include <windows.h>
+#undef NOMINMAX
 #include <vector>
 #include <map>
 #include <string>
 #include <algorithm>
-
-#undef min
-#undef max
 
 #ifdef NDEBUG
 #define OutputDebugPrintf (void)
@@ -28,22 +27,6 @@ static void OutputDebugPrintf(char* format, ...)
 }
 #endif
 
-#if 0
-class SolidFileCache
-{
-public:
-	bool IsCached(unsigned int index) const;
-	void Append(unsigned int index, const void* data, unsigned int size);
-	void Cached(unsigned int index);
-	void PurgeUnmarked();
-	void GetContent(unsigned int index, void* dest, unsigned int size) const;
-	void OutputContent(unsigned int index, unsigned int size, FILE* fp) const;
-	void GetExtractVector(std::vector<UINT32> &v, UINT32 index, UINT32 num, UINT32 max_num);
-	int GetProgress(UINT32 index);
-	int GetProgressDenom(UINT32 index);
-};
-#endif
-
 struct sqlite3;
 
 class SolidFileCacheDisk;
@@ -51,9 +34,6 @@ class SolidFileCacheDisk;
 class SolidCacheDisk
 {
 private:
-	SolidCacheDisk():m_nMaxLookAhead(-1),m_nMaxMemory(-1),m_nMaxDisk(-1),m_sCacheFolder(""),m_db(0) {}
-	int m_nMaxLookAhead;
-	int m_nMaxMemory;
 	int m_nMaxDisk;
 	std::string m_sCacheFolder;
 	sqlite3* m_db;
@@ -68,12 +48,13 @@ private:
 	void PurgeUnreferenced();
 	void PurgeUnmarkedAll();
 	void PurgeUnmarkedOther(int aidx);
-	int GetSize();
+	int GetSize() const;
 	void ReduceSizeWithArchive(const char* archive, int size);
 	void ReduceSizeWithAIdx(int aidx, int size);
 	void ReduceSize(int size, int exclude_aidx);
 	void AccessArchive(const char* archive);
 public:
+	SolidCacheDisk():m_nMaxDisk(-1),m_sCacheFolder(""),m_db(0) {}
 	~SolidCacheDisk();
 	bool IsCached(const char* archive, unsigned int index) const;
 	void Append(const char* archive, unsigned int index, const void* data, unsigned int size);
@@ -83,20 +64,6 @@ public:
 	void OutputContent(const char* archive, unsigned int index, unsigned int size, FILE* fp) const;
 	static SolidCacheDisk& GetInstance();
 	static SolidFileCacheDisk GetFileCache(const std::string& filename);
-	int GetMaxLookAhead() const { return m_nMaxLookAhead; }
-	int SetMaxLookAhead(int nNew)
-	{
-		int nOld = m_nMaxLookAhead;
-		m_nMaxLookAhead = nNew;
-		return nOld;
-	}
-	int GetMaxMemory() const { return m_nMaxMemory; }
-	int SetMaxMemory(int nNew)
-	{
-		int nOld = m_nMaxMemory;
-		m_nMaxMemory = nNew;
-		return nOld;
-	}
 	int GetMaxDisk() const { return m_nMaxDisk; }
 	int SetMaxDisk(int nNew)
 	{
@@ -231,17 +198,52 @@ public:
 class SolidCacheMemory
 {
 private:
-	SolidCacheMemory():m_nMaxLookAhead(-1),m_nMaxMemory(-1),m_nMaxDisk(-1),m_sCacheFolder("") {}
-	static std::map<std::string, SolidFileCacheMemory::FileCache> table;
-	int m_nMaxLookAhead;
+	std::map<std::string, SolidFileCacheMemory::FileCache> table;
 	int m_nMaxMemory;
-	int m_nMaxDisk;
-	std::string m_sCacheFolder;
 public:
-	static SolidCacheMemory& GetInstance();
-	static SolidFileCacheMemory GetFileCache(const std::string& filename)
+	SolidCacheMemory():m_nMaxMemory(-1) {}
+	int GetMaxMemory() const { return m_nMaxMemory; }
+	int SetMaxMemory(int nNew)
 	{
-		return SolidFileCacheMemory(table[filename]);
+		int nOld = m_nMaxMemory;
+		m_nMaxMemory = nNew;
+		return nOld;
+	}
+};
+
+class SolidCache;
+
+class SolidFileCache
+{
+	friend class SolidCache;
+private:
+	SolidCache &m_sc;
+	std::string m_sArchive;
+	SolidFileCache(SolidCache &sc, const std::string &sArchive) : m_sc(sc), m_sArchive(sArchive) {}
+public:
+	bool IsCached(unsigned int index) const;
+	void Append(unsigned int index, const void* data, unsigned int size);
+	void Cached(unsigned int index);
+	void PurgeUnmarked();
+	void GetContent(unsigned int index, void* dest, unsigned int size) const;
+	void OutputContent(unsigned int index, unsigned int size, FILE* fp) const;
+	void GetExtractVector(std::vector<UINT32> &v, UINT32 index, UINT32 num, UINT32 max_num);
+	int GetProgress(UINT32 index);
+	int GetProgressDenom(UINT32 index);
+};
+
+class SolidCache
+{
+private:
+	int m_nMaxLookAhead;
+	SolidCacheDisk m_scd;
+	SolidCacheMemory m_scm;
+	SolidCache() : m_nMaxLookAhead(-1) {}
+public:
+	static SolidCache& GetInstance();
+	static SolidFileCache GetFileCache(const std::string& filename)
+	{
+		return SolidFileCache(GetInstance(), filename);
 	}
 	int GetMaxLookAhead() const { return m_nMaxLookAhead; }
 	int SetMaxLookAhead(int nNew)
@@ -250,29 +252,12 @@ public:
 		m_nMaxLookAhead = nNew;
 		return nOld;
 	}
-	int GetMaxMemory() const { return m_nMaxMemory; }
-	int SetMaxMemory(int nNew)
-	{
-		int nOld = m_nMaxMemory;
-		m_nMaxMemory = nNew;
-		return nOld;
-	}
-	int GetMaxDisk() const { return m_nMaxDisk; }
-	int SetMaxDisk(int nNew)
-	{
-		int nOld = m_nMaxDisk;
-		m_nMaxDisk = nNew;
-		return nOld;
-	}
-	const std::string& GetCacheFolder() const { return m_sCacheFolder; }
-	std::string SetCacheFolder(std::string sNew)
-	{
-		std::swap(sNew, m_sCacheFolder);
-		return sNew;
-	}
+	int GetMaxMemory() const { return m_scm.GetMaxMemory(); }
+	int SetMaxMemory(int nNew) { return m_scm.SetMaxMemory(nNew); }
+	int GetMaxDisk() const { return m_scd.GetMaxDisk(); }
+	int SetMaxDisk(int nNew) { return m_scd.SetMaxDisk(nNew); }
+	const std::string& GetCacheFolder() const { return m_scd.GetCacheFolder(); }
+	std::string SetCacheFolder(std::string sNew) { return m_scd.SetCacheFolder(sNew); }
 };
-
-typedef SolidFileCacheDisk SolidFileCache;
-typedef SolidCacheDisk SolidCache;
 
 #endif

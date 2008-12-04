@@ -176,7 +176,7 @@ void SolidCacheDisk::PurgeUnmarkedOther(int aidx)
 	PurgeUnreferenced();
 }
 
-int SolidCacheDisk::GetSize()
+int SolidCacheDisk::GetSize() const
 {
 	Statement stmt(m_db, "select sum(length(data)) from entry");
 	stmt();

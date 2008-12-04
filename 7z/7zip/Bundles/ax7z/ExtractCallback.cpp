@@ -1,5 +1,7 @@
 // ExtractCallback.h
+#define NOMINMAX
 #include <windows.h>
+#undef NOMINMAX
 #include "ExtractCallback.h"
 #include "Common/StringConvert.h"
 #include "Windows/FileDir.h"

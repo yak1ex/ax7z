@@ -2,7 +2,9 @@
 7-zip decode engine - susie bridge
 */
 
+#define NOMINMAX
 #include <windows.h>
+#undef NOMINMAX
 #include <commctrl.h>
 #include <initguid.h>
 #include <time.h>
