@@ -1,5 +1,4 @@
 #include <iostream>
-#include <ctime>
 #include "sqlite3/sqlite3.h"
 #include "sqlite3/sqlite3helper.h"
 #include "SolidCache.h"
@@ -223,7 +222,7 @@ bool SolidCacheDisk::IsCached(const char* archive, unsigned int idx) const
 
 bool SolidCacheDisk::Exists(const char* archive, unsigned int idx) const
 {
-	Statement stmt(m_db, "select count(*) from archive, entry where archive.idx = entry.aidx and archive.path = ? and idx = ?");
+	Statement stmt(m_db, "select count(*) from archive, entry where archive.idx = entry.aidx and archive.path = ? and entry.idx = ?");
 	stmt.bind(1, archive).bind(2, idx);
 	return stmt() && stmt.get_int(0) > 0;
 }
@@ -233,6 +232,7 @@ void SolidCacheDisk::GetContent(const char *archive, unsigned int index, void* d
 	Statement stmt(m_db, "select data from archive, entry where archive.idx = entry.aidx and archive.path = ? and entry.idx = ?");
 	stmt.bind(1, archive).bind(2, index)();
 	CopyMemory(dest, stmt.get_blob(0), std::min<unsigned int>(size, stmt.get_bytes(0)));
+	OutputDebugPrintf("SolidCacheDisk::GetContent: %s %u %p %d %d", archive, index, dest, size, stmt.get_bytes(0));
 }
 
 void SolidCacheDisk::OutputContent(const char *archive, unsigned int index, unsigned int size, FILE* fp) const
@@ -240,6 +240,7 @@ void SolidCacheDisk::OutputContent(const char *archive, unsigned int index, unsi
 	Statement stmt(m_db, "select data from archive, entry where archive.idx = entry.aidx and archive.path = ? and entry.idx = ?");
 	stmt.bind(1, archive).bind(2, index)();
 	fwrite(stmt.get_blob(0), std::min<unsigned int>(size, stmt.get_bytes(0)), 1, fp);
+	OutputDebugPrintf("SolidCacheDisk::OutputContent: %s %u %p %d %d", archive, index, fp, size, stmt.get_bytes(0));
 }
 
 SolidCacheDisk& SolidCacheDisk::GetInstance()

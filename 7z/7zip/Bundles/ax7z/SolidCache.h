@@ -12,6 +12,7 @@
 #include <map>
 #include <string>
 #include <algorithm>
+#include <ctime>
 
 #ifdef NDEBUG
 #define OutputDebugPrintf (void)
@@ -129,10 +130,12 @@ private:
 		Entry():fCached(false) {}
 	};
 	typedef std::map<unsigned int, Entry> FileCache;
-	SolidFileCacheMemory(FileCache& cache) : m_cache(cache)
+	SolidFileCacheMemory(FileCache& cache, std::time_t &atime) : m_cache(cache), m_atime(atime)
 	{
 	}
+	void AccessArchive();
 	FileCache& m_cache;
+	std::time_t m_atime;
 public:
 	bool IsCached(unsigned int index) const
 	{
@@ -157,6 +160,11 @@ public:
 	void Remove(unsigned int index)
 	{
 		m_cache.erase(index);
+	}
+	unsigned int ReduceSize(unsigned int uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg);
+	unsigned int GetCount() const
+	{
+		return m_cache.size();
 	}
 	int GetCurSize(unsigned int index) const
 	{
@@ -183,12 +191,15 @@ class SolidCacheMemory
 {
 private:
 	std::map<std::string, SolidFileCacheMemory::FileCache> m_mTable;
+	std::map<std::string, std::time_t> m_mAccess;
 	int m_nMaxMemory;
+	void AccessArchive(const char* archive);
+	std::string GetLRUArchive() const;
 public:
 	SolidCacheMemory():m_nMaxMemory(-1) {}
 	SolidFileCacheMemory GetFileCache(const std::string& sArchive)
 	{
-		return SolidFileCacheMemory(m_mTable[sArchive]);
+		return SolidFileCacheMemory(m_mTable[sArchive], m_mAccess[sArchive]);
 	}
 	int GetMaxMemory() const { return m_nMaxMemory; }
 	int SetMaxMemory(int nNew)
@@ -198,6 +209,7 @@ public:
 		return nOld;
 	}
 	int GetSize() const;
+	unsigned int ReduceSize(unsigned int uiSize, void(*)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg);
 };
 
 class SolidFileCache;
