@@ -4,32 +4,6 @@
 #include "sqlite3/sqlite3helper.h"
 #include "SolidCache.h"
 
-#if 0
-[append]
-if(cur_in_disk) {
-    append_to_disk();
-} else {
-    if(cur_size + size > MaxMemory) {
-        purge_to_file();
-        append_to_disk();
-    } else {
-        append_to_memory();
-        if(GetMemoryUsage()+ size > MaxMemory)
-            purge_memory();
-    }
-}
-
-[mark]
-if(cur_in_disk) {
-    mark_disk();
-} else if(cur_in_memory) {
-    mark_memory();
-}
-
-[isCached]
-cur_in_disk && marked || cur_in_memory && marked
-#endif
-
 using yak::sqlite::Statement;
 
 void dump_table(sqlite3 *db, char *name)
@@ -126,7 +100,7 @@ void SolidCacheDisk::AddEntry(int aidx, int idx, const void *data, int size)
 
 void SolidCacheDisk::Append(const char* archive, unsigned int idx, const void* data, unsigned int size)
 {
-	OutputDebugPrintf("Append: archive %s idx %d size %d", archive, idx, size);
+	OutputDebugPrintf("SolidCacheDisk::Append: archive %s idx %d size %d", archive, idx, size);
 	if(!ExistsArchive(archive)) {
 		AddArchive(archive);
 	}
@@ -243,6 +217,13 @@ void SolidCacheDisk::AccessArchive(const char* archive)
 bool SolidCacheDisk::IsCached(const char* archive, unsigned int idx) const
 {
 	Statement stmt(m_db, "select count(*) from archive, entry where entry.aidx = archive.idx and archive.path = ? and entry.idx = ? and completed = 1");
+	stmt.bind(1, archive).bind(2, idx);
+	return stmt() && stmt.get_int(0) > 0;
+}
+
+bool SolidCacheDisk::Exists(const char* archive, unsigned int idx) const
+{
+	Statement stmt(m_db, "select count(*) from archive, entry where archive.idx = entry.aidx and archive.path = ? and idx = ?");
 	stmt.bind(1, archive).bind(2, idx);
 	return stmt() && stmt.get_int(0) > 0;
 }
