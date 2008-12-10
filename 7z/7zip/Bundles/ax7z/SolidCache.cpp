@@ -30,8 +30,7 @@ void SolidCache::Append(const std::string& sArchive, unsigned int index, const v
 		m_scm.GetFileCache(sArchive).Append(index, data, size);
 		OutputDebugPrintf("SolidCache::Append:memory %s %d %d bytes", sArchive.c_str(), index, size);
 		if(m_scm.GetMaxMemory() >= 0 && m_scm.GetSize()/1024/1024 > m_scm.GetMaxMemory()) {
-// TODO: Need to select which entries are purged to disk
-// TODO: Reduce size
+// TODO: Enable configuration for delete size at a time
 			m_scm.ReduceSize(std::min(m_scm.GetSize(), std::max(10*1024*1024, m_scm.GetSize() - m_scm.GetMaxMemory() * 1024 * 1024)), ReduceSizeCallback, &m_scd);
 			OutputDebugPrintf("SolidCache::Append:memory2disk %s %d %d", sArchive.c_str(), index, m_scm.GetFileCache(sArchive).GetCurSize(index));
 		}

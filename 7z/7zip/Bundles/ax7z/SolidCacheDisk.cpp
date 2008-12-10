@@ -45,9 +45,23 @@ SolidCacheDisk::~SolidCacheDisk()
 
 void SolidCacheDisk::InitDB()
 {
-// TODO: version checking
-	sqlite3_exec(m_db, "create table archive (idx INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT, atime INTEGER)", NULL, NULL, NULL);
-	sqlite3_exec(m_db, "create table entry (aidx INTERGER, idx INTEGER, data BLOB, completed INTEGER, constraint pkey PRIMARY KEY (aidx, idx) )", NULL, NULL, NULL);
+	sqlite3_exec(m_db, "create table version (version INTEGER)", NULL, NULL, NULL);
+	Statement stmt(m_db, "select version from version");
+	if(stmt()) {
+		switch(stmt.get_int(0)) {
+		case 1:
+			OutputDebugPrintf("SolidCacheDisk::InitDB: version 1");
+			break;
+		default:
+			OutputDebugPrintf("SolidCacheDisk::InitDB: Unknown version %d", stmt.get_int(0));
+			break;
+		}
+	} else {
+		OutputDebugPrintf("SolidCacheDisk::InitDB: Create version 1");
+		sqlite3_exec(m_db, "insert into version values (1)", NULL, NULL, NULL);
+		sqlite3_exec(m_db, "create table archive (idx INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT, atime INTEGER)", NULL, NULL, NULL);
+		sqlite3_exec(m_db, "create table entry (aidx INTERGER, idx INTEGER, data BLOB, completed INTEGER, constraint pkey PRIMARY KEY (aidx, idx) )", NULL, NULL, NULL);
+	}
 }
 
 bool SolidCacheDisk::ExistsArchive(const char* archive)
