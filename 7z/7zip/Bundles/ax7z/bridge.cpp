@@ -602,8 +602,8 @@ int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, cons
         pa.hwnd = CreateDialog(g_hInstance, MAKEINTRESOURCE(IDD_PROGRESS), NULL, ProgressDlgProc);
         ProgressFunc(0, scCache->GetProgressDenom(0), reinterpret_cast<long>(&pa));
         HRESULT result = archiveHandler->Extract(&v[0], v.size(), false, extractCallback);
-// TODO: too slow when disk cache is used
-        for(UINT32 i=0;i<v.size();++i) scCache->Cached(v[i]);
+// TODO: may need to distribute cached mark
+		scCache->CachedVector(v);
 		scCache->PurgeUnmarked();
         DestroyWindow(pa.hwnd);
     } else {

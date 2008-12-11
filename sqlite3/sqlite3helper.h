@@ -24,6 +24,11 @@ public:
 		sqlite3_prepare_v2(db, sql, -1, &m_stmt, NULL);
 		return *this;
 	}
+	Statement& reset()
+	{
+		sqlite3_reset(m_stmt);
+		return *this;
+	}
 	~Statement()
 	{
 		sqlite3_finalize(m_stmt);

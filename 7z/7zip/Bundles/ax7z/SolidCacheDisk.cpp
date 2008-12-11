@@ -158,6 +158,21 @@ void SolidCacheDisk::Cached(const char* archive, unsigned int idx)
 	}
 }
 
+void SolidCacheDisk::CachedVector(const char* archive, std::vector<unsigned int>& vIndex)
+{
+	int aidx = GetArchiveIdx(archive); 
+	Statement stmt(m_db, "update entry set completed = 1 where idx = ? and aidx = ?");
+	stmt.bind(2, aidx);
+	std::vector<unsigned int>::iterator it = vIndex.begin(), itEnd = vIndex.end();
+	for(; it != itEnd; ++it) {
+		if(!IsCached(archive, *it)) {
+			OutputDebugPrintf("SolidCacheDisk::CachedVector %s %d", archive, *it);
+			stmt.bind(1, *it)();
+			stmt.reset();
+		}
+	}
+}
+
 void SolidCacheDisk::PurgeUnreferenced()
 {
 	sqlite3_exec(m_db, "delete from archive where idx not in (select aidx from entry)", NULL, NULL, NULL);

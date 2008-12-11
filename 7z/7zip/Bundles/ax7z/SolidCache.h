@@ -62,6 +62,7 @@ public:
 	bool Exists(const char* archive, unsigned int index) const;
 	void Append(const char* archive, unsigned int index, const void* data, unsigned int size);
 	void Cached(const char* archive, unsigned int index);
+	void CachedVector(const char* archive, std::vector<unsigned int>& vIndex);
 	void PurgeUnmarked(const char *archive);
 	void GetContent(const char* archive, unsigned int index, void* dest, unsigned int size) const;
 	void OutputContent(const char* archive, unsigned int index, unsigned int size, FILE* fp) const;
@@ -105,6 +106,10 @@ public:
 	void Cached(unsigned int index)
 	{
 		m_scd.Cached(m_sArchive.c_str(), index);
+	}
+	void CachedVector(std::vector<unsigned int>& vIndex)
+	{
+		m_scd.CachedVector(m_sArchive.c_str(), vIndex);
 	}
 	void PurgeUnmarked()
 	{
@@ -157,6 +162,15 @@ public:
 	{
 		m_cache[index].fCached = true;
 //		OutputDebugPrintf("SolidCache::Cached: %d", index);
+	}
+	void CachedVector(std::vector<unsigned int>& vIndex)
+	{
+		std::vector<unsigned int>::iterator it = vIndex.begin(), itEnd = vIndex.end();
+		for(; it != itEnd; ++it) {
+			if(m_cache.count(*it)) {
+				m_cache[*it].fCached = true;
+			}
+		}
 	}
 	void Remove(unsigned int index)
 	{
@@ -241,8 +255,13 @@ public:
 			OutputDebugPrintf("SolidCache::Cached:disk %s %d", sArchive.c_str(), index);
 			m_scd.Cached(sArchive.c_str(), index);
 		} else {
-// TODO: assert
+			assert("SolidCache::Cached: Not reached");
 		}
+	}
+	void CachedVector(const std::string& sArchive, std::vector<unsigned int>& vIndex)
+	{
+		m_scm.GetFileCache(sArchive).CachedVector(vIndex);
+		m_scd.CachedVector(sArchive.c_str(), vIndex);
 	}
 	void PurgeUnmarked(const std::string& sArchive)
 	{
@@ -303,6 +322,7 @@ public:
 		m_sc.Append(m_sArchive, index, data, size);
 	}
 	void Cached(unsigned int index) { m_sc.Cached(m_sArchive, index); }
+	void CachedVector(std::vector<unsigned int>& vIndex) { m_sc.CachedVector(m_sArchive, vIndex); }
 	void PurgeUnmarked() { m_sc.PurgeUnmarked(m_sArchive); }
 	void GetContent(unsigned int index, void* dest, unsigned int size) /* const */
 	{
