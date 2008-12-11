@@ -13,6 +13,7 @@
 #include <string>
 #include <algorithm>
 #include <ctime>
+#include <cassert>
 
 #ifdef NDEBUG
 #define OutputDebugPrintf (void)
@@ -40,6 +41,7 @@ private:
 	sqlite3* m_db;
 
 	void InitDB();
+	std::string GetFileName(__int64 id) const;
 	bool ExistsArchive(const char* archive);
 	void AddArchive(const char* archive);
 	int GetArchiveIdx(const char* archive);
@@ -50,7 +52,6 @@ private:
 	void PurgeUnmarkedAll();
 	void PurgeUnmarkedOther(int aidx);
 	int GetSize() const;
-	void ReduceSizeWithArchive(const char* archive, int size);
 	void ReduceSizeWithAIdx(int aidx, int size);
 	void ReduceSize(int size, int exclude_aidx);
 	void AccessArchive(const char* archive);
@@ -251,22 +252,24 @@ public:
 	}
 	void GetContent(const std::string& sArchive, unsigned int index, void* dest, unsigned int size) /* const */
 	{
+		OutputDebugPrintf("SolidCache::GetContent %s %d %d bytes", sArchive.c_str(), index, size);
 		if(m_scm.GetFileCache(sArchive).IsCached(index)) {
 			m_scm.GetFileCache(sArchive).GetContent(index, dest, size);
 		} else if(m_scd.IsCached(sArchive.c_str(), index)) {
 			m_scd.GetContent(sArchive.c_str(), index, dest, size);
 		} else {
-// TODO: assert
+			assert("SolidCache::GetContent: Not reached");
 		}
 	}
 	void OutputContent(const std::string& sArchive, unsigned int index, unsigned int size, FILE* fp) /* const */
 	{
+		OutputDebugPrintf("SolidCache::OutputContent %s %d %d bytes", sArchive.c_str(), index, size);
 		if(m_scm.GetFileCache(sArchive).IsCached(index)) {
 			m_scm.GetFileCache(sArchive).OutputContent(index, size, fp);
 		} else if(m_scd.IsCached(sArchive.c_str(), index)) {
 			m_scd.OutputContent(sArchive.c_str(), index, size, fp);
 		} else {
-// TODO: assert
+			assert("SolidCache::OutputContent: Not reached");
 		}
 	}
 

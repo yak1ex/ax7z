@@ -31,8 +31,8 @@ void SolidCache::Append(const std::string& sArchive, unsigned int index, const v
 		OutputDebugPrintf("SolidCache::Append:memory %s %d %d bytes", sArchive.c_str(), index, size);
 		if(m_scm.GetMaxMemory() >= 0 && m_scm.GetSize()/1024/1024 > m_scm.GetMaxMemory()) {
 // TODO: Enable configuration for delete size at a time
-			m_scm.ReduceSize(std::min(m_scm.GetSize(), std::max(10*1024*1024, m_scm.GetSize() - m_scm.GetMaxMemory() * 1024 * 1024)), ReduceSizeCallback, &m_scd);
 			OutputDebugPrintf("SolidCache::Append:memory2disk %s %d %d", sArchive.c_str(), index, m_scm.GetFileCache(sArchive).GetCurSize(index));
+			m_scm.ReduceSize(std::min(m_scm.GetSize(), std::max(10*1024*1024, m_scm.GetSize() - m_scm.GetMaxMemory() * 1024 * 1024)), ReduceSizeCallback, &m_scd);
 		}
 	}
 }
@@ -53,7 +53,7 @@ struct Argument2
 unsigned int SolidFileCacheMemory::ReduceSize(unsigned int uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg)
 {
 	Argument2 *pArg2 = static_cast<Argument2*>(pArg);
-	while(uiSize > 0) {
+	while(uiSize > 0 && m_cache.size() > 0) {
 		OutputDebugPrintf("SolidFileCacheMemory::ReduceSize %u ", uiSize);
 		unsigned int index = m_cache.begin()->first;
 		fCallback(pArg2->pArg, pArg2->sArchive, index, &m_cache[index].vBuffer[0], m_cache[index].vBuffer.size(), m_cache[index].fCached);

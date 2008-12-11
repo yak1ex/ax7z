@@ -33,6 +33,16 @@ public:
 		sqlite3_bind_int(m_stmt, idx, value);
 		return *this;
 	}
+	Statement& bind(int idx, unsigned int value)
+	{
+		sqlite3_bind_int64(m_stmt, idx, value);
+		return *this;
+	}
+	Statement& bind(int idx, sqlite3_int64 value)
+	{
+		sqlite3_bind_int64(m_stmt, idx, value);
+		return *this;
+	}
 	Statement& bind(int idx, const char* value)
 	{
 		sqlite3_bind_text(m_stmt, idx, value, -1, SQLITE_TRANSIENT);
@@ -51,6 +61,10 @@ public:
 	int get_int(int idx)
 	{
 		return sqlite3_column_int(m_stmt, idx);
+	}
+	sqlite3_int64 get_int64(int idx)
+	{
+		return sqlite3_column_int64(m_stmt, idx);
 	}
 	double get_double(int idx)
 	{
