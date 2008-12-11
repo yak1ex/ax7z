@@ -48,9 +48,11 @@ SolidCacheDisk::~SolidCacheDisk()
 
 void SolidCacheDisk::InitDB()
 {
-	sqlite3_exec(m_db, "create table version (version INTEGER)", NULL, NULL, NULL);
-	Statement stmt(m_db, "select version from version");
-	if(stmt()) {
+	sqlite3_exec(m_db, "pragma journal_mode = off", NULL, NULL, NULL);
+	sqlite3_exec(m_db, "PRAGMA synchronous = OFF", NULL, NULL, NULL); // very effective
+	sqlite3_exec(m_db, "PRAGMA temp_store = MEMORY", NULL, NULL, NULL);
+	Statement stmt(m_db, "pragma user_version");
+	if(stmt() && stmt.get_int(0) > 0) {
 		switch(stmt.get_int(0)) {
 		case 1:
 			OutputDebugPrintf("SolidCacheDisk::InitDB: version 1");
@@ -61,7 +63,7 @@ void SolidCacheDisk::InitDB()
 		}
 	} else {
 		OutputDebugPrintf("SolidCacheDisk::InitDB: Create version 1");
-		sqlite3_exec(m_db, "insert into version values (1)", NULL, NULL, NULL);
+		sqlite3_exec(m_db, "pragma user_version = 1", NULL, NULL, NULL);
 		sqlite3_exec(m_db, "create table archive (idx INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT, atime INTEGER)", NULL, NULL, NULL);
 		sqlite3_exec(m_db, "create table entry (aidx INTERGER, idx INTEGER, size INTEGER, completed INTEGER, constraint pkey PRIMARY KEY (aidx, idx) )", NULL, NULL, NULL);
 	}
@@ -292,7 +294,7 @@ public:
 		hFile = CreateFile(name.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 		hView = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
 		pMap = MapViewOfFile(hView, FILE_MAP_READ, 0, 0, size);
-		OutputDebugPrintf("hFile %08X hView %08X pMap %08X", hFile, hView, pMap);
+//		OutputDebugPrintf("hFile %08X hView %08X pMap %08X", hFile, hView, pMap);
 	}
 	operator LPVOID() { return pMap; }
 	~MMap()
