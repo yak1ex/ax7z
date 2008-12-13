@@ -23,25 +23,23 @@ static void ReduceSizeCallback(void *pArg, const std::string& sArchive, unsigned
 void SolidCache::Append(const std::string& sArchive, unsigned int index, const void* data, unsigned int size)
 {
 	OutputDebugPrintf("SolidCache::Append %s %d %d bytes", sArchive.c_str(), index, size);
-	if(m_scd.Exists(sArchive.c_str(), index)) {
+	if(m_scd.Exists(sArchive.c_str(), index) || GetMaxMemory() == 0) {
 		m_scd.Append(sArchive.c_str(), index, data, size);
 		OutputDebugPrintf("SolidCache::Append:disk %s %d %d bytes", sArchive.c_str(), index, size);
 	} else {
 		m_scm.GetFileCache(sArchive).Append(index, data, size);
 		OutputDebugPrintf("SolidCache::Append:memory %s %d %d bytes", sArchive.c_str(), index, size);
-		if(m_scm.GetMaxMemory() >= 0 && m_scm.GetSize()/1024/1024 > m_scm.GetMaxMemory()) {
+		if(m_scm.GetMaxMemory() >= 0 && m_scm.GetSize() > m_scm.GetMaxMemoryInBytes()) {
 // TODO: Enable configuration for delete size at a time
 			OutputDebugPrintf("SolidCache::Append:memory2disk %s %d %d", sArchive.c_str(), index, m_scm.GetFileCache(sArchive).GetCurSize(index));
-			m_scm.ReduceSize(std::min(m_scm.GetSize(), std::max(10*1024*1024, m_scm.GetSize() - m_scm.GetMaxMemory() * 1024 * 1024)), ReduceSizeCallback, &m_scd);
+			m_scm.ReduceSize(std::min(m_scm.GetSize(), std::max(m_scm.GetPurgeMemoryInBytes(), m_scm.GetSize() - m_scm.GetMaxMemoryInBytes())), ReduceSizeCallback, &m_scd);
 		}
 	}
 }
 
-void SolidFileCacheMemory::AccessArchive()
+void SolidFileCacheMemory::AccessArchive() const
 {
-	std::time_t atime;
-	std::time(&atime);
-	m_atime = atime;
+	std::time(&m_atime);
 }
 
 struct Argument2

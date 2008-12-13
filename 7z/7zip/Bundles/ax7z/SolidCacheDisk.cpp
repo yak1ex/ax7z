@@ -72,7 +72,7 @@ void SolidCacheDisk::InitDB()
 std::string SolidCacheDisk::GetFileName(__int64 id) const
 {
 	char buf[32768];
-	wsprintf(buf, "%s%08X%08X.tmp", m_sCacheFolder.c_str(), static_cast<unsigned int>(id >> 32), static_cast<unsigned int>(id & 0xFFFFFFFF));
+	wsprintf(buf, "%sax7z%08X%08X.tmp", m_sCacheFolder.c_str(), static_cast<unsigned int>(id >> 32), static_cast<unsigned int>(id & 0xFFFFFFFF));
 	return std::string(buf);
 }
 
@@ -138,11 +138,11 @@ void SolidCacheDisk::Append(const char* archive, unsigned int idx, const void* d
 	}
 
 	int aidx = GetArchiveIdx(archive);
-	if(m_nMaxDisk >= 0 && (GetSize() + size)/1024/1024 >= m_nMaxDisk) {
+	if(GetMaxDisk() >= 0 && GetSize() + size >= GetMaxDiskInBytes()) {
 // TODO: enable configuration for delete size at a time
 		PurgeUnmarkedOther(aidx);
-		if(m_nMaxDisk >= 0 && (GetSize() + size)/1024/1024 >= m_nMaxDisk) {
-			ReduceSize(std::max(10U * 1024 * 1024, GetSize() + size - m_nMaxDisk * 1024 * 1024), aidx);
+		if(GetSize() + size >= GetMaxDiskInBytes()) {
+			ReduceSize(std::max<unsigned int>(GetPurgeDiskInBytes(), GetSize() + size - GetMaxDiskInBytes()), aidx);
 		}
 	}
 	if(ExistsEntry(aidx, idx)) {
@@ -337,13 +337,52 @@ SolidFileCacheDisk SolidCacheDisk::GetFileCache(const std::string& filename)
 	return SolidFileCacheDisk(GetInstance(), filename);
 }
 
+void SolidCacheDisk::Clear()
+{
+	std::string sDB = GetCacheFolder() + "ax7z.db";
+	std::string s;
+
+	sqlite3_close(m_db);
+	sDB = GetCacheFolder() + "ax7z.db";
+	DeleteFile(sDB.c_str());
+	s = GetCacheFolder() + "ax7z????????????????.tmp";
+	WIN32_FIND_DATA find;
+	HANDLE hFind;
+	hFind = FindFirstFile(s.c_str(), &find);
+	if(hFind != INVALID_HANDLE_VALUE) {
+		do {
+			s = GetCacheFolder() + find.cFileName;
+			DeleteFile(s.c_str());
+		} while(FindNextFile(hFind, &find));
+		CloseHandle(hFind);
+	}
+	if(sqlite3_open(sDB.c_str(), &m_db) != SQLITE_OK) {
+		OutputDebugPrintf("SolidCache::Clear: sqlite3_open for %s failed by %s", sDB.c_str(), sqlite3_errmsg(m_db));
+	}
+	InitDB();
+}
+
 std::string SolidCacheDisk::SetCacheFolder(std::string sNew)
 {
 	if(sNew != m_sCacheFolder) {
 	    sqlite3_close(m_db);
-	    std::string sOldDB = m_sCacheFolder + "ax7z.db";
-	    std::string sNewDB = sNew + "ax7z.db";
-	    MoveFileEx(sOldDB.c_str(), sNewDB.c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
+		std::string sNewDB = sNew + "ax7z.db";
+		if(m_sCacheFolder != "") {
+			std::string sOldDB = m_sCacheFolder + "ax7z.db";
+			MoveFileEx(sOldDB.c_str(), sNewDB.c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
+			std::string s = m_sCacheFolder + "ax7z????????????????.tmp";
+			WIN32_FIND_DATA find;
+			HANDLE hFind;
+			hFind = FindFirstFile(s.c_str(), &find);
+			if(hFind != INVALID_HANDLE_VALUE) {
+				do {
+					s = m_sCacheFolder + find.cFileName;
+					std::string sNewData = sNew + find.cFileName;
+					MoveFileEx(s.c_str(), sNewData.c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
+				} while(FindNextFile(hFind, &find));
+				CloseHandle(hFind);
+			}
+		}
 		std::swap(sNew, m_sCacheFolder);
 		if(sqlite3_open(sNewDB.c_str(), &m_db) != SQLITE_OK) {
 			OutputDebugPrintf("SetCacheFolder: sqlite3_open for %s failed by %s", sNewDB.c_str(), sqlite3_errmsg(m_db));

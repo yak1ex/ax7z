@@ -30,3 +30,8 @@ ax7z.aps
 *.BAK
 *.patch
 *.zip
+cache
+dist.sh
+sqlite3.h
+sqlite3ext.h
+sqlite3.c

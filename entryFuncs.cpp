@@ -56,8 +56,10 @@ void SetParamDefault()
 	SolidCache& sc = SolidCache::GetInstance();
 
 	sc.SetMaxLookAhead(-1);
-	sc.SetMaxMemory(-1);
-	sc.SetMaxDisk(-1);
+	sc.SetMaxMemory(100);
+	sc.SetMaxDisk(1024);
+	sc.SetPurgeMemory(10);
+	sc.SetPurgeDisk(10);
 //    char buf[2048];
 //    GetTempPath(sizeof(buf), buf);
 //	sc.SetCacheFolder(buf);
@@ -88,6 +90,8 @@ void LoadFromIni()
 	sc.SetMaxLookAhead(GetPrivateProfileInt("ax7z", "lookahead", sc.GetMaxLookAhead(), sIniFileName.c_str()));
     sc.SetMaxMemory(GetPrivateProfileInt("ax7z", "memory", sc.GetMaxMemory(), sIniFileName.c_str()));
     sc.SetMaxDisk(GetPrivateProfileInt("ax7z", "disk", sc.GetMaxDisk(), sIniFileName.c_str()));
+    sc.SetPurgeMemory(GetPrivateProfileInt("ax7z", "purge_memory", sc.GetPurgeMemory(), sIniFileName.c_str()));
+    sc.SetPurgeDisk(GetPrivateProfileInt("ax7z", "purge_disk", sc.GetPurgeDisk(), sIniFileName.c_str()));
     char buf[2048], buf2[2048];
     GetTempPath(sizeof(buf2), buf2);
     GetPrivateProfileString("ax7z", "folder", buf2, buf, sizeof(buf), sIniFileName.c_str());
@@ -116,6 +120,10 @@ void SaveToIni()
     WritePrivateProfileString("ax7z", "memory", buf, sIniFileName.c_str());
     wsprintf(buf, "%d", sc.GetMaxDisk());
     WritePrivateProfileString("ax7z", "disk", buf, sIniFileName.c_str());
+    wsprintf(buf, "%d", sc.GetPurgeMemory());
+    WritePrivateProfileString("ax7z", "purge_memory", buf, sIniFileName.c_str());
+    wsprintf(buf, "%d", sc.GetPurgeDisk());
+    WritePrivateProfileString("ax7z", "purge_disk", buf, sIniFileName.c_str());
     WritePrivateProfileString("ax7z", "folder", sc.GetCacheFolder().c_str(), sIniFileName.c_str());
 }
 
@@ -526,6 +534,10 @@ static void UpdateSolidDialogItem(HWND hDlgWnd)
     SendDlgItemMessage(hDlgWnd, IDC_MAX_MEMORY_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
     wsprintf(buf, "%d", sc.GetMaxDisk());
     SendDlgItemMessage(hDlgWnd, IDC_MAX_DISK_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
+    wsprintf(buf, "%d", sc.GetPurgeMemory());
+    SendDlgItemMessage(hDlgWnd, IDC_PURGE_MEMORY_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
+    wsprintf(buf, "%d", sc.GetPurgeDisk());
+    SendDlgItemMessage(hDlgWnd, IDC_PURGE_DISK_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
     SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_SETTEXT, 0, (LPARAM)sc.GetCacheFolder().c_str());
 }
 
@@ -560,6 +572,8 @@ static bool UpdateSolidValue(HWND hDlgWnd)
 	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT, SolidCache::GetMaxLookAhead, SolidCache::SetMaxLookAhead);
 	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_MEMORY_EDIT, SolidCache::GetMaxMemory, SolidCache::SetMaxMemory);
 	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_DISK_EDIT, SolidCache::GetMaxDisk, SolidCache::SetMaxDisk);
+	fChanged |= GetIntValue(hDlgWnd, IDC_PURGE_MEMORY_EDIT, SolidCache::GetPurgeMemory, SolidCache::SetPurgeMemory);
+	fChanged |= GetIntValue(hDlgWnd, IDC_PURGE_DISK_EDIT, SolidCache::GetPurgeDisk, SolidCache::SetPurgeDisk);
     char buf[2048];
     SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_GETTEXT, sizeof(buf), (LPARAM)buf);
 	if(lstrcmp(buf, SolidCache::GetInstance().GetCacheFolder().c_str())) {
@@ -575,6 +589,7 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
     switch (msg) {
         case WM_INITDIALOG:
             UpdateSolidDialogItem(hDlgWnd);
+			EnableWindow(GetDlgItem(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT), FALSE);
             return FALSE;
         case WM_COMMAND:
             switch (LOWORD(wp)) {
@@ -599,6 +614,10 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
 					}
 				}
                     break;
+				case IDC_CLEAR_BUTTON:
+					if(MessageBox(hDlgWnd, "Do you want to clear cache contents?", "ax7z.spi confirmation", MB_YESNO) == IDYES)
+						SolidCache::GetInstance().Clear();
+					break;
                 default:
                     return FALSE;
             }

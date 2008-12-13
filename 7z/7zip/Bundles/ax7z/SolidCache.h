@@ -37,6 +37,7 @@ class SolidCacheDisk
 {
 private:
 	int m_nMaxDisk;
+	int m_nPurgeDisk;
 	std::string m_sCacheFolder;
 	sqlite3* m_db;
 
@@ -54,9 +55,8 @@ private:
 	int GetSize() const;
 	void ReduceSizeWithAIdx(int aidx, int size);
 	void ReduceSize(int size, int exclude_aidx);
-	void AccessArchive(const char* archive);
 public:
-	SolidCacheDisk():m_nMaxDisk(-1),m_sCacheFolder(""),m_db(0) {}
+	SolidCacheDisk():m_nMaxDisk(-1),m_nPurgeDisk(10),m_sCacheFolder(""),m_db(0) {}
 	~SolidCacheDisk();
 	bool IsCached(const char* archive, unsigned int index) const;
 	bool Exists(const char* archive, unsigned int index) const;
@@ -66,13 +66,26 @@ public:
 	void PurgeUnmarked(const char *archive);
 	void GetContent(const char* archive, unsigned int index, void* dest, unsigned int size) const;
 	void OutputContent(const char* archive, unsigned int index, unsigned int size, FILE* fp) const;
+	void AccessArchive(const char* archive);
+	void Clear();
+
 	static SolidCacheDisk& GetInstance();
 	static SolidFileCacheDisk GetFileCache(const std::string& filename);
+
 	int GetMaxDisk() const { return m_nMaxDisk; }
+	int GetMaxDiskInBytes() const { return m_nMaxDisk * 1024 * 1024; }
 	int SetMaxDisk(int nNew)
 	{
 		int nOld = m_nMaxDisk;
 		m_nMaxDisk = nNew;
+		return nOld;
+	}
+	int GetPurgeDisk() const { return m_nPurgeDisk; }
+	int GetPurgeDiskInBytes() const { return m_nPurgeDisk * 1024 * 1024; }
+	int SetPurgeDisk(int nNew)
+	{
+		int nOld = m_nPurgeDisk;
+		m_nPurgeDisk = nNew;
 		return nOld;
 	}
 	const std::string& GetCacheFolder() const { return m_sCacheFolder; }
@@ -117,10 +130,12 @@ public:
 	}
 	void GetContent(unsigned int index, void* dest, unsigned int size) const
 	{
+		m_scd.AccessArchive(m_sArchive.c_str());
 		m_scd.GetContent(m_sArchive.c_str(), index, dest, size);
 	}
 	void OutputContent(unsigned int index, unsigned int size, FILE* fp) const
 	{
+		m_scd.AccessArchive(m_sArchive.c_str());
 		m_scd.OutputContent(m_sArchive.c_str(), index, size, fp);
 	}
 };
@@ -139,9 +154,9 @@ private:
 	SolidFileCacheMemory(FileCache& cache, std::time_t &atime) : m_cache(cache), m_atime(atime)
 	{
 	}
-	void AccessArchive();
+	void AccessArchive() const;
 	FileCache& m_cache;
-	std::time_t m_atime;
+	mutable std::time_t& m_atime;
 public:
 	bool IsCached(unsigned int index) const
 	{
@@ -194,11 +209,13 @@ public:
 		OutputDebugPrintf("SolidCacheMemory::GetContent: %d %p %d %d %02X %02X %02X %02X", index, dest, size, m_cache[index].vBuffer.size(), m_cache[index].vBuffer[0], m_cache[index].vBuffer[1], m_cache[index].vBuffer[2], m_cache[index].vBuffer[3]);
 		// TODO: error check
 		CopyMemory(dest, &m_cache[index].vBuffer[0], std::min(size, m_cache[index].vBuffer.size()));
+		AccessArchive();
 	}
 	void OutputContent(unsigned int index, unsigned int size, FILE* fp) const
 	{
 		OutputDebugPrintf("SolidCacheMemory::OutputContent: %d %p %d %d %02X %02X %02X %02X", index, fp, size, m_cache[index].vBuffer.size(), m_cache[index].vBuffer[0], m_cache[index].vBuffer[1], m_cache[index].vBuffer[2], m_cache[index].vBuffer[3]);
 		fwrite(&m_cache[index].vBuffer[0], std::min(size, m_cache[index].vBuffer.size()), 1, fp);
+		AccessArchive();
 	}
 };
 
@@ -208,23 +225,38 @@ private:
 	std::map<std::string, SolidFileCacheMemory::FileCache> m_mTable;
 	std::map<std::string, std::time_t> m_mAccess;
 	int m_nMaxMemory;
+	int m_nPurgeMemory;
 	void AccessArchive(const char* archive);
 	std::string GetLRUArchive() const;
 public:
-	SolidCacheMemory():m_nMaxMemory(-1) {}
+	SolidCacheMemory():m_nMaxMemory(-1),m_nPurgeMemory(10) {}
 	SolidFileCacheMemory GetFileCache(const std::string& sArchive)
 	{
 		return SolidFileCacheMemory(m_mTable[sArchive], m_mAccess[sArchive]);
 	}
 	int GetMaxMemory() const { return m_nMaxMemory; }
+	int GetMaxMemoryInBytes() const { return m_nMaxMemory * 1024 * 1024; }
 	int SetMaxMemory(int nNew)
 	{
 		int nOld = m_nMaxMemory;
 		m_nMaxMemory = nNew;
 		return nOld;
 	}
+	int GetPurgeMemory() const { return m_nPurgeMemory; }
+	int GetPurgeMemoryInBytes() const { return m_nPurgeMemory * 1024 * 1024; }
+	int SetPurgeMemory(int nNew)
+	{
+		int nOld = m_nPurgeMemory;
+		m_nPurgeMemory = nNew;
+		return nOld;
+	}
 	int GetSize() const;
 	unsigned int ReduceSize(unsigned int uiSize, void(*)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg);
+	void Clear()
+	{
+		m_mTable.clear();
+		m_mAccess.clear();
+	}
 };
 
 class SolidFileCache;
@@ -292,6 +324,12 @@ public:
 		}
 	}
 
+	void Clear()
+	{
+		m_scm.Clear();
+		m_scd.Clear();
+	}
+
 	int GetMaxLookAhead() const { return m_nMaxLookAhead; }
 	int SetMaxLookAhead(int nNew)
 	{
@@ -300,9 +338,17 @@ public:
 		return nOld;
 	}
 	int GetMaxMemory() const { return m_scm.GetMaxMemory(); }
+	int GetMaxMemoryInBytes() const { return m_scm.GetMaxMemoryInBytes(); }
 	int SetMaxMemory(int nNew) { return m_scm.SetMaxMemory(nNew); }
+	int GetPurgeMemory() const { return m_scm.GetPurgeMemory(); }
+	int GetPurgeMemoryInBytes() const { return m_scm.GetPurgeMemoryInBytes(); }
+	int SetPurgeMemory(int nNew) { return m_scm.SetPurgeMemory(nNew); }
 	int GetMaxDisk() const { return m_scd.GetMaxDisk(); }
+	int GetMaxDiskInBytes() const { return m_scd.GetMaxDiskInBytes(); }
 	int SetMaxDisk(int nNew) { return m_scd.SetMaxDisk(nNew); }
+	int GetPurgeDisk() const { return m_scd.GetPurgeDisk(); }
+	int GetPurgeDiskInBytes() const { return m_scd.GetPurgeDiskInBytes(); }
+	int SetPurgeDisk(int nNew) { return m_scd.SetPurgeDisk(nNew); }
 	const std::string& GetCacheFolder() const { return m_scd.GetCacheFolder(); }
 	std::string SetCacheFolder(std::string sNew) { return m_scd.SetCacheFolder(sNew); }
 };
