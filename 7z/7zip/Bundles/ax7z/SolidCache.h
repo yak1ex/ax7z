@@ -42,6 +42,7 @@ private:
 	sqlite3* m_db;
 
 	void InitDB();
+	void CheckDB();
 	std::string GetFileName(__int64 id) const;
 	bool ExistsArchive(const char* archive);
 	void AddArchive(const char* archive);
@@ -55,6 +56,7 @@ private:
 	int GetSize() const;
 	void ReduceSizeWithAIdx(int aidx, int size);
 	void ReduceSize(int size, int exclude_aidx);
+	bool IsProcessing(const char* archive, unsigned int index) const;
 public:
 	SolidCacheDisk():m_nMaxDisk(-1),m_nPurgeDisk(10),m_sCacheFolder(""),m_db(0) {}
 	~SolidCacheDisk();
@@ -183,6 +185,7 @@ public:
 		std::vector<unsigned int>::iterator it = vIndex.begin(), itEnd = vIndex.end();
 		for(; it != itEnd; ++it) {
 			if(m_cache.count(*it)) {
+				OutputDebugPrintf("SolidCacheMemory::CachedVector %d", *it);
 				m_cache[*it].fCached = true;
 			}
 		}
@@ -190,6 +193,16 @@ public:
 	void Remove(unsigned int index)
 	{
 		m_cache.erase(index);
+	}
+	void PurgeUnmarked()
+	{
+		FileCache::iterator it = m_cache.begin(), itEnd = m_cache.end();
+		while(it != itEnd) {
+			if(!it->second.fCached) {
+				it = m_cache.erase(it);
+			} else 
+				++it;
+		}
 	}
 	unsigned int ReduceSize(unsigned int uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg);
 	unsigned int GetCount() const
@@ -222,8 +235,10 @@ public:
 class SolidCacheMemory
 {
 private:
-	std::map<std::string, SolidFileCacheMemory::FileCache> m_mTable;
-	std::map<std::string, std::time_t> m_mAccess;
+	typedef std::map<std::string, SolidFileCacheMemory::FileCache> Table;
+	typedef std::map<std::string, std::time_t> ArchiveTable;
+	Table m_mTable;
+	ArchiveTable m_mAccess;
 	int m_nMaxMemory;
 	int m_nPurgeMemory;
 	void AccessArchive(const char* archive);
@@ -233,6 +248,28 @@ public:
 	SolidFileCacheMemory GetFileCache(const std::string& sArchive)
 	{
 		return SolidFileCacheMemory(m_mTable[sArchive], m_mAccess[sArchive]);
+	}
+	bool Peek(bool (SolidFileCacheMemory::*method)(unsigned int) const, const std::string& sArchive, unsigned int index) const
+	{
+		Table::const_iterator it = m_mTable.find(sArchive);
+		ArchiveTable::const_iterator it2 = m_mAccess.find(sArchive);
+		if(it != m_mTable.end()) {
+			return (SolidFileCacheMemory(const_cast<Table::mapped_type&>(it->second), const_cast<ArchiveTable::mapped_type&>(it2->second)).*method)(index);
+		}
+		return false;
+	}
+	void PurgeUnreferenced()
+	{
+		Table::iterator it = m_mTable.begin(), itEnd = m_mTable.end();
+		while(it != itEnd) {
+			if(it->second.size() == 0) {
+				it = m_mTable.erase(it);
+			} else ++it;
+		}
+	}
+	bool Exists(const std::string &sArchive) const
+	{
+		return m_mTable.count(sArchive) > 0;
 	}
 	int GetMaxMemory() const { return m_nMaxMemory; }
 	int GetMaxMemoryInBytes() const { return m_nMaxMemory * 1024 * 1024; }
@@ -272,15 +309,15 @@ public:
 	static SolidCache& GetInstance();
 	static SolidFileCache GetFileCache(const std::string& filename);
 
-	bool IsCached(const std::string& sArchive, unsigned int index) /* const */
+	bool IsCached(const std::string& sArchive, unsigned int index) const
 	{
-		return m_scm.GetFileCache(sArchive).IsCached(index) || m_scd.IsCached(sArchive.c_str(), index);
+		return m_scm.Peek(SolidFileCacheMemory::IsCached, sArchive, index) || m_scd.IsCached(sArchive.c_str(), index);
 	}
 	void Append(const std::string& sArchvie, unsigned int index, const void* data, unsigned int size);
 	void Cached(const std::string& sArchive, unsigned int index)
 	{
 		OutputDebugPrintf("SolidCache::Cached %s %d", sArchive.c_str(), index);
-		if(m_scm.GetFileCache(sArchive).Exists(index)) {
+		if(m_scm.Peek(SolidFileCacheMemory::Exists, sArchive, index)) {
 			OutputDebugPrintf("SolidCache::Cached:memory %s %d", sArchive.c_str(), index);
 			m_scm.GetFileCache(sArchive).Cached(index);
 		} else if(m_scd.Exists(sArchive.c_str(), index)) {
@@ -292,19 +329,21 @@ public:
 	}
 	void CachedVector(const std::string& sArchive, std::vector<unsigned int>& vIndex)
 	{
-		m_scm.GetFileCache(sArchive).CachedVector(vIndex);
+		if(m_scm.Exists(sArchive)) {
+			m_scm.GetFileCache(sArchive).CachedVector(vIndex);
+		}
 		m_scd.CachedVector(sArchive.c_str(), vIndex);
 	}
 	void PurgeUnmarked(const std::string& sArchive)
 	{
-// TODO: Implement for memory
-//		m_scm.GetFileCache(sArchive);
+		m_scm.GetFileCache(sArchive).PurgeUnmarked();
+		m_scm.PurgeUnreferenced();
 		m_scd.PurgeUnmarked(sArchive.c_str());
 	}
 	void GetContent(const std::string& sArchive, unsigned int index, void* dest, unsigned int size) /* const */
 	{
 		OutputDebugPrintf("SolidCache::GetContent %s %d %d bytes", sArchive.c_str(), index, size);
-		if(m_scm.GetFileCache(sArchive).IsCached(index)) {
+		if(m_scm.Peek(SolidFileCacheMemory::IsCached, sArchive, index)) {
 			m_scm.GetFileCache(sArchive).GetContent(index, dest, size);
 		} else if(m_scd.IsCached(sArchive.c_str(), index)) {
 			m_scd.GetContent(sArchive.c_str(), index, dest, size);
@@ -315,7 +354,7 @@ public:
 	void OutputContent(const std::string& sArchive, unsigned int index, unsigned int size, FILE* fp) /* const */
 	{
 		OutputDebugPrintf("SolidCache::OutputContent %s %d %d bytes", sArchive.c_str(), index, size);
-		if(m_scm.GetFileCache(sArchive).IsCached(index)) {
+		if(m_scm.Peek(SolidFileCacheMemory::IsCached, sArchive, index)) {
 			m_scm.GetFileCache(sArchive).OutputContent(index, size, fp);
 		} else if(m_scd.IsCached(sArchive.c_str(), index)) {
 			m_scd.OutputContent(sArchive.c_str(), index, size, fp);
@@ -362,7 +401,7 @@ private:
 	UINT32 m_nMaxNum;
 	SolidFileCache(SolidCache &sc, const std::string &sArchive) : m_sc(sc), m_sArchive(sArchive) {}
 public:
-	bool IsCached(unsigned int index) /* const */ { return m_sc.IsCached(m_sArchive, index); }
+	bool IsCached(unsigned int index) const { return m_sc.IsCached(m_sArchive, index); }
 	void Append(unsigned int index, const void* data, unsigned int size)
 	{
 		m_sc.Append(m_sArchive, index, data, size);

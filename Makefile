@@ -1,10 +1,10 @@
-VER = 0.7-457y2b1
+VER = 0.7-457y2b2
 DIR = ax7z-$(VER)
 
 dist: mkpatch
 	rm -rf $(DIR)
 	mkdir -p $(DIR)
-	cp Release/ax7z.spi ax7z.txt $(DIR)
+	cp -p Release/ax7z.spi ax7z.txt $(DIR)
 	(cd $(DIR); zip ../$(DIR).zip *)
 	rm -rf $(DIR)
 	

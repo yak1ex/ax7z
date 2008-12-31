@@ -753,6 +753,18 @@
 			Filter="">
 			<File
 				RelativePath=".\sqlite3\sqlite3.c">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions="SQLITE_THREADSAFE"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions="SQLITE_THREADSAFE"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\sqlite3\sqlite3.h">
