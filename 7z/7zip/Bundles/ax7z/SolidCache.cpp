@@ -12,13 +12,17 @@ SolidFileCache SolidCache::GetFileCache(const std::string& filename)
 	return SolidFileCache(GetInstance(), filename);
 }
 
-static void ReduceSizeCallback(void *pArg, const std::string& sArchive, unsigned int index, void* data, unsigned int size, bool flag)
+// TODO: probably, this operation itself should be moved to SolidCacheDisk
+struct SolidCacheDiskCallback
 {
-	SolidCacheDisk *pscd = static_cast<SolidCacheDisk*>(pArg);
-	assert(!pscd->Exists(sArchive.c_str(), index));
-	pscd->Append(sArchive.c_str(), index, data, size);
-	if(flag) pscd->Cached(sArchive.c_str(), index);
-}
+	static void ReduceSizeCallback(void *pArg, const std::string& sArchive, unsigned int index, void* data, unsigned int size, bool flag)
+	{
+		SolidCacheDisk *pscd = static_cast<SolidCacheDisk*>(pArg);
+		assert(!pscd->Exists_(sArchive.c_str(), index));
+		pscd->Append_(sArchive.c_str(), index, data, size);
+		if(flag) pscd->Cached_(sArchive.c_str(), index);
+	}
+};
 
 void SolidCache::Append(const std::string& sArchive, unsigned int index, const void* data, unsigned int size)
 {
@@ -30,14 +34,13 @@ void SolidCache::Append(const std::string& sArchive, unsigned int index, const v
 		m_scm.GetFileCache(sArchive).Append(index, data, size);
 		OutputDebugPrintf("SolidCache::Append:memory %s %d %d bytes", sArchive.c_str(), index, size);
 		if(m_scm.GetMaxMemory() > 0 && m_scm.GetSize() > m_scm.GetMaxMemoryInBytes()) {
-// TODO: Enable configuration for delete size at a time
 			OutputDebugPrintf("SolidCache::Append:memory2disk %s %d %d", sArchive.c_str(), index, m_scm.GetFileCache(sArchive).GetCurSize(index));
-			m_scm.ReduceSize(std::min(m_scm.GetSize(), std::max(m_scm.GetPurgeMemoryInBytes(), m_scm.GetSize() - m_scm.GetMaxMemoryInBytes())), ReduceSizeCallback, &m_scd);
+			m_scm.ReduceSize(std::min(m_scm.GetSize(), std::max(m_scm.GetPurgeMemoryInBytes(), m_scm.GetSize() - m_scm.GetMaxMemoryInBytes())), SolidCacheDiskCallback::ReduceSizeCallback, &m_scd);
 		}
 	}
 }
 
-void SolidFileCacheMemory::AccessArchive() const
+void SolidFileCacheMemory::AccessArchive_() const
 {
 	std::time(&m_atime);
 }
@@ -48,7 +51,7 @@ struct Argument2
 	void *pArg;
 };
 
-unsigned int SolidFileCacheMemory::ReduceSize(unsigned int uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg)
+unsigned int SolidFileCacheMemory::ReduceSize_(unsigned int uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg)
 {
 	Argument2 *pArg2 = static_cast<Argument2*>(pArg);
 	while(uiSize > 0 && m_cache.size() > 0) {
@@ -62,14 +65,14 @@ unsigned int SolidFileCacheMemory::ReduceSize(unsigned int uiSize, void(*fCallba
 	return uiSize;
 }
 
-void SolidCacheMemory::AccessArchive(const char* archive)
+void SolidCacheMemory::AccessArchive_(const char* archive)
 {
 	std::time_t atime;
 	std::time(&atime);
 	m_mAccess[archive] = atime;
 }
 
-std::string SolidCacheMemory::GetLRUArchive() const
+std::string SolidCacheMemory::GetLRUArchive_() const
 {
 	std::string sArchive = m_mAccess.begin()->first;
 	std::time_t atime = m_mAccess.begin()->second;
@@ -81,7 +84,7 @@ std::string SolidCacheMemory::GetLRUArchive() const
 	return sArchive;
 }
 
-int SolidCacheMemory::GetSize() const
+int SolidCacheMemory::GetSize_() const
 {
 	int nResult = 0;
 	for(std::map<std::string, SolidFileCacheMemory::FileCache>::const_iterator it1 = m_mTable.begin(); it1 != m_mTable.end(); ++it1) {
@@ -92,16 +95,16 @@ int SolidCacheMemory::GetSize() const
 	return nResult;
 }
 
-unsigned int SolidCacheMemory::ReduceSize(unsigned int uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg)
+unsigned int SolidCacheMemory::ReduceSize_(unsigned int uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg)
 {
 	OutputDebugPrintf("SolidCacheMemory::ReduceSize %u ", uiSize);
 	while(uiSize > 0) {
 		if(m_mTable.size() > 0) {
-			std::string sArchive = GetLRUArchive();
+			std::string sArchive = GetLRUArchive_();
 			SolidFileCacheMemory scm = GetFileCache(sArchive);
 			if(scm.GetCount() > 0) {
 				Argument2 arg2 = { sArchive, pArg };
-				uiSize = scm.ReduceSize(uiSize, fCallback, &arg2);
+				uiSize = scm.ReduceSize_(uiSize, fCallback, &arg2);
 			} else {
 				m_mTable.erase(sArchive);
 				m_mAccess.erase(sArchive);
