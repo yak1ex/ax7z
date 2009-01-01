@@ -511,13 +511,15 @@ int GetFileExImp_Cached(HLOCAL *dest, const char* pOutFile, UINT32 iExtractFileI
             return SPI_NO_MEMORY;
         }
 
-        scCache.GetContent(iExtractFileIndex, *dest, unpackSize);
+		// Due to Susie plugin specification, size should be in 32 bits.
+        scCache.GetContent(iExtractFileIndex, *dest, static_cast<unsigned int>(unpackSize));
     } else {
         fp = fopen(pOutFile, "wb");
         if (fp == NULL) {
             return SPI_FILE_WRITE_ERROR;
         }
-        scCache.OutputContent(iExtractFileIndex, unpackSize, fp);
+		// Due to Susie plugin specification, size should be in 32 bits.
+        scCache.OutputContent(iExtractFileIndex, static_cast<unsigned int>(unpackSize), fp);
     }
 
     if (fp) {

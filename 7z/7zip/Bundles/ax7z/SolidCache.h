@@ -15,6 +15,10 @@
 #include <ctime>
 #include <cassert>
 
+#define __STDC_CONSTANT_MACROS
+#include <boost/cstdint.hpp>
+#define UINT64_S "I64"
+
 #include <boost/function_types/result_type.hpp>
 #include <boost/function_types/parameter_types.hpp>
 #include <boost/function_types/function_arity.hpp>
@@ -37,7 +41,7 @@ static void OutputDebugPrintf(char* format, ...)
 	va_list ap;
 	va_start(ap, format);
 	char buf[2048];
-	wvsprintf(buf, format, ap);
+	std::vsprintf(buf, format, ap);
 	OutputDebugString(buf);
 	va_end(ap);
 }
@@ -65,18 +69,18 @@ private:
 	void CheckDB_();
 	bool ExistsArchive_(const char* archive);
 	void AddArchive_(const char* archive);
-	int GetArchiveIdx_(const char* archive);
-	bool ExistsEntry_(int aidx, int idx);
-	void AppendEntry_(int aidx, int idx, const void* data, int size);
-	void AddEntry_(int aidx, int idx, const void *data, int size);
+	unsigned int GetArchiveIdx_(const char* archive);
+	bool ExistsEntry_(unsigned int aidx, unsigned int idx);
+	void AppendEntry_(unsigned int aidx, unsigned int idx, const void* data, unsigned int size);
+	void AddEntry_(unsigned int aidx, unsigned int idx, const void *data, unsigned int size);
 	void PurgeUnreferenced_();
-	void PurgeUnreferencedOther_(int aidx);
-	void PurgeUnreferencedWithAIdx_(int aidx);
+	void PurgeUnreferencedOther_(unsigned int aidx);
+	void PurgeUnreferencedWithAIdx_(unsigned int aidx);
 	void PurgeUnmarkedAll_();
-	void PurgeUnmarkedOther_(int aidx);
-	int GetSize_() const;
-	void ReduceSizeWithAIdx_(int aidx, int size);
-	void ReduceSize_(int size, int exclude_aidx);
+	void PurgeUnmarkedOther_(unsigned int aidx);
+	boost::uint64_t GetSize_() const;
+	void ReduceSizeWithAIdx_(unsigned int aidx, boost::uint64_t size);
+	void ReduceSize_(boost::uint64_t size, unsigned int exclude_aidx);
 	bool IsProcessing_(const char* archive, unsigned int index) const;
 // public:
 	bool IsCached_(const char* archive, unsigned int index) const;
@@ -140,7 +144,7 @@ public:
 	static SolidFileCacheDisk GetFileCache(const std::string& filename);
 
 	int GetMaxDisk() const { return m_nMaxDisk; }
-	int GetMaxDiskInBytes() const { return m_nMaxDisk * 1024 * 1024; }
+	boost::uint64_t GetMaxDiskInBytes() const { return m_nMaxDisk * UINT64_C(1024)*UINT64_C(1024); }
 	int SetMaxDisk(int nNew)
 	{
 		int nOld = m_nMaxDisk;
@@ -148,7 +152,7 @@ public:
 		return nOld;
 	}
 	int GetPurgeDisk() const { return m_nPurgeDisk; }
-	int GetPurgeDiskInBytes() const { return m_nPurgeDisk * 1024 * 1024; }
+	boost::uint64_t GetPurgeDiskInBytes() const { return m_nPurgeDisk * UINT64_C(1024)*UINT64_C(1024); }
 	int SetPurgeDisk(int nNew)
 	{
 		int nOld = m_nPurgeDisk;
@@ -217,7 +221,7 @@ class SolidFileCacheMemory
 // private:
 	void AccessArchive_() const;
 // public:
-	unsigned int ReduceSize_(unsigned int uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg);
+	boost::uint64_t ReduceSize_(boost::uint64_t uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg);
 	void Append_(unsigned int index, const void* data, unsigned int size)
 	{
 		m_cache[index].vBuffer.insert(m_cache[index].vBuffer.end(), 
@@ -258,7 +262,7 @@ class SolidFileCacheMemory
 	{
 		return m_cache.size();
 	}
-	int GetCurSize_(unsigned int index) const
+	unsigned int GetCurSize_(unsigned int index) const
 	{
 		return m_cache[index].vBuffer.size();
 	}
@@ -331,7 +335,7 @@ public:
 	{
 		return CallWithSharedLock(&SolidFileCacheMemory::GetCount_);
 	}
-	int GetCurSize(unsigned int index) const
+	unsigned int GetCurSize(unsigned int index) const
 	{
 		return CallWithSharedLock(&SolidFileCacheMemory::GetCurSize_, index);
 	}
@@ -367,8 +371,8 @@ private:
 	std::string GetLRUArchive_(const std::string& sExcludeArchive) const;
 
 // public:
-	int GetSize_() const;
-	unsigned int ReduceSize_(unsigned int uiSize, void(*)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const std::string &sExcludeArchive);
+	boost::uint64_t GetSize_() const;
+	boost::uint64_t ReduceSize_(boost::uint64_t uiSize, void(*)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const std::string &sExcludeArchive);
 	void Clear_()
 	{
 		m_mTable.clear();
@@ -407,6 +411,13 @@ public:
 	{
 		return SolidFileCacheMemory(m_mTable[sArchive], m_mAccess[sArchive]);
 	}
+	SolidFileCacheMemory GetFileCache(const std::string& sArchive) const
+	{
+		Table::const_iterator it = m_mTable.find(sArchive);
+		ArchiveTable::const_iterator it2 = m_mAccess.find(sArchive);
+		if(it == m_mTable.end() || it2 == m_mAccess.end()) throw std::domain_error("SolidCacheMemory::GetFileCache() const: not initialized");
+		return SolidFileCacheMemory(const_cast<Table::mapped_type&>(it->second), const_cast<ArchiveTable::mapped_type&>(it2->second));
+	}
 	bool Peek(bool (SolidFileCacheMemory::*method)(unsigned int) const, const std::string& sArchive, unsigned int index) const
 	{
 		return CallWithSharedLock(&SolidCacheMemory::Peek_, method, sArchive, index);
@@ -419,11 +430,11 @@ public:
 	{
 		return CallWithSharedLock(&SolidCacheMemory::Exists_, sArchive);
 	}
-	int GetSize() const
+	boost::uint64_t GetSize() const
 	{
 		return CallWithSharedLock(&SolidCacheMemory::GetSize_);
 	}
-	unsigned int ReduceSize(unsigned int uiSize, void(*f)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const std::string& sExcludeArchive)
+	boost::uint64_t ReduceSize(boost::uint64_t uiSize, void(*f)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const std::string& sExcludeArchive)
 	{
 		return CallWithLockGuard(&SolidCacheMemory::ReduceSize_, uiSize, f, pArg, sExcludeArchive);
 	}
@@ -433,7 +444,7 @@ public:
 	}
 
 	int GetMaxMemory() const { return m_nMaxMemory; }
-	int GetMaxMemoryInBytes() const { return m_nMaxMemory * 1024 * 1024; }
+	boost::uint64_t GetMaxMemoryInBytes() const { return m_nMaxMemory * UINT64_C(1024)*UINT64_C(1024); }
 	int SetMaxMemory(int nNew)
 	{
 		int nOld = m_nMaxMemory;
@@ -441,7 +452,7 @@ public:
 		return nOld;
 	}
 	int GetPurgeMemory() const { return m_nPurgeMemory; }
-	int GetPurgeMemoryInBytes() const { return m_nPurgeMemory * 1024 * 1024; }
+	boost::uint64_t GetPurgeMemoryInBytes() const { return m_nPurgeMemory * UINT64_C(1024)*UINT64_C(1024); }
 	int SetPurgeMemory(int nNew)
 	{
 		int nOld = m_nPurgeMemory;
@@ -500,7 +511,7 @@ public:
 		m_scm.PurgeUnreferenced();
 		m_scd.PurgeUnmarked(sArchive.c_str());
 	}
-	void GetContent(const std::string& sArchive, unsigned int index, void* dest, unsigned int size) /* const */
+	void GetContent(const std::string& sArchive, unsigned int index, void* dest, unsigned int size) const
 	{
 		OutputDebugPrintf("SolidCache::GetContent %s %d %d bytes", sArchive.c_str(), index, size);
 		if(m_scm.Peek(SolidFileCacheMemory::IsCached_, sArchive, index)) {
@@ -511,7 +522,7 @@ public:
 			assert("SolidCache::GetContent: Not reached");
 		}
 	}
-	void OutputContent(const std::string& sArchive, unsigned int index, unsigned int size, FILE* fp) /* const */
+	void OutputContent(const std::string& sArchive, unsigned int index, unsigned int size, FILE* fp) const
 	{
 		OutputDebugPrintf("SolidCache::OutputContent %s %d %d bytes", sArchive.c_str(), index, size);
 		if(m_scm.Peek(SolidFileCacheMemory::IsCached_, sArchive, index)) {
@@ -537,16 +548,16 @@ public:
 		return nOld;
 	}
 	int GetMaxMemory() const { return m_scm.GetMaxMemory(); }
-	int GetMaxMemoryInBytes() const { return m_scm.GetMaxMemoryInBytes(); }
+	boost::uint64_t GetMaxMemoryInBytes() const { return m_scm.GetMaxMemoryInBytes(); }
 	int SetMaxMemory(int nNew) { return m_scm.SetMaxMemory(nNew); }
 	int GetPurgeMemory() const { return m_scm.GetPurgeMemory(); }
-	int GetPurgeMemoryInBytes() const { return m_scm.GetPurgeMemoryInBytes(); }
+	boost::uint64_t GetPurgeMemoryInBytes() const { return m_scm.GetPurgeMemoryInBytes(); }
 	int SetPurgeMemory(int nNew) { return m_scm.SetPurgeMemory(nNew); }
 	int GetMaxDisk() const { return m_scd.GetMaxDisk(); }
-	int GetMaxDiskInBytes() const { return m_scd.GetMaxDiskInBytes(); }
+	boost::uint64_t GetMaxDiskInBytes() const { return m_scd.GetMaxDiskInBytes(); }
 	int SetMaxDisk(int nNew) { return m_scd.SetMaxDisk(nNew); }
 	int GetPurgeDisk() const { return m_scd.GetPurgeDisk(); }
-	int GetPurgeDiskInBytes() const { return m_scd.GetPurgeDiskInBytes(); }
+	boost::uint64_t GetPurgeDiskInBytes() const { return m_scd.GetPurgeDiskInBytes(); }
 	int SetPurgeDisk(int nNew) { return m_scd.SetPurgeDisk(nNew); }
 	const std::string& GetCacheFolder() const { return m_scd.GetCacheFolder(); }
 	std::string SetCacheFolder(std::string sNew) { return m_scd.SetCacheFolder(sNew); }
@@ -569,11 +580,11 @@ public:
 	void Cached(unsigned int index) { m_sc.Cached(m_sArchive, index); }
 	void CachedVector(std::vector<unsigned int>& vIndex) { m_sc.CachedVector(m_sArchive, vIndex); }
 	void PurgeUnmarked() { m_sc.PurgeUnmarked(m_sArchive); }
-	void GetContent(unsigned int index, void* dest, unsigned int size) /* const */
+	void GetContent(unsigned int index, void* dest, unsigned int size) const
 	{
 		m_sc.GetContent(m_sArchive, index, dest, size);
 	}
-	void OutputContent(unsigned int index, unsigned int size, FILE* fp) /* const */
+	void OutputContent(unsigned int index, unsigned int size, FILE* fp) const
 	{
 		m_sc.OutputContent(m_sArchive, index, size, fp);
 	}
