@@ -31,7 +31,12 @@ ax7z.aps
 *.patch
 *.zip
 cache
+cache.v1
 dist.sh
 sqlite3.h
 sqlite3ext.h
 sqlite3.c
+test.exe
+test.cpp
+test.sh
+test.db
