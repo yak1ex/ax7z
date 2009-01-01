@@ -165,10 +165,15 @@ void SolidCacheDisk::Append_(const char* archive, unsigned int idx, const void* 
 
 	int aidx = GetArchiveIdx_(archive);
 	if(GetMaxDisk() >= 0 && GetSize_() + size >= GetMaxDiskInBytes()) {
-		PurgeUnmarkedOther_(aidx);
+//		PurgeUnmarkedOther_(aidx);
 		if(GetSize_() + size >= GetMaxDiskInBytes()) {
 			ReduceSize_(std::max<unsigned int>(GetPurgeDiskInBytes(), GetSize_() + size - GetMaxDiskInBytes()), aidx);
 		}
+	}
+	if(!ExistsArchive_(archive)) {
+		AddArchive_(archive);
+		aidx = GetArchiveIdx_(archive);
+		OutputDebugPrintf("SolidCacheDisk::Append: Should not reach: new aidx %d", aidx);
 	}
 	if(ExistsEntry_(aidx, idx)) {
 		AppendEntry_(aidx, idx, data, size);
@@ -204,6 +209,18 @@ void SolidCacheDisk::PurgeUnreferenced_()
 {
 	OutputDebugPrintf("SolidCacheDisk::PurgeUnreferenced()");
 	sqlite3_exec(m_db, "delete from archive where idx not in (select aidx from entry)", NULL, NULL, NULL);
+}
+
+void SolidCacheDisk::PurgeUnreferencedOther_(int aidx)
+{
+	OutputDebugPrintf("SolidCacheDisk::PurgeUnreferencedOther(): aidx %d", aidx);
+	Statement(m_db, "delete from archive where idx not in (select aidx from entry) and idx <> ?").bind(1, aidx)();
+}
+
+void SolidCacheDisk::PurgeUnreferencedWithAIdx_(int aidx)
+{
+	OutputDebugPrintf("SolidCacheDisk::PurgeUnreferencedWithAIdx(): aidx %d", aidx);
+	Statement(m_db, "delete from archive where idx not in (select aidx from entry) and idx = ?").bind(1, aidx)();
 }
 
 void SolidCacheDisk::PurgeUnmarked_(const char *archive)
@@ -242,7 +259,7 @@ void SolidCacheDisk::PurgeUnmarkedOther_(int aidx)
 		DeleteFile(GetFileName(stmt.get_int64(0)).c_str());
 	}
 	Statement(m_db, "delete from entry where aidx <> ? and completed <> 0").bind(1,aidx)();
-	PurgeUnreferenced_();
+	PurgeUnreferencedOther_(aidx);
 }
 
 int SolidCacheDisk::GetSize_() const
@@ -255,7 +272,7 @@ int SolidCacheDisk::GetSize_() const
 void SolidCacheDisk::ReduceSizeWithAIdx_(int aidx, int size)
 {
 // TODO: transaction
-	OutputDebugPrintf("ReduceSizeWithAidx: aidx %d size %d", aidx, size);
+	OutputDebugPrintf("SolidCacheDisk::ReduceSizeWithAidx: aidx %d size %d", aidx, size);
 	unsigned int total = 0;
 	int idx = -1;
 	Statement stmt(m_db, "select idx, size, rowid from entry where aidx = ? and completed = 0 order by idx");
@@ -269,12 +286,12 @@ void SolidCacheDisk::ReduceSizeWithAIdx_(int aidx, int size)
 
 	stmt.reprepare(m_db, "delete from entry where completed = 0 and aidx = ? and idx <= ?");
 	stmt.bind(1, aidx).bind(2, idx)();
-	PurgeUnreferenced_();
+	PurgeUnreferencedWithAIdx_(aidx);
 }
 
 void SolidCacheDisk::ReduceSize_(int size, int exclude_aidx)
 {
-	OutputDebugPrintf("ReduceSize: size %d exclude_aidx %d", size, exclude_aidx);
+	OutputDebugPrintf("SolidCacheDisk::ReduceSize: size %d exclude_aidx %d", size, exclude_aidx);
 	int cur_size = GetSize_();
 	while(size > 0 && cur_size != 0) {
 		Statement stmt(m_db, "select archive.idx from archive, entry where archive.idx <> ? and archive.idx = entry.aidx and entry.completed = 0 group by archive.idx having count(entry.idx) > 0 order by atime limit 1");

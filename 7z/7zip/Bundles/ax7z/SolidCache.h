@@ -70,6 +70,8 @@ private:
 	void AppendEntry_(int aidx, int idx, const void* data, int size);
 	void AddEntry_(int aidx, int idx, const void *data, int size);
 	void PurgeUnreferenced_();
+	void PurgeUnreferencedOther_(int aidx);
+	void PurgeUnreferencedWithAIdx_(int aidx);
 	void PurgeUnmarkedAll_();
 	void PurgeUnmarkedOther_(int aidx);
 	int GetSize_() const;
@@ -88,22 +90,8 @@ private:
 	void AccessArchive_(const char* archive);
 	void Clear_();
 
-//	void InitDB();
-//	void CheckDB();
+//
 	std::string GetFileName(__int64 id) const;
-//	bool ExistsArchive(const char* archive);
-//	void AddArchive(const char* archive);
-//	int GetArchiveIdx(const char* archive);
-//	bool ExistsEntry(int aidx, int idx);
-//	void AppendEntry(int aidx, int idx, const void* data, int size);
-//	void AddEntry(int aidx, int idx, const void *data, int size);
-//	void PurgeUnreferenced();
-//	void PurgeUnmarkedAll();
-//	void PurgeUnmarkedOther(int aidx);
-//	int GetSize() const;
-//	void ReduceSizeWithAIdx(int aidx, int size);
-//	void ReduceSize(int size, int exclude_aidx);
-//	bool IsProcessing(const char* archive, unsigned int index) const;
 public:
 	SolidCacheDisk():m_nMaxDisk(-1),m_nPurgeDisk(10),m_sCacheFolder(""),m_db(0) {}
 	~SolidCacheDisk();
@@ -283,13 +271,13 @@ class SolidFileCacheMemory
 		OutputDebugPrintf("SolidCacheMemory::GetContent: %d %p %d %d %02X %02X %02X %02X", index, dest, size, m_cache[index].vBuffer.size(), m_cache[index].vBuffer[0], m_cache[index].vBuffer[1], m_cache[index].vBuffer[2], m_cache[index].vBuffer[3]);
 		// TODO: error check
 		CopyMemory(dest, &m_cache[index].vBuffer[0], std::min(size, m_cache[index].vBuffer.size()));
-		AccessArchive();
+		AccessArchive_();
 	}
 	void OutputContent_(unsigned int index, unsigned int size, FILE* fp) const
 	{
 		OutputDebugPrintf("SolidCacheMemory::OutputContent: %d %p %d %d %02X %02X %02X %02X", index, fp, size, m_cache[index].vBuffer.size(), m_cache[index].vBuffer[0], m_cache[index].vBuffer[1], m_cache[index].vBuffer[2], m_cache[index].vBuffer[3]);
 		fwrite(&m_cache[index].vBuffer[0], std::min(size, m_cache[index].vBuffer.size()), 1, fp);
-		AccessArchive();
+		AccessArchive_();
 	}
 
 private:
@@ -371,16 +359,16 @@ private:
 	int m_nMaxMemory;
 	int m_nPurgeMemory;
 
-#define BOOST_PP_ITERATION_PARAMS_1 (4, (0, 3, "Lock.h", 3))
+#define BOOST_PP_ITERATION_PARAMS_1 (4, (0, 4, "Lock.h", 3))
 #include BOOST_PP_ITERATE()
 
 // private:
 	void AccessArchive_(const char* archive);
-	std::string GetLRUArchive_() const;
+	std::string GetLRUArchive_(const std::string& sExcludeArchive) const;
 
 // public:
 	int GetSize_() const;
-	unsigned int ReduceSize_(unsigned int uiSize, void(*)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg);
+	unsigned int ReduceSize_(unsigned int uiSize, void(*)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const std::string &sExcludeArchive);
 	void Clear_()
 	{
 		m_mTable.clear();
@@ -411,7 +399,7 @@ private:
 
 //
 //	void AccessArchive(const char* archive);
-//	std::string GetLRUArchive() const;
+//	std::string GetLRUArchive(const std::string& sExcludeArchive) const;
 
 public:
 	SolidCacheMemory():m_nMaxMemory(-1),m_nPurgeMemory(10) {}
@@ -435,9 +423,9 @@ public:
 	{
 		return CallWithSharedLock(&SolidCacheMemory::GetSize_);
 	}
-	unsigned int ReduceSize(unsigned int uiSize, void(*f)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg)
+	unsigned int ReduceSize(unsigned int uiSize, void(*f)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const std::string& sExcludeArchive)
 	{
-		return CallWithLockGuard(&SolidCacheMemory::ReduceSize_, uiSize, f, pArg);
+		return CallWithLockGuard(&SolidCacheMemory::ReduceSize_, uiSize, f, pArg, sExcludeArchive);
 	}
 	void Clear()
 	{
