@@ -28,6 +28,8 @@ diff-exclude.txt
 ax7z.txt
 ax7z.aps
 *.BAK
+*.o
+*.7z
 *.patch
 *.zip
 cache
