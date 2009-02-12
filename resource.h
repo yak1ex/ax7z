@@ -15,6 +15,7 @@
 #define IDC_LZH_CHECK                   1006
 #define IDC_DEFAULT_BUTTON              1007
 #define IDC_PROGRESSBAR                 1008
+#define IDC_ISO_CHECK                   1008
 #define IDC_PROGRESSTEXT                1009
 #define IDC_SOLID_BUTTON                1010
 #define IDC_SOLID_7Z_CHECK              1011

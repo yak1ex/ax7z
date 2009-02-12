@@ -25,6 +25,7 @@ static int s_nEnableCbr = 1;
 static int s_nEnableCab = 1;
 static int s_nEnableArj = 1;
 static int s_nEnableLzh = 1;
+static int s_nEnableIso = 1;
 HINSTANCE g_hInstance;
 int g_nSolidEnable7z = 1;
 int g_nSolidEnableRar = 1;
@@ -49,6 +50,7 @@ void SetParamDefault()
     s_nEnableCab = 1;
     s_nEnableArj = 1;
     s_nEnableLzh = 1;
+    s_nEnableIso = 1;
 
     g_nSolidEnable7z = 1;
     g_nSolidEnableRar = 1;
@@ -82,6 +84,7 @@ void LoadFromIni()
     s_nEnableCab = GetPrivateProfileInt("ax7z", "cab", s_nEnableCab, sIniFileName.c_str());
     s_nEnableArj = GetPrivateProfileInt("ax7z", "arj", s_nEnableArj, sIniFileName.c_str());
     s_nEnableLzh = GetPrivateProfileInt("ax7z", "lzh", s_nEnableLzh, sIniFileName.c_str());
+    s_nEnableIso = GetPrivateProfileInt("ax7z", "iso", s_nEnableIso, sIniFileName.c_str());
 
 	SolidCache& sc = SolidCache::GetInstance();
 
@@ -108,6 +111,7 @@ void SaveToIni()
     WritePrivateProfileString("ax7z", "cab", s_nEnableCab ? "1" : "0", sIniFileName.c_str());
     WritePrivateProfileString("ax7z", "arj", s_nEnableArj ? "1" : "0", sIniFileName.c_str());
     WritePrivateProfileString("ax7z", "lzh", s_nEnableLzh ? "1" : "0", sIniFileName.c_str());
+    WritePrivateProfileString("ax7z", "iso", s_nEnableIso ? "1" : "0", sIniFileName.c_str());
 
     char buf[2048];
     WritePrivateProfileString("ax7z", "solid7z", g_nSolidEnable7z ? "1" : "0", sIniFileName.c_str());
@@ -196,7 +200,7 @@ int __stdcall GetPluginInfo(int infono, LPSTR buf, int buflen)
 {
     std::vector<std::string> vsPluginInfo;
     vsPluginInfo.push_back("00AM");
-    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57 y2b2 (C) Makito Miyano / patched by Yak!"); 
+    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57 y2b3 (C) Makito Miyano / patched by Yak!"); 
     if (s_nEnable7z) {
         vsPluginInfo.push_back("*.7z");
         vsPluginInfo.push_back("7-zip files");
@@ -220,6 +224,10 @@ int __stdcall GetPluginInfo(int infono, LPSTR buf, int buflen)
     if (s_nEnableLzh) {
         vsPluginInfo.push_back("*.lzh");
         vsPluginInfo.push_back("LZH files");
+    }
+    if (s_nEnableIso) {
+        vsPluginInfo.push_back("*.iso;*.img;*.bin;*.mdf");
+        vsPluginInfo.push_back("ISO files");
     }
 
     if (infono < 0 || infono >= (int)vsPluginInfo.size()) {
@@ -271,6 +279,10 @@ int __stdcall IsSupported(LPSTR filename, DWORD dw)
         || (s_nEnableCbr && CheckFileExtension(filename, "cbr"))
         || (s_nEnableCab && CheckFileExtension(filename, "cab"))
         || (s_nEnableLzh && CheckFileExtension(filename, "lzh"))
+        || (s_nEnableIso && CheckFileExtension(filename, "iso"))
+        || (s_nEnableIso && CheckFileExtension(filename, "img"))
+        || (s_nEnableIso && CheckFileExtension(filename, "bin"))
+        || (s_nEnableIso && CheckFileExtension(filename, "mdf"))
         || (s_nEnableArj && CheckFileExtension(filename, "arj"))) {
         // サポートしていると判断
         return 1;
@@ -293,6 +305,10 @@ int __stdcall IsSupportedW(LPWSTR filename, DWORD dw)
         || (s_nEnableCbr && CheckFileExtensionW(filename, L"cbr"))
         || (s_nEnableCab && CheckFileExtensionW(filename, L"cab"))
         || (s_nEnableLzh && CheckFileExtensionW(filename, L"lzh"))
+        || (s_nEnableIso && CheckFileExtensionW(filename, L"iso"))
+        || (s_nEnableIso && CheckFileExtensionW(filename, L"img"))
+        || (s_nEnableIso && CheckFileExtensionW(filename, L"bin"))
+        || (s_nEnableIso && CheckFileExtensionW(filename, L"mdf"))
         || (s_nEnableArj && CheckFileExtensionW(filename, L"arj"))) {
         // サポートしていると判断
         return 1;
@@ -635,6 +651,7 @@ void UpdateDialogItem(HWND hDlgWnd)
     SendMessage(GetDlgItem(hDlgWnd, IDC_CAB_CHECK), BM_SETCHECK, (WPARAM)s_nEnableCab, 0L);
     SendMessage(GetDlgItem(hDlgWnd, IDC_ARJ_CHECK), BM_SETCHECK, (WPARAM)s_nEnableArj, 0L);
     SendMessage(GetDlgItem(hDlgWnd, IDC_LZH_CHECK), BM_SETCHECK, (WPARAM)s_nEnableLzh, 0L);
+    SendMessage(GetDlgItem(hDlgWnd, IDC_ISO_CHECK), BM_SETCHECK, (WPARAM)s_nEnableIso, 0L);
 }
 
 int IsChecked(HWND hDlgWnd, int nID)
@@ -654,6 +671,7 @@ bool UpdateValue(HWND hDlgWnd)
     s_nEnableCab = IsChecked(hDlgWnd, IDC_CAB_CHECK);
     s_nEnableArj = IsChecked(hDlgWnd, IDC_ARJ_CHECK);
     s_nEnableLzh = IsChecked(hDlgWnd, IDC_LZH_CHECK);
+    s_nEnableIso = IsChecked(hDlgWnd, IDC_ISO_CHECK);
 
     return true;
 }
