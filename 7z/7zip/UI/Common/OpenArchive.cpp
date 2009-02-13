@@ -155,6 +155,26 @@ HRESULT OpenArchive(
     }
     orderIndices2 += orderIndices;
     orderIndices = orderIndices2;
+
+/* begin: extracted from 4.65 */
+    if (orderIndices.Size() >= 2)
+    {
+      int isoIndex = codecs->FindFormatForArchiveType(L"iso");
+      int udfIndex = codecs->FindFormatForArchiveType(L"udf");
+      int iIso = -1;
+      int iUdf = -1;
+      for (int i = 0; i < orderIndices.Size(); i++)
+      {
+        if (orderIndices[i] == isoIndex) iIso = i;
+        if (orderIndices[i] == udfIndex) iUdf = i;
+      }
+      if (iUdf == iIso + 1)
+      {
+        orderIndices[iUdf] = isoIndex;
+        orderIndices[iIso] = udfIndex;
+      }
+    }
+/* end: extracted from 4.65 */
   }
   else if (extension == L"000" || extension == L"001")
   {

@@ -200,7 +200,7 @@ int __stdcall GetPluginInfo(int infono, LPSTR buf, int buflen)
 {
     std::vector<std::string> vsPluginInfo;
     vsPluginInfo.push_back("00AM");
-    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57 y2b3 (C) Makito Miyano / patched by Yak!"); 
+    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57 y2b4 (C) Makito Miyano / patched by Yak!"); 
     if (s_nEnable7z) {
         vsPluginInfo.push_back("*.7z");
         vsPluginInfo.push_back("7-zip files");
@@ -279,7 +279,11 @@ int __stdcall IsSupported(LPSTR filename, DWORD dw)
         || (s_nEnableCbr && CheckFileExtension(filename, "cbr"))
         || (s_nEnableCab && CheckFileExtension(filename, "cab"))
         || (s_nEnableLzh && CheckFileExtension(filename, "lzh"))
-        || (s_nEnableIso && CheckFileExtension(filename, "iso"))
+        || (s_nEnableIso &&
+                (CheckFileExtension(filename, "iso")
+            ||   CheckFileExtension(filename, "img")
+            ||   CheckFileExtension(filename, "bin")
+            ||   CheckFileExtension(filename, "mdf")))
         || (s_nEnableIso && CheckFileExtension(filename, "img"))
         || (s_nEnableIso && CheckFileExtension(filename, "bin"))
         || (s_nEnableIso && CheckFileExtension(filename, "mdf"))
@@ -288,7 +292,7 @@ int __stdcall IsSupported(LPSTR filename, DWORD dw)
         return 1;
     }
 
-    return 0;
+	return 0;
 }
 
 int __stdcall IsSupportedW(LPWSTR filename, DWORD dw)
@@ -305,10 +309,11 @@ int __stdcall IsSupportedW(LPWSTR filename, DWORD dw)
         || (s_nEnableCbr && CheckFileExtensionW(filename, L"cbr"))
         || (s_nEnableCab && CheckFileExtensionW(filename, L"cab"))
         || (s_nEnableLzh && CheckFileExtensionW(filename, L"lzh"))
-        || (s_nEnableIso && CheckFileExtensionW(filename, L"iso"))
-        || (s_nEnableIso && CheckFileExtensionW(filename, L"img"))
-        || (s_nEnableIso && CheckFileExtensionW(filename, L"bin"))
-        || (s_nEnableIso && CheckFileExtensionW(filename, L"mdf"))
+        || (s_nEnableIso &&
+                (CheckFileExtensionW(filename, L"iso")
+            ||   CheckFileExtensionW(filename, L"img")
+            ||   CheckFileExtensionW(filename, L"bin")
+            ||   CheckFileExtensionW(filename, L"mdf")))
         || (s_nEnableArj && CheckFileExtensionW(filename, L"arj"))) {
         // サポートしていると判断
         return 1;

@@ -666,7 +666,6 @@ int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinf
     if (!GetUINT64Value(archiveHandler, iExtractFileIndex, kpidSize, unpackSize)) {
         return SPI_FILE_READ_ERROR;
     }
-OutputDebugPrintf("GetFileEx %s %d %d", pinfo->filename, iExtractFileIndex, (UINT32)unpackSize);
 
     // ‰ð“€
     if(!lstrcmp((char*)pinfo->method, "7zip_s")

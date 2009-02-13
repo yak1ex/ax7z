@@ -1,4 +1,4 @@
-VER = 0.7-457y2b3
+VER = 0.7-457y2b4
 DIR = ax7z-$(VER)
 
 dist: mkpatch
@@ -14,6 +14,8 @@ build:
 mkpatch:
 	rm -f $(DIR).patch
 	-env LANG=C diff -urN -X diff-exclude.txt /var/tmp/ax7z_src-orig . > $(DIR).patch
+	-env LANG=C diff -u /var/tmp/ax7z_src-orig/7z/7zip/UI/Common/OpenArchive.cpp 7z/7zip/UI/Common/OpenArchive.cpp >> $(DIR).patch
+	-env LANG=C diff -u /var/tmp/ax7z_src-orig/7z/7zip/UI/Common/LoadCodecs.cpp 7z/7zip/UI/Common/LoadCodecs.cpp >> $(DIR).patch
 
 tag:
 	svn copy . https://yak.myhome.cx/repos/source/ax7z/tags/$(DIR)

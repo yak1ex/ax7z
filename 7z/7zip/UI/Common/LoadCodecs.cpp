@@ -468,9 +468,11 @@ int CCodecs::FindFormatForArchiveType(const UString &arcType) const
   for (int i = 0; i < Formats.Size(); i++)
   {
     const CArcInfoEx &arc = Formats[i];
-    if (!arc.UpdateEnabled)
-      continue;
-    if (arc.Name.CompareNoCase(arcType) == 0)
+// begin: adjusted to 4.65
+//    if (!arc.UpdateEnabled)
+//      continue;
+// end: adjusted to 4.65
+	if (arc.Name.CompareNoCase(arcType) == 0)
       return i;
   }
   return -1;

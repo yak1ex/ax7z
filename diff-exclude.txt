@@ -42,3 +42,4 @@ test.exe
 test.cpp
 test.sh
 test.db
+*.iso
