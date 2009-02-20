@@ -15,6 +15,14 @@ ax7z entry funcs
 #include "resource.h"
 #include "7z/7zip/Bundles/ax7z/SolidCache.h"
 
+struct NoCaseLess
+{
+	bool operator()(const std::string &s1, const std::string &s2) const
+	{
+		return _stricmp(s1.c_str(), s2.c_str()) < 0;
+	}
+};
+
 //拡張子管理クラス
 class ExtManager
 {
@@ -25,16 +33,119 @@ private:
 		std::vector<std::string> methods;
 		bool enable;
 	};
-	std::map<Ext, Info> m_mTable;
+	std::map<Ext, Info, NoCaseLess> m_mTable;
+	std::map<Ext, bool, NoCaseLess> m_mTableUser;
 public:
 	ExtManager() {}
 	typedef std::vector<std::pair<std::string, std::string> > Conf;
 	void Init(const Conf& conf);
 	bool IsEnable(LPSTR filename) const;
-	void Save() const;
-	void Load();
+	void Save(const std::string &sIniFileName) const;
+	void Load(const std::string &sIniFileName);
 	void SetPluginInfo(std::vector<std::string> &info) const;
+	void AddUserExt(const std::string& sExt, bool fEnable);
+	void RemoveUserExt(const std::string& sExt);
 };
+
+void ExtManager::Init(const Conf& conf)
+{
+	Conf::const_iterator ciEnd = conf.end();
+	for(Conf::const_iterator ci = conf.begin(); ci != ciEnd; ++ci) {
+		m_mTable[ci->first].methods.push_back(ci->second);
+	}
+}
+
+bool ExtManager::IsEnable(LPSTR filename) const
+{
+	char buf[_MAX_EXT];
+	_splitpath(filename, NULL, NULL, NULL, buf);
+	std::string sBuf(buf);
+	std::map<Ext, Info, NoCaseLess>::const_iterator ci = m_mTable.find(sBuf);
+	if(ci != m_mTable.end()) {
+		return ci->second.enable;
+	}
+	std::map<Ext, bool, NoCaseLess>::const_iterator ciUser = m_mTableUser.find(sBuf);
+	if(ciUser != m_mTableUser.end()) {
+		return ciUser->second;
+	}
+	return false;
+}
+
+void ExtManager::Save(const std::string &sIniFileName) const
+{
+	char buf[2048];
+
+	int cur = GetPrivateProfileInt("ax7z", "user_extension", 0, sIniFileName.c_str());
+	wsprintf(buf, "%d", m_mTableUser.size());
+    WritePrivateProfileString("ax7z", "user_extension", buf, sIniFileName.c_str());
+	int i = 0;
+	std::map<Ext, bool, NoCaseLess>::const_iterator ciUser, ciUserEnd = m_mTableUser.end();
+	for(ciUser = m_mTableUser.begin(); ciUser != ciUserEnd; ++ciUser) {
+		wsprintf(buf, "user_ext_name%d", i);
+	    WritePrivateProfileString("ax7z", buf, ciUser->first.c_str(), sIniFileName.c_str());
+		wsprintf(buf, "user_ext_enable%d", i);
+		WritePrivateProfileString("ax7z", buf, ciUser->second ? "1" : "0", sIniFileName.c_str());
+	}
+
+	std::map<Ext, Info, NoCaseLess>::const_iterator ci, ciEnd = m_mTable.end();
+	for(ci = m_mTable.begin(); ci != ciEnd; ++ci) {
+		WritePrivateProfileString("ax7z", ci->first.c_str(), ci->second.enable ? "1" : "0", sIniFileName.c_str());
+	}
+}
+
+void ExtManager::Load(const std::string &sIniFileName)
+{
+	int num = GetPrivateProfileInt("ax7z", "user_extension", 0, sIniFileName.c_str());
+	char buf[2048], buf2[2048];
+	for(int i = 0; i < num; ++i) {
+		wsprintf(buf, "user_ext_name%d", i);
+	    GetPrivateProfileString("ax7z", buf, "", buf2, sizeof(buf2), sIniFileName.c_str());
+		wsprintf(buf, "user_ext_enable%d", i);
+		m_mTableUser[buf2] = GetPrivateProfileInt("ax7z", buf, 1, sIniFileName.c_str()) != 0;
+	}
+
+	std::map<Ext, Info, NoCaseLess>::iterator mi, miEnd = m_mTable.end();
+	for(mi = m_mTable.begin(); mi != miEnd; ++mi) {
+		mi->second.enable = GetPrivateProfileInt("ax7z", mi->first.c_str(), 1, sIniFileName.c_str()) != 0;
+	}
+}
+
+void ExtManager::SetPluginInfo(std::vector<std::string> &vsPluginInfo) const
+{
+	std::map<std::string, std::string> mResmap;
+	std::map<Ext, Info, NoCaseLess>::const_iterator ci, ciEnd = m_mTable.end();	
+	for(ci = m_mTable.begin(); ci != ciEnd; ++ci) {
+		if(!ci->second.enable) continue;
+		std::vector<std::string>::const_iterator ci2, ciEnd2 = ci->second.methods.end();
+		for(ci2 = ci->second.methods.begin(); ci2 != ciEnd2; ++ci2) {
+			if(!mResmap[*ci2].empty()) {
+				mResmap[*ci2] += ";";
+			}
+			mResmap[*ci2] += "*.";
+			mResmap[*ci2] += ci->first;
+		}
+	}
+
+	vsPluginInfo.clear();
+	vsPluginInfo.push_back("00AM");
+    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57 y2b5 (C) Makito Miyano / patched by Yak!"); 
+
+	std::map<std::string, std::string>::const_iterator ci2, ciEnd2 = mResmap.end();
+	for(ci2 = mResmap.begin(); ci2 != ciEnd2; ++ci2) {
+		vsPluginInfo.push_back(ci2->second);
+		vsPluginInfo.push_back(ci2->first + " files");
+	}
+}
+
+void ExtManager::AddUserExt(const std::string& sExt, bool fEnable)
+{
+	m_mTableUser[sExt] = fEnable;
+}
+
+void ExtManager::RemoveUserExt(const std::string& sExt)
+{
+	m_mTableUser.erase(sExt);
+}
 
 //グローバル変数
 static InfoCache infocache; //アーカイブ情報キャッシュクラス

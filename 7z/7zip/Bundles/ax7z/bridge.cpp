@@ -837,6 +837,7 @@ void GetFormats(std::vector<std::pair<std::string, std::string> > &res)
     > compressCodecsInfo = codecs;
 	HRESULT result = codecs->Load();
     int num = codecs->Formats.Size();
+	res.clear();
 	for(int i = 0; i < num; ++i) {
         const CArcInfoEx &arc = codecs->Formats[i];
         std::string arcname = UnicodeStringToMultiByte(arc.Name, CP_OEMCP);
@@ -844,14 +845,8 @@ void GetFormats(std::vector<std::pair<std::string, std::string> > &res)
 		for(int j = 0; j < num_ext; ++j) {
 			if(!arc.Exts[j].Ext.IsEmpty()) {
 				std::string extname = UnicodeStringToMultiByte(arc.Exts[j].Ext, CP_OEMCP);
-				if(mTable[extname].size()) mTable[extname] += ',';
-				mTable[extname] += arcname;
+				res.push_back(std::make_pair(extname, arcname));
 			}
 		}
-	}
-	res.clear();
-	for(std::map<std::string, std::string>::iterator it = mTable.begin(); it != mTable.end(); ++it) {
-OutputDebugPrintf("GetFormats(): %s - %s", it->first.c_str(), it->second.c_str());
-		res.push_back(std::make_pair(it->first, it->second));
 	}
 }
