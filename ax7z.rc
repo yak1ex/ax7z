@@ -149,6 +149,18 @@ BEGIN
     PUSHBUTTON      "&Cancel",IDCANCEL,237,35,50,14
 END
 
+IDD_PASSWORD DIALOGEX 0, 0, 186, 47
+STYLE DS_SETFONT | DS_MODALFRAME | DS_SETFOREGROUND | DS_FIXEDSYS | 
+    DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "ax7z.spi password"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_PASSWORD_EDIT,7,7,172,14,ES_PASSWORD | 
+                    ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,29,26,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,107,26,50,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -188,6 +200,14 @@ BEGIN
         RIGHTMARGIN, 287
         TOPMARGIN, 7
         BOTTOMMARGIN, 98
+    END
+
+    IDD_PASSWORD, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 40
     END
 END
 #endif    // APSTUDIO_INVOKED

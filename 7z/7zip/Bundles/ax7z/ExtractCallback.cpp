@@ -7,6 +7,7 @@
 #include "Windows/FileDir.h"
 #include "Windows/PropVariant.h"
 #include "Windows/PropVariantConversions.h"
+#include "resource.h"
 #include <assert.h>
 
 using namespace NWindows;
@@ -23,6 +24,7 @@ void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize,
   m_cache = cache;
   m_lpPrgressCallback = lpPrgressCallback;
   m_lData = lData;
+  m_fPassword = false;
 }
 
 bool CExtractCallbackImp::IsEncrypted(UINT32 index)
@@ -142,19 +144,52 @@ STDMETHODIMP CExtractCallbackImp::SetOperationResult(INT32 resultEOperationResul
   return S_OK;
 }
 
+INT_PTR CALLBACK CExtractCallbackImp::PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+  switch(uMsg)
+  {
+  case WM_INITDIALOG:
+    SetWindowLongPtr(hwnd, DWLP_USER, lParam);
+    return TRUE;
+  case WM_COMMAND:
+    switch(LOWORD(wParam)) {
+    case IDOK:
+    {
+      CExtractCallbackImp* p = static_cast<CExtractCallbackImp*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
+      char buf[4096+1];
+      GetDlgItemText(hwnd, IDC_PASSWORD_EDIT, buf, sizeof(buf));
+OutputDebugPrintf("PasswordDlgProc: %s", buf);
+	  AString oemPassword = buf;
+      p->m_usPassword = MultiByteToUnicodeString(oemPassword, CP_OEMCP);
+	  p->m_fPassword = true;
+      EndDialog(hwnd, TRUE);
+      break;
+	}
+    case IDCANCEL:
+      EndDialog(hwnd, FALSE);
+      break;
+	default:
+      return FALSE;
+	}
+  default:
+    return FALSE;
+  }
+  return FALSE; // not reached
+}
+
 STDMETHODIMP CExtractCallbackImp::CryptoGetTextPassword(BSTR *password)
 {
-  /*
-  if (!m_PasswordIsDefined)
+  extern HINSTANCE g_hInstance;
+  if (!m_fPassword)
   {
-    g_StdOut << "\nEnter password:";
-    AString oemPassword = g_StdIn.ScanStringUntilNewLine();
-    m_Password = MultiByteToUnicodeString(oemPassword, CP_OEMCP); 
-    m_PasswordIsDefined = true;
+    DialogBoxParam(g_hInstance, MAKEINTRESOURCE(IDD_PASSWORD), NULL, (DLGPROC)PasswordDlgProc, reinterpret_cast<LPARAM>(static_cast<void*>(this)));
+//    AString oemPassword = g_StdIn.ScanStringUntilNewLine();
+//    m_fPassword = MultiByteToUnicodeString(oemPassword, CP_OEMCP); 
+//    m_fPassword = true;
   }
-  CMyComBSTR tempName(m_Password);
+  CMyComBSTR tempName(m_usPassword);
   *password = tempName.Detach();
-  */
+
   return S_OK;
 }
   

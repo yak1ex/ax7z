@@ -45,6 +45,8 @@ public:
   void Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index, SolidFileCache *cache, SPI_PROGRESS lpPrgressCallback, long lData);
 
   UINT64 m_NumErrors;
+  static INT_PTR CALLBACK PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+private:
   char* m_pBuf;
   FILE* m_fp;
   UINT32 m_nBufSize;
@@ -52,6 +54,9 @@ public:
   SolidFileCache *m_cache;
   SPI_PROGRESS m_lpPrgressCallback;
   long m_lData;
+
+  bool m_fPassword;
+  UString m_usPassword;
 };
 
 #endif

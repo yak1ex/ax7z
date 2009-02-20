@@ -15,6 +15,27 @@ ax7z entry funcs
 #include "resource.h"
 #include "7z/7zip/Bundles/ax7z/SolidCache.h"
 
+//拡張子管理クラス
+class ExtManager
+{
+private:
+	typedef std::string Ext;
+	struct Info
+	{
+		std::vector<std::string> methods;
+		bool enable;
+	};
+	std::map<Ext, Info> m_mTable;
+public:
+	ExtManager() {}
+	typedef std::vector<std::pair<std::string, std::string> > Conf;
+	void Init(const Conf& conf);
+	bool IsEnable(LPSTR filename) const;
+	void Save() const;
+	void Load();
+	void SetPluginInfo(std::vector<std::string> &info) const;
+};
+
 //グローバル変数
 static InfoCache infocache; //アーカイブ情報キャッシュクラス
 static InfoCacheW infocacheW; //アーカイブ情報キャッシュクラス
@@ -160,8 +181,13 @@ BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpR
             SetIniFileName(hModule);
             LoadFromIni();
             bInitPath = true;
-            break;
-        case DLL_THREAD_ATTACH:
+		{
+			extern void GetFormats(ExtManager::Conf &res);
+			ExtManager::Conf v;
+			GetFormats(v);
+		}
+			break;
+		case DLL_THREAD_ATTACH:
             CoInitialize(NULL);
             SetIniFileName(hModule);
             LoadFromIni();

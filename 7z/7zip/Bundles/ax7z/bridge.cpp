@@ -823,3 +823,35 @@ int ExtractSolidArchiveEx(LPCWSTR filename, SPI_OnWriteCallback pCallback)
 
     return SPI_ALL_RIGHT;
 }
+
+void GetFormats(std::vector<std::pair<std::string, std::string> > &res)
+{
+	std::map<std::string, std::string> mTable;
+	CCodecs *codecs = new CCodecs;
+    CMyComPtr<
+        #ifdef EXTERNAL_CODECS
+        ICompressCodecsInfo
+        #else
+        IUnknown
+        #endif
+    > compressCodecsInfo = codecs;
+	HRESULT result = codecs->Load();
+    int num = codecs->Formats.Size();
+	for(int i = 0; i < num; ++i) {
+        const CArcInfoEx &arc = codecs->Formats[i];
+        std::string arcname = UnicodeStringToMultiByte(arc.Name, CP_OEMCP);
+		int num_ext = arc.Exts.Size();
+		for(int j = 0; j < num_ext; ++j) {
+			if(!arc.Exts[j].Ext.IsEmpty()) {
+				std::string extname = UnicodeStringToMultiByte(arc.Exts[j].Ext, CP_OEMCP);
+				if(mTable[extname].size()) mTable[extname] += ',';
+				mTable[extname] += arcname;
+			}
+		}
+	}
+	res.clear();
+	for(std::map<std::string, std::string>::iterator it = mTable.begin(); it != mTable.end(); ++it) {
+OutputDebugPrintf("GetFormats(): %s - %s", it->first.c_str(), it->second.c_str());
+		res.push_back(std::make_pair(it->first, it->second));
+	}
+}
