@@ -9,11 +9,18 @@ ax7z entry funcs
 #include <shlobj.h>
 #include <vector>
 #include <algorithm>
+#include <numeric>
+#include <map>
+#include <set>
 #include "entryFuncs.h"
 #include "infcache.h"
 #include <sstream>
 #include "resource.h"
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 #include "7z/7zip/Bundles/ax7z/SolidCache.h"
+
+const char DEFAULT_EXTENSIONS[] = "bin;img;mdf";
 
 struct NoCaseLess
 {
@@ -34,23 +41,37 @@ private:
 		bool enable;
 	};
 	std::map<Ext, Info, NoCaseLess> m_mTable;
-	std::map<Ext, bool, NoCaseLess> m_mTableUser;
+	std::set<Ext, NoCaseLess> m_sTableUser;
 public:
 	ExtManager() {}
 	typedef std::vector<std::pair<std::string, std::string> > Conf;
 	void Init(const Conf& conf);
 	bool IsEnable(LPSTR filename) const;
+	void SetEnable(const std::string &sExt, bool fEnable)
+	{
+		m_mTable[sExt].enable = fEnable;
+	}
+	typedef std::map<Ext, Info, NoCaseLess>::value_type EachValueType;
+	template<typename Functor>
+	void Each(Functor f) const
+	{
+		std::for_each(m_mTable.begin(), m_mTable.end(), f);
+	}
+	void SetDefault();
 	void Save(const std::string &sIniFileName) const;
 	void Load(const std::string &sIniFileName);
 	void SetPluginInfo(std::vector<std::string> &info) const;
-	void AddUserExt(const std::string& sExt, bool fEnable);
+	void AddUserExt(const std::string& sExt);
 	void RemoveUserExt(const std::string& sExt);
+	void SetUserExtensions(const std::string& sExts);
+	std::string GetUserExtensions() const;
 };
 
 void ExtManager::Init(const Conf& conf)
 {
 	Conf::const_iterator ciEnd = conf.end();
 	for(Conf::const_iterator ci = conf.begin(); ci != ciEnd; ++ci) {
+		m_mTable[ci->first].enable = true;
 		m_mTable[ci->first].methods.push_back(ci->second);
 	}
 }
@@ -59,32 +80,34 @@ bool ExtManager::IsEnable(LPSTR filename) const
 {
 	char buf[_MAX_EXT];
 	_splitpath(filename, NULL, NULL, NULL, buf);
-	std::string sBuf(buf);
+	if(buf[0] == 0) buf[1] = 0; // guard
+	std::string sBuf(buf+1); // skip period
 	std::map<Ext, Info, NoCaseLess>::const_iterator ci = m_mTable.find(sBuf);
 	if(ci != m_mTable.end()) {
 		return ci->second.enable;
 	}
-	std::map<Ext, bool, NoCaseLess>::const_iterator ciUser = m_mTableUser.find(sBuf);
-	if(ciUser != m_mTableUser.end()) {
-		return ciUser->second;
+	std::set<Ext, NoCaseLess>::const_iterator ciUser = m_sTableUser.find(sBuf);
+	if(ciUser != m_sTableUser.end()) {
+		return true;
 	}
 	return false;
 }
 
+void ExtManager::SetDefault()
+{
+	std::map<Ext, Info, NoCaseLess>::iterator it, itEnd = m_mTable.end();
+	for(it = m_mTable.begin(); it != itEnd; ++it) {
+		it->second.enable = true;
+	}
+}
+
 void ExtManager::Save(const std::string &sIniFileName) const
 {
-	char buf[2048];
-
-	int cur = GetPrivateProfileInt("ax7z", "user_extension", 0, sIniFileName.c_str());
-	wsprintf(buf, "%d", m_mTableUser.size());
-    WritePrivateProfileString("ax7z", "user_extension", buf, sIniFileName.c_str());
-	int i = 0;
-	std::map<Ext, bool, NoCaseLess>::const_iterator ciUser, ciUserEnd = m_mTableUser.end();
-	for(ciUser = m_mTableUser.begin(); ciUser != ciUserEnd; ++ciUser) {
-		wsprintf(buf, "user_ext_name%d", i);
-	    WritePrivateProfileString("ax7z", buf, ciUser->first.c_str(), sIniFileName.c_str());
-		wsprintf(buf, "user_ext_enable%d", i);
-		WritePrivateProfileString("ax7z", buf, ciUser->second ? "1" : "0", sIniFileName.c_str());
+	if(m_sTableUser.size()) {
+		const std::string &sResult = GetUserExtensions();
+		WritePrivateProfileString("ax7z", "user_extensions", sResult.c_str(), sIniFileName.c_str());
+	} else {
+		WritePrivateProfileString("ax7z", "user_extensions", NULL, sIniFileName.c_str());
 	}
 
 	std::map<Ext, Info, NoCaseLess>::const_iterator ci, ciEnd = m_mTable.end();
@@ -95,20 +118,31 @@ void ExtManager::Save(const std::string &sIniFileName) const
 
 void ExtManager::Load(const std::string &sIniFileName)
 {
-	int num = GetPrivateProfileInt("ax7z", "user_extension", 0, sIniFileName.c_str());
-	char buf[2048], buf2[2048];
-	for(int i = 0; i < num; ++i) {
-		wsprintf(buf, "user_ext_name%d", i);
-	    GetPrivateProfileString("ax7z", buf, "", buf2, sizeof(buf2), sIniFileName.c_str());
-		wsprintf(buf, "user_ext_enable%d", i);
-		m_mTableUser[buf2] = GetPrivateProfileInt("ax7z", buf, 1, sIniFileName.c_str()) != 0;
-	}
+	std::vector<char> vBuf(1024);
+
+	DWORD dwSize;
+	do {
+		vBuf.resize(vBuf.size() * 2);
+		dwSize = GetPrivateProfileString("ax7z", "user_extensions", DEFAULT_EXTENSIONS, &vBuf[0], vBuf.size(), sIniFileName.c_str());
+	} while(dwSize == vBuf.size() - 1);
+	std::string sResult(&vBuf[0]);
+	SetUserExtensions(sResult);
 
 	std::map<Ext, Info, NoCaseLess>::iterator mi, miEnd = m_mTable.end();
 	for(mi = m_mTable.begin(); mi != miEnd; ++mi) {
 		mi->second.enable = GetPrivateProfileInt("ax7z", mi->first.c_str(), 1, sIniFileName.c_str()) != 0;
 	}
 }
+
+struct MyConcat2
+{
+	std::string operator()(const std::string &s1, const std::string &s2) const
+	{
+		if(s1 == "")
+			return "*." + s2;
+		return s1 + ";" + "*." + s2;
+	}
+};
 
 void ExtManager::SetPluginInfo(std::vector<std::string> &vsPluginInfo) const
 {
@@ -128,36 +162,54 @@ void ExtManager::SetPluginInfo(std::vector<std::string> &vsPluginInfo) const
 
 	vsPluginInfo.clear();
 	vsPluginInfo.push_back("00AM");
-    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57 y2b5 (C) Makito Miyano / patched by Yak!"); 
+    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ y2b5 (C) Makito Miyano / enhanced by Yak!"); 
 
 	std::map<std::string, std::string>::const_iterator ci2, ciEnd2 = mResmap.end();
 	for(ci2 = mResmap.begin(); ci2 != ciEnd2; ++ci2) {
 		vsPluginInfo.push_back(ci2->second);
 		vsPluginInfo.push_back(ci2->first + " files");
 	}
+	if(m_sTableUser.size()) {
+		vsPluginInfo.push_back(std::accumulate(m_sTableUser.begin(), m_sTableUser.end(), std::string(), MyConcat2()));
+		vsPluginInfo.push_back("User-defined");
+	}
 }
 
-void ExtManager::AddUserExt(const std::string& sExt, bool fEnable)
+void ExtManager::AddUserExt(const std::string& sExt)
 {
-	m_mTableUser[sExt] = fEnable;
+	m_sTableUser.insert(sExt);
 }
 
 void ExtManager::RemoveUserExt(const std::string& sExt)
 {
-	m_mTableUser.erase(sExt);
+	m_sTableUser.erase(sExt);
+}
+
+struct MyConcat
+{
+	std::string operator()(const std::string &s1, const std::string &s2) const
+	{
+		if(s1 == "") return s2;
+		return s1 + ";" + s2;
+	}
+};
+
+std::string ExtManager::GetUserExtensions() const
+{
+	return std::accumulate(m_sTableUser.begin(), m_sTableUser.end(), std::string(), MyConcat());
+}
+
+void ExtManager::SetUserExtensions(const std::string& sExts)
+{
+	boost::algorithm::split(m_sTableUser, sExts, boost::algorithm::is_any_of(";"), boost::algorithm::token_compress_on);
+	m_sTableUser.erase("");
 }
 
 //グローバル変数
 static InfoCache infocache; //アーカイブ情報キャッシュクラス
 static InfoCacheW infocacheW; //アーカイブ情報キャッシュクラス
 static std::string g_sIniFileName; // ini ファイル名
-static int s_nEnable7z = 1;
-static int s_nEnableRar = 1;
-static int s_nEnableCbr = 1;
-static int s_nEnableCab = 1;
-static int s_nEnableArj = 1;
-static int s_nEnableLzh = 1;
-static int s_nEnableIso = 1;
+static ExtManager g_extManager;
 HINSTANCE g_hInstance;
 int g_nSolidEnable7z = 1;
 int g_nSolidEnableRar = 1;
@@ -176,13 +228,8 @@ static inline bool IsItWindowsNT()
 
 void SetParamDefault()
 {
-    s_nEnable7z = 1;
-    s_nEnableRar = 1;
-    s_nEnableCbr = 1;
-    s_nEnableCab = 1;
-    s_nEnableArj = 1;
-    s_nEnableLzh = 1;
-    s_nEnableIso = 1;
+	g_extManager.SetDefault();
+	g_extManager.SetUserExtensions(DEFAULT_EXTENSIONS);
 
     g_nSolidEnable7z = 1;
     g_nSolidEnableRar = 1;
@@ -210,13 +257,7 @@ void LoadFromIni()
 
     std::string sIniFileName = GetIniFileName();
 
-    s_nEnable7z = GetPrivateProfileInt("ax7z", "7z", s_nEnable7z, sIniFileName.c_str());
-    s_nEnableRar = GetPrivateProfileInt("ax7z", "rar", s_nEnableRar, sIniFileName.c_str());
-    s_nEnableCbr = GetPrivateProfileInt("ax7z", "cbr", s_nEnableCbr, sIniFileName.c_str());
-    s_nEnableCab = GetPrivateProfileInt("ax7z", "cab", s_nEnableCab, sIniFileName.c_str());
-    s_nEnableArj = GetPrivateProfileInt("ax7z", "arj", s_nEnableArj, sIniFileName.c_str());
-    s_nEnableLzh = GetPrivateProfileInt("ax7z", "lzh", s_nEnableLzh, sIniFileName.c_str());
-    s_nEnableIso = GetPrivateProfileInt("ax7z", "iso", s_nEnableIso, sIniFileName.c_str());
+	g_extManager.Load(sIniFileName);
 
 	SolidCache& sc = SolidCache::GetInstance();
 
@@ -237,13 +278,7 @@ void SaveToIni()
 {
     std::string sIniFileName = GetIniFileName();
 
-    WritePrivateProfileString("ax7z", "7z", s_nEnable7z ? "1" : "0", sIniFileName.c_str());
-    WritePrivateProfileString("ax7z", "rar", s_nEnableRar ? "1" : "0", sIniFileName.c_str());
-    WritePrivateProfileString("ax7z", "cbr", s_nEnableCbr ? "1" : "0", sIniFileName.c_str());
-    WritePrivateProfileString("ax7z", "cab", s_nEnableCab ? "1" : "0", sIniFileName.c_str());
-    WritePrivateProfileString("ax7z", "arj", s_nEnableArj ? "1" : "0", sIniFileName.c_str());
-    WritePrivateProfileString("ax7z", "lzh", s_nEnableLzh ? "1" : "0", sIniFileName.c_str());
-    WritePrivateProfileString("ax7z", "iso", s_nEnableIso ? "1" : "0", sIniFileName.c_str());
+	g_extManager.Save(sIniFileName);
 
     char buf[2048];
     WritePrivateProfileString("ax7z", "solid7z", g_nSolidEnable7z ? "1" : "0", sIniFileName.c_str());
@@ -289,14 +324,15 @@ BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpR
 #endif
             CoInitialize(NULL);
             InitCommonControlsEx(&ice);
-            SetIniFileName(hModule);
-            LoadFromIni();
-            bInitPath = true;
 		{
 			extern void GetFormats(ExtManager::Conf &res);
 			ExtManager::Conf v;
 			GetFormats(v);
+			g_extManager.Init(v);
 		}
+            SetIniFileName(hModule);
+            LoadFromIni();
+            bInitPath = true;
 			break;
 		case DLL_THREAD_ATTACH:
             CoInitialize(NULL);
@@ -336,38 +372,10 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserve
 int __stdcall GetPluginInfo(int infono, LPSTR buf, int buflen)
 {
     std::vector<std::string> vsPluginInfo;
-    vsPluginInfo.push_back("00AM");
-    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57 y2b4 (C) Makito Miyano / patched by Yak!"); 
-    if (s_nEnable7z) {
-        vsPluginInfo.push_back("*.7z");
-        vsPluginInfo.push_back("7-zip files");
-    }
-    if (s_nEnableRar) {
-        vsPluginInfo.push_back("*.rar");
-        vsPluginInfo.push_back("Rar files");
-    }
-    if (s_nEnableCbr) {
-        vsPluginInfo.push_back("*.cbr");
-        vsPluginInfo.push_back("Cbr(rar) files");
-    }
-    if (s_nEnableCab) {
-        vsPluginInfo.push_back("*.cab");
-        vsPluginInfo.push_back("Cab files");
-    }
-    if (s_nEnableArj) {
-        vsPluginInfo.push_back("*.arj");
-        vsPluginInfo.push_back("Arj files");
-    }
-    if (s_nEnableLzh) {
-        vsPluginInfo.push_back("*.lzh");
-        vsPluginInfo.push_back("LZH files");
-    }
-    if (s_nEnableIso) {
-        vsPluginInfo.push_back("*.iso;*.img;*.bin;*.mdf");
-        vsPluginInfo.push_back("ISO files");
-    }
 
-    if (infono < 0 || infono >= (int)vsPluginInfo.size()) {
+	g_extManager.SetPluginInfo(vsPluginInfo);
+
+	if (infono < 0 || infono >= (int)vsPluginInfo.size()) {
         return 0;
     }
 
@@ -405,57 +413,12 @@ static bool CheckFileExtensionW(const wchar_t* pFileName, const wchar_t* pExtens
 int __stdcall IsSupported(LPSTR filename, DWORD dw)
 {
     // 現時点では名前のみで判断
-    int nLen = strlen(filename);
-    if (nLen < 4) {
-        // 最低でも4文字は必要なはず (a.7zが最短)
-        return 0;
-    }
-
-    if ((s_nEnable7z && CheckFileExtension(filename, "7z"))
-        || (s_nEnableRar && CheckFileExtension(filename, "rar"))
-        || (s_nEnableCbr && CheckFileExtension(filename, "cbr"))
-        || (s_nEnableCab && CheckFileExtension(filename, "cab"))
-        || (s_nEnableLzh && CheckFileExtension(filename, "lzh"))
-        || (s_nEnableIso &&
-                (CheckFileExtension(filename, "iso")
-            ||   CheckFileExtension(filename, "img")
-            ||   CheckFileExtension(filename, "bin")
-            ||   CheckFileExtension(filename, "mdf")))
-        || (s_nEnableIso && CheckFileExtension(filename, "img"))
-        || (s_nEnableIso && CheckFileExtension(filename, "bin"))
-        || (s_nEnableIso && CheckFileExtension(filename, "mdf"))
-        || (s_nEnableArj && CheckFileExtension(filename, "arj"))) {
-        // サポートしていると判断
-        return 1;
-    }
-
-	return 0;
+	return g_extManager.IsEnable(filename);
 }
 
 int __stdcall IsSupportedW(LPWSTR filename, DWORD dw)
 {
-    // 現時点では名前のみで判断
-    int nLen = wcslen(filename);
-    if (nLen < 4) {
-        // 最低でも4文字は必要なはず (a.7zが最短)
-        return 0;
-    }
-
-    if ((s_nEnable7z && CheckFileExtensionW(filename, L"7z"))
-        || (s_nEnableRar && CheckFileExtensionW(filename, L"rar"))
-        || (s_nEnableCbr && CheckFileExtensionW(filename, L"cbr"))
-        || (s_nEnableCab && CheckFileExtensionW(filename, L"cab"))
-        || (s_nEnableLzh && CheckFileExtensionW(filename, L"lzh"))
-        || (s_nEnableIso &&
-                (CheckFileExtensionW(filename, L"iso")
-            ||   CheckFileExtensionW(filename, L"img")
-            ||   CheckFileExtensionW(filename, L"bin")
-            ||   CheckFileExtensionW(filename, L"mdf")))
-        || (s_nEnableArj && CheckFileExtensionW(filename, L"arj"))) {
-        // サポートしていると判断
-        return 1;
-    }
-
+    // Unicode 未サポート
     return 0;
 }
 
@@ -784,18 +747,37 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
 }
 
 //---------------------------------------------------------------------------
+struct ListUpdater
+{
+	ListUpdater(HWND hwnd, std::vector<std::string> &v) : hwnd(hwnd), v(v) {}
+	HWND hwnd;
+	std::vector<std::string> &v;
+	void operator()(const ExtManager::EachValueType& value)
+	{
+		std::string sLine(value.first);
+		if(value.first.size() < 5)
+			sLine += std::string(5 - value.first.size(), ' ');
+		sLine += std::accumulate(value.second.methods.begin(), value.second.methods.end(), std::string(), MyConcat2());
+		LRESULT lResult = SendMessage(hwnd, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(static_cast<const void*>(sLine.c_str())));
+		v.push_back(value.first);
+		SendMessage(hwnd, LB_SETSEL, value.second.enable, lResult);
+	}
+};
+
 void UpdateDialogItem(HWND hDlgWnd)
 {
-    std::ostringstream ost;
-    SendMessage(GetDlgItem(hDlgWnd, IDC_7Z_CHECK), BM_SETCHECK, (WPARAM)s_nEnable7z, 0L);
-    SendMessage(GetDlgItem(hDlgWnd, IDC_RAR_CHECK), BM_SETCHECK, (WPARAM)s_nEnableRar, 0L);
-    SendMessage(GetDlgItem(hDlgWnd, IDC_CBR_CHECK), BM_SETCHECK, (WPARAM)s_nEnableCbr, 0L);
-    SendMessage(GetDlgItem(hDlgWnd, IDC_CAB_CHECK), BM_SETCHECK, (WPARAM)s_nEnableCab, 0L);
-    SendMessage(GetDlgItem(hDlgWnd, IDC_ARJ_CHECK), BM_SETCHECK, (WPARAM)s_nEnableArj, 0L);
-    SendMessage(GetDlgItem(hDlgWnd, IDC_LZH_CHECK), BM_SETCHECK, (WPARAM)s_nEnableLzh, 0L);
-    SendMessage(GetDlgItem(hDlgWnd, IDC_ISO_CHECK), BM_SETCHECK, (WPARAM)s_nEnableIso, 0L);
+	std::vector<std::string> *pvMap = static_cast<std::vector<std::string>*>(reinterpret_cast<void*>(GetWindowLongPtr(hDlgWnd, DWLP_USER)));
+
+	pvMap->clear();
+	SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_RESETCONTENT, 0L, 0L);
+
+	g_extManager.Each(ListUpdater(GetDlgItem(hDlgWnd, IDC_EXTENSION_LIST), *pvMap));
+	SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_SETCARETINDEX, 0, 0);
+
+	SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_EDIT, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(static_cast<const void*>(g_extManager.GetUserExtensions().c_str())));
 }
 
+#if 0
 int IsChecked(HWND hDlgWnd, int nID)
 {
     if (IsDlgButtonChecked(hDlgWnd, nID) == BST_CHECKED) {
@@ -804,16 +786,21 @@ int IsChecked(HWND hDlgWnd, int nID)
         return 0;
     }
 }
+#endif
 
 bool UpdateValue(HWND hDlgWnd)
 {
-    s_nEnable7z = IsChecked(hDlgWnd, IDC_7Z_CHECK);
-    s_nEnableRar = IsChecked(hDlgWnd, IDC_RAR_CHECK);
-    s_nEnableCbr = IsChecked(hDlgWnd, IDC_CBR_CHECK);
-    s_nEnableCab = IsChecked(hDlgWnd, IDC_CAB_CHECK);
-    s_nEnableArj = IsChecked(hDlgWnd, IDC_ARJ_CHECK);
-    s_nEnableLzh = IsChecked(hDlgWnd, IDC_LZH_CHECK);
-    s_nEnableIso = IsChecked(hDlgWnd, IDC_ISO_CHECK);
+	std::vector<std::string> *pvMap = static_cast<std::vector<std::string>*>(reinterpret_cast<void*>(GetWindowLongPtr(hDlgWnd, DWLP_USER)));
+
+	int nNum = pvMap->size();
+	for(int i = 0; i < nNum; ++i) {
+		g_extManager.SetEnable((*pvMap)[i], SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_GETSEL, i, 0) > 0);
+	}
+
+	LRESULT lLen = SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_EDIT, WM_GETTEXTLENGTH, 0, 0);
+	std::vector<char> vBuf(lLen+1);
+	SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_EDIT, WM_GETTEXT, lLen+1, reinterpret_cast<LPARAM>(&vBuf[0]));
+	g_extManager.SetUserExtensions(&vBuf[0]);
 
     return true;
 }
@@ -822,6 +809,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
         case WM_INITDIALOG:
+			SetWindowLongPtr(hDlgWnd, DWLP_USER, lp);
             UpdateDialogItem(hDlgWnd);
             return TRUE;
         case WM_COMMAND:
@@ -842,6 +830,12 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
                 case IDC_SOLID_BUTTON:
                     DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_SOLID_CONFIG_DIALOG), hDlgWnd, (DLGPROC)SolidConfigDlgProc);
                     break;
+				case IDC_SELECT_ALL_BUTTON:
+					SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_SELITEMRANGE, TRUE, MAKELPARAM(0, 0xFFFFU));
+					break;
+				case IDC_UNSELECT_ALL_BUTTON:
+					SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_SELITEMRANGE, FALSE, MAKELPARAM(0, 0xFFFFU));
+					break;
                 default:
                     return FALSE;
             }
@@ -857,7 +851,8 @@ int __stdcall ConfigurationDlg(HWND parent, int fnc)
         //about
         DialogBox((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_ABOUT_DIALOG), parent, (DLGPROC)AboutDlgProc);
     } else {
-        DialogBox((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), parent, (DLGPROC)ConfigDlgProc);
+		std::vector<std::string> vMap;
+        DialogBoxParam((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), parent, (DLGPROC)ConfigDlgProc, reinterpret_cast<LPARAM>(static_cast<void*>(&vMap)));
     }
     return 0;
 }

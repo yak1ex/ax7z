@@ -158,7 +158,6 @@ INT_PTR CALLBACK CExtractCallbackImp::PasswordDlgProc(HWND hwnd, UINT uMsg, WPAR
       CExtractCallbackImp* p = static_cast<CExtractCallbackImp*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
       char buf[4096+1];
       GetDlgItemText(hwnd, IDC_PASSWORD_EDIT, buf, sizeof(buf));
-OutputDebugPrintf("PasswordDlgProc: %s", buf);
 	  AString oemPassword = buf;
       p->m_usPassword = MultiByteToUnicodeString(oemPassword, CP_OEMCP);
 	  p->m_fPassword = true;
