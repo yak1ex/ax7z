@@ -20,7 +20,7 @@ ax7z entry funcs
 #include <boost/algorithm/string/classification.hpp>
 #include "7z/7zip/Bundles/ax7z/SolidCache.h"
 
-const char DEFAULT_EXTENSIONS[] = "bin;img;mdf";
+const char * const DEFAULT_EXTENSIONS = "bin;img;mdf";
 
 struct NoCaseLess
 {
@@ -747,6 +747,15 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
 }
 
 //---------------------------------------------------------------------------
+struct MyConcat3
+{
+	std::string operator()(const std::string &s1, const std::string &s2) const
+	{
+		if(s1 == "") return s2;
+		return s1 + ", " + s2;
+	}
+};
+
 struct ListUpdater
 {
 	ListUpdater(HWND hwnd, std::vector<std::string> &v) : hwnd(hwnd), v(v) {}
@@ -754,10 +763,11 @@ struct ListUpdater
 	std::vector<std::string> &v;
 	void operator()(const ExtManager::EachValueType& value)
 	{
-		std::string sLine(value.first);
-		if(value.first.size() < 5)
-			sLine += std::string(5 - value.first.size(), ' ');
-		sLine += std::accumulate(value.second.methods.begin(), value.second.methods.end(), std::string(), MyConcat2());
+		std::string sLine("*.");
+		sLine += value.first;
+		if(value.first.size() < 8)
+			sLine += std::string(8 - value.first.size(), ' ');
+		sLine += std::accumulate(value.second.methods.begin(), value.second.methods.end(), std::string(), MyConcat3());
 		LRESULT lResult = SendMessage(hwnd, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(static_cast<const void*>(sLine.c_str())));
 		v.push_back(value.first);
 		SendMessage(hwnd, LB_SETSEL, value.second.enable, lResult);
@@ -776,17 +786,6 @@ void UpdateDialogItem(HWND hDlgWnd)
 
 	SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_EDIT, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(static_cast<const void*>(g_extManager.GetUserExtensions().c_str())));
 }
-
-#if 0
-int IsChecked(HWND hDlgWnd, int nID)
-{
-    if (IsDlgButtonChecked(hDlgWnd, nID) == BST_CHECKED) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-#endif
 
 bool UpdateValue(HWND hDlgWnd)
 {
