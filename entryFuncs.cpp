@@ -20,8 +20,6 @@ ax7z entry funcs
 #include <boost/algorithm/string/classification.hpp>
 #include "7z/7zip/Bundles/ax7z/SolidCache.h"
 
-const char * const DEFAULT_EXTENSIONS = "bin;img;mdf";
-
 struct NoCaseLess
 {
 	bool operator()(const std::string &s1, const std::string &s2) const
@@ -43,6 +41,8 @@ private:
 	std::map<Ext, Info, NoCaseLess> m_mTable;
 	std::set<Ext, NoCaseLess> m_sTableUser;
 public:
+	static const char* const SECTION_NAME;
+	static const char* const DEFAULT_EXTENSIONS;
 	ExtManager() {}
 	typedef std::vector<std::pair<std::string, std::string> > Conf;
 	void Init(const Conf& conf);
@@ -66,6 +66,9 @@ public:
 	void SetUserExtensions(const std::string& sExts);
 	std::string GetUserExtensions() const;
 };
+
+const char* const ExtManager::SECTION_NAME = "ax7z_s";
+const char* const ExtManager::DEFAULT_EXTENSIONS = "bin;img;mdf";
 
 void ExtManager::Init(const Conf& conf)
 {
@@ -105,14 +108,14 @@ void ExtManager::Save(const std::string &sIniFileName) const
 {
 	if(m_sTableUser.size()) {
 		const std::string &sResult = GetUserExtensions();
-		WritePrivateProfileString("ax7z", "user_extensions", sResult.c_str(), sIniFileName.c_str());
+		WritePrivateProfileString(SECTION_NAME, "user_extensions", sResult.c_str(), sIniFileName.c_str());
 	} else {
-		WritePrivateProfileString("ax7z", "user_extensions", NULL, sIniFileName.c_str());
+		WritePrivateProfileString(SECTION_NAME, "user_extensions", NULL, sIniFileName.c_str());
 	}
 
 	std::map<Ext, Info, NoCaseLess>::const_iterator ci, ciEnd = m_mTable.end();
 	for(ci = m_mTable.begin(); ci != ciEnd; ++ci) {
-		WritePrivateProfileString("ax7z", ci->first.c_str(), ci->second.enable ? "1" : "0", sIniFileName.c_str());
+		WritePrivateProfileString(SECTION_NAME, ci->first.c_str(), ci->second.enable ? "1" : "0", sIniFileName.c_str());
 	}
 }
 
@@ -123,14 +126,14 @@ void ExtManager::Load(const std::string &sIniFileName)
 	DWORD dwSize;
 	do {
 		vBuf.resize(vBuf.size() * 2);
-		dwSize = GetPrivateProfileString("ax7z", "user_extensions", DEFAULT_EXTENSIONS, &vBuf[0], vBuf.size(), sIniFileName.c_str());
+		dwSize = GetPrivateProfileString(SECTION_NAME, "user_extensions", DEFAULT_EXTENSIONS, &vBuf[0], vBuf.size(), sIniFileName.c_str());
 	} while(dwSize == vBuf.size() - 1);
 	std::string sResult(&vBuf[0]);
 	SetUserExtensions(sResult);
 
 	std::map<Ext, Info, NoCaseLess>::iterator mi, miEnd = m_mTable.end();
 	for(mi = m_mTable.begin(); mi != miEnd; ++mi) {
-		mi->second.enable = GetPrivateProfileInt("ax7z", mi->first.c_str(), 1, sIniFileName.c_str()) != 0;
+		mi->second.enable = GetPrivateProfileInt(SECTION_NAME, mi->first.c_str(), 1, sIniFileName.c_str()) != 0;
 	}
 }
 
@@ -162,7 +165,7 @@ void ExtManager::SetPluginInfo(std::vector<std::string> &vsPluginInfo) const
 
 	vsPluginInfo.clear();
 	vsPluginInfo.push_back("00AM");
-    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ y2b5 (C) Makito Miyano / enhanced by Yak!"); 
+    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ s_y3 (C) Makito Miyano / enhanced by Yak!"); 
 
 	std::map<std::string, std::string>::const_iterator ci2, ciEnd2 = mResmap.end();
 	for(ci2 = mResmap.begin(); ci2 != ciEnd2; ++ci2) {
@@ -229,7 +232,7 @@ static inline bool IsItWindowsNT()
 void SetParamDefault()
 {
 	g_extManager.SetDefault();
-	g_extManager.SetUserExtensions(DEFAULT_EXTENSIONS);
+	g_extManager.SetUserExtensions(ExtManager::DEFAULT_EXTENSIONS);
 
     g_nSolidEnable7z = 1;
     g_nSolidEnableRar = 1;
@@ -261,16 +264,16 @@ void LoadFromIni()
 
 	SolidCache& sc = SolidCache::GetInstance();
 
-    g_nSolidEnable7z = GetPrivateProfileInt("ax7z", "solid7z", g_nSolidEnable7z, sIniFileName.c_str());
-    g_nSolidEnableRar = GetPrivateProfileInt("ax7z", "solidrar", g_nSolidEnableRar, sIniFileName.c_str());
-	sc.SetMaxLookAhead(GetPrivateProfileInt("ax7z", "lookahead", sc.GetMaxLookAhead(), sIniFileName.c_str()));
-    sc.SetMaxMemory(GetPrivateProfileInt("ax7z", "memory", sc.GetMaxMemory(), sIniFileName.c_str()));
-    sc.SetMaxDisk(GetPrivateProfileInt("ax7z", "disk", sc.GetMaxDisk(), sIniFileName.c_str()));
-    sc.SetPurgeMemory(GetPrivateProfileInt("ax7z", "purge_memory", sc.GetPurgeMemory(), sIniFileName.c_str()));
-    sc.SetPurgeDisk(GetPrivateProfileInt("ax7z", "purge_disk", sc.GetPurgeDisk(), sIniFileName.c_str()));
+    g_nSolidEnable7z = GetPrivateProfileInt(ExtManager::SECTION_NAME, "solid7z", g_nSolidEnable7z, sIniFileName.c_str());
+    g_nSolidEnableRar = GetPrivateProfileInt(ExtManager::SECTION_NAME, "solidrar", g_nSolidEnableRar, sIniFileName.c_str());
+	sc.SetMaxLookAhead(GetPrivateProfileInt(ExtManager::SECTION_NAME, "lookahead", sc.GetMaxLookAhead(), sIniFileName.c_str()));
+    sc.SetMaxMemory(GetPrivateProfileInt(ExtManager::SECTION_NAME, "memory", sc.GetMaxMemory(), sIniFileName.c_str()));
+    sc.SetMaxDisk(GetPrivateProfileInt(ExtManager::SECTION_NAME, "disk", sc.GetMaxDisk(), sIniFileName.c_str()));
+    sc.SetPurgeMemory(GetPrivateProfileInt(ExtManager::SECTION_NAME, "purge_memory", sc.GetPurgeMemory(), sIniFileName.c_str()));
+    sc.SetPurgeDisk(GetPrivateProfileInt(ExtManager::SECTION_NAME, "purge_disk", sc.GetPurgeDisk(), sIniFileName.c_str()));
     char buf[2048], buf2[2048];
     GetTempPath(sizeof(buf2), buf2);
-    GetPrivateProfileString("ax7z", "folder", buf2, buf, sizeof(buf), sIniFileName.c_str());
+    GetPrivateProfileString(ExtManager::SECTION_NAME, "folder", buf2, buf, sizeof(buf), sIniFileName.c_str());
     sc.SetCacheFolder(buf);
 }
 
@@ -281,21 +284,21 @@ void SaveToIni()
 	g_extManager.Save(sIniFileName);
 
     char buf[2048];
-    WritePrivateProfileString("ax7z", "solid7z", g_nSolidEnable7z ? "1" : "0", sIniFileName.c_str());
-    WritePrivateProfileString("ax7z", "solidrar", g_nSolidEnableRar ? "1" : "0", sIniFileName.c_str());
+    WritePrivateProfileString(ExtManager::SECTION_NAME, "solid7z", g_nSolidEnable7z ? "1" : "0", sIniFileName.c_str());
+    WritePrivateProfileString(ExtManager::SECTION_NAME, "solidrar", g_nSolidEnableRar ? "1" : "0", sIniFileName.c_str());
 
 	SolidCache& sc = SolidCache::GetInstance();
 	wsprintf(buf, "%d", sc.GetMaxLookAhead());
-    WritePrivateProfileString("ax7z", "lookahead", buf, sIniFileName.c_str());
+    WritePrivateProfileString(ExtManager::SECTION_NAME, "lookahead", buf, sIniFileName.c_str());
     wsprintf(buf, "%d", sc.GetMaxMemory());
-    WritePrivateProfileString("ax7z", "memory", buf, sIniFileName.c_str());
+    WritePrivateProfileString(ExtManager::SECTION_NAME, "memory", buf, sIniFileName.c_str());
     wsprintf(buf, "%d", sc.GetMaxDisk());
-    WritePrivateProfileString("ax7z", "disk", buf, sIniFileName.c_str());
+    WritePrivateProfileString(ExtManager::SECTION_NAME, "disk", buf, sIniFileName.c_str());
     wsprintf(buf, "%d", sc.GetPurgeMemory());
-    WritePrivateProfileString("ax7z", "purge_memory", buf, sIniFileName.c_str());
+    WritePrivateProfileString(ExtManager::SECTION_NAME, "purge_memory", buf, sIniFileName.c_str());
     wsprintf(buf, "%d", sc.GetPurgeDisk());
-    WritePrivateProfileString("ax7z", "purge_disk", buf, sIniFileName.c_str());
-    WritePrivateProfileString("ax7z", "folder", sc.GetCacheFolder().c_str(), sIniFileName.c_str());
+    WritePrivateProfileString(ExtManager::SECTION_NAME, "purge_disk", buf, sIniFileName.c_str());
+    WritePrivateProfileString(ExtManager::SECTION_NAME, "folder", sc.GetCacheFolder().c_str(), sIniFileName.c_str());
 }
 
 void SetIniFileName(HANDLE hModule)
@@ -736,7 +739,7 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
 				}
                     break;
 				case IDC_CLEAR_BUTTON:
-					if(MessageBox(hDlgWnd, "Do you want to clear cache contents?", "ax7z.spi confirmation", MB_YESNO) == IDYES)
+					if(MessageBox(hDlgWnd, "Do you want to clear cache contents?", "ax7z_s.spi confirmation", MB_YESNO) == IDYES)
 						SolidCache::GetInstance().Clear();
 					break;
                 default:

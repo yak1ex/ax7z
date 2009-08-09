@@ -109,7 +109,7 @@ void SolidCacheDisk::CheckDB_()
 std::string SolidCacheDisk::GetFileName(__int64 id) const
 {
 	char buf[32768];
-	wsprintf(buf, "%sax7z%08X%08X.tmp", m_sCacheFolder.c_str(), static_cast<unsigned int>(id >> 32), static_cast<unsigned int>(id & 0xFFFFFFFF));
+	wsprintf(buf, "%sax7z_s%08X%08X.tmp", m_sCacheFolder.c_str(), static_cast<unsigned int>(id >> 32), static_cast<unsigned int>(id & 0xFFFFFFFF));
 	return std::string(buf);
 }
 
@@ -411,13 +411,12 @@ SolidFileCacheDisk SolidCacheDisk::GetFileCache(const std::string& filename)
 
 void SolidCacheDisk::Clear_()
 {
-	std::string sDB = GetCacheFolder() + "ax7z.db";
+	std::string sDB = GetCacheFolder() + "ax7z_s.db";
 	std::string s;
 
 	sqlite3_close(m_db);
-	sDB = GetCacheFolder() + "ax7z.db";
 	DeleteFile(sDB.c_str());
-	s = GetCacheFolder() + "ax7z????????????????.tmp";
+	s = GetCacheFolder() + "ax7z_s????????????????.tmp";
 	WIN32_FIND_DATA find;
 	HANDLE hFind;
 	hFind = FindFirstFile(s.c_str(), &find);
@@ -440,11 +439,11 @@ std::string SolidCacheDisk::SetCacheFolder(std::string sNew)
 
 	if(sNew != m_sCacheFolder) {
 	    sqlite3_close(m_db);
-		std::string sNewDB = sNew + "ax7z.db";
+		std::string sNewDB = sNew + "ax7z_s.db";
 		if(m_sCacheFolder != "") {
-			std::string sOldDB = m_sCacheFolder + "ax7z.db";
+			std::string sOldDB = m_sCacheFolder + "ax7z_s.db";
 			MoveFileEx(sOldDB.c_str(), sNewDB.c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
-			std::string s = m_sCacheFolder + "ax7z????????????????.tmp";
+			std::string s = m_sCacheFolder + "ax7z_s????????????????.tmp";
 			WIN32_FIND_DATA find;
 			HANDLE hFind;
 			hFind = FindFirstFile(s.c_str(), &find);

@@ -25,7 +25,7 @@ PropID.h
 00am.ncb
 00am.suo
 diff-exclude.txt
-ax7z.txt
+ax7z_s.txt
 ax7z.aps
 *.BAK
 *.o
