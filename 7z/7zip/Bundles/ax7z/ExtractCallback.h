@@ -13,7 +13,6 @@
 #include <stdio.h>
 
 #include "entryFuncs.h"
-#include "SolidCache.h"
 
 class CExtractCallbackImp: 
   public IArchiveExtractCallback,
@@ -42,7 +41,7 @@ private:
 
   bool IsEncrypted(UINT32 index);
 public:
-  void Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index, SolidFileCache *cache, SPI_PROGRESS lpPrgressCallback, long lData);
+  void Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index);
 
   UINT64 m_NumErrors;
   static INT_PTR CALLBACK PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -51,9 +50,6 @@ private:
   FILE* m_fp;
   UINT32 m_nBufSize;
   UINT32 m_nIndex;
-  SolidFileCache *m_cache;
-  SPI_PROGRESS m_lpPrgressCallback;
-  long m_lData;
 
   bool m_fPassword;
   UString m_usPassword;

@@ -18,9 +18,6 @@ ax7z entry funcs
 #include "resource.h"
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
-#include "7z/7zip/Bundles/ax7z/SolidCache.h"
-
-const char * const DEFAULT_EXTENSIONS = "bin;img;mdf";
 
 struct NoCaseLess
 {
@@ -43,6 +40,8 @@ private:
 	std::map<Ext, Info, NoCaseLess> m_mTable;
 	std::set<Ext, NoCaseLess> m_sTableUser;
 public:
+	static const char* const SECTION_NAME;
+	static const char* const DEFAULT_EXTENSIONS;
 	ExtManager() {}
 	typedef std::vector<std::pair<std::string, std::string> > Conf;
 	void Init(const Conf& conf);
@@ -66,6 +65,9 @@ public:
 	void SetUserExtensions(const std::string& sExts);
 	std::string GetUserExtensions() const;
 };
+
+const char* const ExtManager::SECTION_NAME = "ax7z";
+const char* const ExtManager::DEFAULT_EXTENSIONS = "bin;img;mdf";
 
 void ExtManager::Init(const Conf& conf)
 {
@@ -105,14 +107,14 @@ void ExtManager::Save(const std::string &sIniFileName) const
 {
 	if(m_sTableUser.size()) {
 		const std::string &sResult = GetUserExtensions();
-		WritePrivateProfileString("ax7z", "user_extensions", sResult.c_str(), sIniFileName.c_str());
+		WritePrivateProfileString(SECTION_NAME, "user_extensions", sResult.c_str(), sIniFileName.c_str());
 	} else {
-		WritePrivateProfileString("ax7z", "user_extensions", NULL, sIniFileName.c_str());
+		WritePrivateProfileString(SECTION_NAME, "user_extensions", NULL, sIniFileName.c_str());
 	}
 
 	std::map<Ext, Info, NoCaseLess>::const_iterator ci, ciEnd = m_mTable.end();
 	for(ci = m_mTable.begin(); ci != ciEnd; ++ci) {
-		WritePrivateProfileString("ax7z", ci->first.c_str(), ci->second.enable ? "1" : "0", sIniFileName.c_str());
+		WritePrivateProfileString(SECTION_NAME, ci->first.c_str(), ci->second.enable ? "1" : "0", sIniFileName.c_str());
 	}
 }
 
@@ -123,14 +125,14 @@ void ExtManager::Load(const std::string &sIniFileName)
 	DWORD dwSize;
 	do {
 		vBuf.resize(vBuf.size() * 2);
-		dwSize = GetPrivateProfileString("ax7z", "user_extensions", DEFAULT_EXTENSIONS, &vBuf[0], vBuf.size(), sIniFileName.c_str());
+		dwSize = GetPrivateProfileString(SECTION_NAME, "user_extensions", DEFAULT_EXTENSIONS, &vBuf[0], vBuf.size(), sIniFileName.c_str());
 	} while(dwSize == vBuf.size() - 1);
 	std::string sResult(&vBuf[0]);
 	SetUserExtensions(sResult);
 
 	std::map<Ext, Info, NoCaseLess>::iterator mi, miEnd = m_mTable.end();
 	for(mi = m_mTable.begin(); mi != miEnd; ++mi) {
-		mi->second.enable = GetPrivateProfileInt("ax7z", mi->first.c_str(), 1, sIniFileName.c_str()) != 0;
+		mi->second.enable = GetPrivateProfileInt(SECTION_NAME, mi->first.c_str(), 1, sIniFileName.c_str()) != 0;
 	}
 }
 
@@ -162,7 +164,7 @@ void ExtManager::SetPluginInfo(std::vector<std::string> &vsPluginInfo) const
 
 	vsPluginInfo.clear();
 	vsPluginInfo.push_back("00AM");
-    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ y2b5 (C) Makito Miyano / enhanced by Yak!"); 
+    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ y3 (C) Makito Miyano / enhanced by Yak!"); 
 
 	std::map<std::string, std::string>::const_iterator ci2, ciEnd2 = mResmap.end();
 	for(ci2 = mResmap.begin(); ci2 != ciEnd2; ++ci2) {
@@ -229,21 +231,10 @@ static inline bool IsItWindowsNT()
 void SetParamDefault()
 {
 	g_extManager.SetDefault();
-	g_extManager.SetUserExtensions(DEFAULT_EXTENSIONS);
+	g_extManager.SetUserExtensions(ExtManager::DEFAULT_EXTENSIONS);
 
     g_nSolidEnable7z = 1;
     g_nSolidEnableRar = 1;
-
-	SolidCache& sc = SolidCache::GetInstance();
-
-	sc.SetMaxLookAhead(-1);
-	sc.SetMaxMemory(100);
-	sc.SetMaxDisk(1024);
-	sc.SetPurgeMemory(10);
-	sc.SetPurgeDisk(10);
-//    char buf[2048];
-//    GetTempPath(sizeof(buf), buf);
-//	sc.SetCacheFolder(buf);
 }
 
 std::string GetIniFileName()
@@ -259,19 +250,8 @@ void LoadFromIni()
 
 	g_extManager.Load(sIniFileName);
 
-	SolidCache& sc = SolidCache::GetInstance();
-
-    g_nSolidEnable7z = GetPrivateProfileInt("ax7z", "solid7z", g_nSolidEnable7z, sIniFileName.c_str());
-    g_nSolidEnableRar = GetPrivateProfileInt("ax7z", "solidrar", g_nSolidEnableRar, sIniFileName.c_str());
-	sc.SetMaxLookAhead(GetPrivateProfileInt("ax7z", "lookahead", sc.GetMaxLookAhead(), sIniFileName.c_str()));
-    sc.SetMaxMemory(GetPrivateProfileInt("ax7z", "memory", sc.GetMaxMemory(), sIniFileName.c_str()));
-    sc.SetMaxDisk(GetPrivateProfileInt("ax7z", "disk", sc.GetMaxDisk(), sIniFileName.c_str()));
-    sc.SetPurgeMemory(GetPrivateProfileInt("ax7z", "purge_memory", sc.GetPurgeMemory(), sIniFileName.c_str()));
-    sc.SetPurgeDisk(GetPrivateProfileInt("ax7z", "purge_disk", sc.GetPurgeDisk(), sIniFileName.c_str()));
-    char buf[2048], buf2[2048];
-    GetTempPath(sizeof(buf2), buf2);
-    GetPrivateProfileString("ax7z", "folder", buf2, buf, sizeof(buf), sIniFileName.c_str());
-    sc.SetCacheFolder(buf);
+    g_nSolidEnable7z = GetPrivateProfileInt(ExtManager::SECTION_NAME, "solid7z", g_nSolidEnable7z, sIniFileName.c_str());
+    g_nSolidEnableRar = GetPrivateProfileInt(ExtManager::SECTION_NAME, "solidrar", g_nSolidEnableRar, sIniFileName.c_str());
 }
 
 void SaveToIni()
@@ -280,22 +260,8 @@ void SaveToIni()
 
 	g_extManager.Save(sIniFileName);
 
-    char buf[2048];
-    WritePrivateProfileString("ax7z", "solid7z", g_nSolidEnable7z ? "1" : "0", sIniFileName.c_str());
-    WritePrivateProfileString("ax7z", "solidrar", g_nSolidEnableRar ? "1" : "0", sIniFileName.c_str());
-
-	SolidCache& sc = SolidCache::GetInstance();
-	wsprintf(buf, "%d", sc.GetMaxLookAhead());
-    WritePrivateProfileString("ax7z", "lookahead", buf, sIniFileName.c_str());
-    wsprintf(buf, "%d", sc.GetMaxMemory());
-    WritePrivateProfileString("ax7z", "memory", buf, sIniFileName.c_str());
-    wsprintf(buf, "%d", sc.GetMaxDisk());
-    WritePrivateProfileString("ax7z", "disk", buf, sIniFileName.c_str());
-    wsprintf(buf, "%d", sc.GetPurgeMemory());
-    WritePrivateProfileString("ax7z", "purge_memory", buf, sIniFileName.c_str());
-    wsprintf(buf, "%d", sc.GetPurgeDisk());
-    WritePrivateProfileString("ax7z", "purge_disk", buf, sIniFileName.c_str());
-    WritePrivateProfileString("ax7z", "folder", sc.GetCacheFolder().c_str(), sIniFileName.c_str());
+    WritePrivateProfileString(ExtManager::SECTION_NAME, "solid7z", g_nSolidEnable7z ? "1" : "0", sIniFileName.c_str());
+    WritePrivateProfileString(ExtManager::SECTION_NAME, "solidrar", g_nSolidEnableRar ? "1" : "0", sIniFileName.c_str());
 }
 
 void SetIniFileName(HANDLE hModule)
@@ -646,20 +612,6 @@ static void UpdateSolidDialogItem(HWND hDlgWnd)
 {
     SendDlgItemMessage(hDlgWnd, IDC_SOLID_7Z_CHECK, BM_SETCHECK, (WPARAM)g_nSolidEnable7z, 0L);
     SendDlgItemMessage(hDlgWnd, IDC_SOLID_RAR_CHECK, BM_SETCHECK, (WPARAM)g_nSolidEnableRar, 0L);
-
-	SolidCache& sc = SolidCache::GetInstance();
-    char buf[2048];
-    wsprintf(buf, "%d", sc.GetMaxLookAhead());
-    SendDlgItemMessage(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    wsprintf(buf, "%d", sc.GetMaxMemory());
-    SendDlgItemMessage(hDlgWnd, IDC_MAX_MEMORY_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    wsprintf(buf, "%d", sc.GetMaxDisk());
-    SendDlgItemMessage(hDlgWnd, IDC_MAX_DISK_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    wsprintf(buf, "%d", sc.GetPurgeMemory());
-    SendDlgItemMessage(hDlgWnd, IDC_PURGE_MEMORY_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    wsprintf(buf, "%d", sc.GetPurgeDisk());
-    SendDlgItemMessage(hDlgWnd, IDC_PURGE_DISK_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_SETTEXT, 0, (LPARAM)sc.GetCacheFolder().c_str());
 }
 
 static bool IsChecked2(HWND hDlgWnd, int nID, int &nVar)
@@ -673,34 +625,11 @@ static bool IsChecked2(HWND hDlgWnd, int nID, int &nVar)
     return (nVar != nOldVar);
 }
 
-static bool GetIntValue(HWND hDlgWnd, int nID, int (SolidCache::*mfGetter)() const, int (SolidCache::*mfSetter)(int))
-{
-    char buf[2048];
-    SendDlgItemMessage(hDlgWnd, nID, WM_GETTEXT, sizeof(buf), (LPARAM)buf);
-    int nTempVar = atoi(buf);
-	if(nTempVar != (SolidCache::GetInstance().*mfGetter)()) {
-		(SolidCache::GetInstance().*mfSetter)(nTempVar);
-        return true;
-    }
-    return false;
-}
-
 static bool UpdateSolidValue(HWND hDlgWnd)
 {
     bool fChanged = false;
     fChanged |= IsChecked2(hDlgWnd, IDC_SOLID_7Z_CHECK, g_nSolidEnable7z);
     fChanged |= IsChecked2(hDlgWnd, IDC_SOLID_RAR_CHECK, g_nSolidEnableRar);
-	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT, SolidCache::GetMaxLookAhead, SolidCache::SetMaxLookAhead);
-	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_MEMORY_EDIT, SolidCache::GetMaxMemory, SolidCache::SetMaxMemory);
-	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_DISK_EDIT, SolidCache::GetMaxDisk, SolidCache::SetMaxDisk);
-	fChanged |= GetIntValue(hDlgWnd, IDC_PURGE_MEMORY_EDIT, SolidCache::GetPurgeMemory, SolidCache::SetPurgeMemory);
-	fChanged |= GetIntValue(hDlgWnd, IDC_PURGE_DISK_EDIT, SolidCache::GetPurgeDisk, SolidCache::SetPurgeDisk);
-    char buf[2048];
-    SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_GETTEXT, sizeof(buf), (LPARAM)buf);
-	if(lstrcmp(buf, SolidCache::GetInstance().GetCacheFolder().c_str())) {
-        fChanged = true;
-		SolidCache::GetInstance().SetCacheFolder(buf);
-    }
 
     return fChanged;
 }
@@ -710,7 +639,6 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
     switch (msg) {
         case WM_INITDIALOG:
             UpdateSolidDialogItem(hDlgWnd);
-			EnableWindow(GetDlgItem(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT), FALSE);
             return FALSE;
         case WM_COMMAND:
             switch (LOWORD(wp)) {
@@ -723,22 +651,6 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
                 case IDCANCEL:
                     EndDialog(hDlgWnd, IDCANCEL);
                     break;
-				case IDC_BROWSE_BUTTON:
-				{
-					char buf[MAX_PATH];
-					BROWSEINFO bwi = { hDlgWnd, NULL, buf, "Specify cache folder", BIF_RETURNONLYFSDIRS };
-					LPITEMIDLIST piid = SHBrowseForFolder(&bwi);
-					if(piid) {
-						SHGetPathFromIDList(piid, buf);
-						SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-						CoTaskMemFree(piid);
-					}
-				}
-                    break;
-				case IDC_CLEAR_BUTTON:
-					if(MessageBox(hDlgWnd, "Do you want to clear cache contents?", "ax7z.spi confirmation", MB_YESNO) == IDYES)
-						SolidCache::GetInstance().Clear();
-					break;
                 default:
                     return FALSE;
             }

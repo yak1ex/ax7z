@@ -24,7 +24,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".,7z;&quot;C:\Program Files\Library\boost\boost_1_36_0&quot;"
+				AdditionalIncludeDirectories=".,7z;&quot;C:\Program Files\Library\boost\boost_1_37&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MY00AM_EXPORTS;EXTERNAL_CODECS"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
@@ -46,7 +46,7 @@
 				OutputFile="Release/ax7z.spi"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Library\boost\boost_1_36_0\lib&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Library\boost\boost_1_37\lib&quot;"
 				ModuleDefinitionFile=".\ax7z.def"
 				ProgramDatabaseFile=".\Release/ax7z.pdb"
 				ImportLibrary=".\Release/ax7z.lib"
@@ -91,7 +91,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;7z;&quot;C:\Program Files\Library\boost\boost_1_36_0&quot;"
+				AdditionalIncludeDirectories=".;7z;&quot;C:\Program Files\Library\boost\boost_1_37&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MY00AM_EXPORTS;EXTERNAL_CODECS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -114,7 +114,7 @@
 				OutputFile="$(OutDir)/ax7z.spi"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Library\boost\boost_1_36_0\lib&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Library\boost\boost_1_37\lib&quot;"
 				ModuleDefinitionFile=".\ax7z.def"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Debug/ax7z.pdb"
@@ -484,15 +484,6 @@
 				<File
 					RelativePath=".\7z\7zip\Bundles\ax7z\SolidArchiveExtractCallback.h">
 				</File>
-				<File
-					RelativePath=".\7z\7zip\Bundles\ax7z\SolidCache.cpp">
-				</File>
-				<File
-					RelativePath=".\7z\7zip\Bundles\ax7z\SolidCache.h">
-				</File>
-				<File
-					RelativePath=".\7z\7zip\Bundles\ax7z\SolidCacheDisk.cpp">
-				</File>
 			</Filter>
 			<Filter
 				Name="7-zip Common"
@@ -750,31 +741,6 @@
 		<Filter
 			Name="Resource Files"
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
-		</Filter>
-		<Filter
-			Name="sqlite3"
-			Filter="">
-			<File
-				RelativePath=".\sqlite3\sqlite3.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions="SQLITE_THREADSAFE"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions="SQLITE_THREADSAFE"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\sqlite3\sqlite3.h">
-			</File>
-			<File
-				RelativePath=".\sqlite3\sqlite3helper.h">
-			</File>
 		</Filter>
 		<File
 			RelativePath=".\ax7z.txt">

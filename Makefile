@@ -1,4 +1,4 @@
-VER = 0.7-457y2b5
+VER = 0.7-457y3
 DIR = ax7z-$(VER)
 
 dist: mkpatch

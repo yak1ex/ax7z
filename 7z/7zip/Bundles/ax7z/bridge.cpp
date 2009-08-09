@@ -8,6 +8,7 @@
 #include <commctrl.h>
 #include <initguid.h>
 #include <time.h>
+#include <vector>
 
 #include "entryFuncs.h"
 
@@ -27,7 +28,6 @@
 #include "ExtractCallback.h"
 #include "SolidArchiveExtractCallback.h"
 #include "OpenCallback.h"
-#include "SolidCache.h"
 #include "resource.h"
 
 extern HINSTANCE g_hInstance;
@@ -502,128 +502,6 @@ int GetArchiveInfoWEx(LPWSTR filename, long len, HLOCAL *lphInf)
     return SPI_ALL_RIGHT;
 }
 
-int GetFileExImp_Cached(HLOCAL *dest, const char* pOutFile, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache scCache)
-{
-    FILE* fp = NULL;
-    if (dest) {
-        *dest = LocalAlloc(LMEM_FIXED, static_cast<size_t>(unpackSize));
-        if (*dest == NULL) {
-            return SPI_NO_MEMORY;
-        }
-
-		// Due to Susie plugin specification, size should be in 32 bits.
-        scCache.GetContent(iExtractFileIndex, *dest, static_cast<unsigned int>(unpackSize));
-    } else {
-        fp = fopen(pOutFile, "wb");
-        if (fp == NULL) {
-            return SPI_FILE_WRITE_ERROR;
-        }
-		// Due to Susie plugin specification, size should be in 32 bits.
-        scCache.OutputContent(iExtractFileIndex, static_cast<unsigned int>(unpackSize), fp);
-    }
-
-    if (fp) {
-        fclose(fp);
-    }
-
-    return SPI_ALL_RIGHT;
-}
-
-INT_PTR CALLBACK ProgressDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
-{
-    switch (msg) {
-        case WM_INITDIALOG:
-            return FALSE;
-    }
-    return FALSE;
-}
-
-struct ProgressArgument
-{
-    SPI_PROGRESS procTrueProgress;
-    long lTrueData;
-    HWND hwnd;
-};
-
-int PASCAL ProgressFunc(int nNum, int nDenom, long lData)
-{
-    ProgressArgument *pArg = reinterpret_cast<ProgressArgument*>(lData);
-    SendDlgItemMessage(pArg->hwnd, IDC_PROGRESSBAR, PBM_SETRANGE32, 0, nDenom);
-    SendDlgItemMessage(pArg->hwnd, IDC_PROGRESSBAR, PBM_SETPOS, nNum, 0);
-    char buf[1024];
-    wsprintf(buf, "%d / %d", nNum, nDenom);
-    SendDlgItemMessage(pArg->hwnd, IDC_PROGRESSTEXT, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(buf));
-	RedrawWindow(pArg->hwnd, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
-    MSG msg;
-    while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-        TranslateMessage(&msg); 
-        DispatchMessage(&msg); 
-    }
-    if(pArg->procTrueProgress)
-        return (pArg->procTrueProgress)(nNum, nDenom, pArg->lTrueData);
-    else
-        return 0;
-}
-
-
-int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache *scCache)
-{
-    CExtractCallbackImp *extractCallbackSpec = new CExtractCallbackImp;
-    CMyComPtr<IArchiveExtractCallback> extractCallback(extractCallbackSpec);
-
-    ProgressArgument pa = {
-        lpPrgressCallback,
-        lData,
-        0
-    };
-
-    FILE* fp = NULL;
-    if (dest) {
-        *dest = LocalAlloc(LMEM_FIXED, static_cast<size_t>(unpackSize));
-        if (*dest == NULL) {
-            return SPI_NO_MEMORY;
-        }
-        extractCallbackSpec->Init(archiveHandler, (char*)*dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex, scCache, ProgressFunc, reinterpret_cast<long>(&pa));
-    } else {
-        fp = fopen(pOutFile, "wb");
-        if (fp == NULL) {
-            return SPI_FILE_WRITE_ERROR;
-        }
-        extractCallbackSpec->Init(archiveHandler, NULL, static_cast<UINT32>(unpackSize), fp, iExtractFileIndex, scCache, ProgressFunc, reinterpret_cast<long>(&pa));
-    }
-
-    if(scCache) {
-        UINT32 numItems;
-        if (S_OK != archiveHandler->GetNumberOfItems(&numItems)) {
-            return SPI_FILE_READ_ERROR;
-        }
-        std::vector<UINT32> v;
-// TODO: may need to call PurgeUnmarkedAll() somewhere
-		scCache->PurgeUnmarked();
-        scCache->GetExtractVector(v, iExtractFileIndex, 10, numItems);
-        pa.hwnd = CreateDialog(g_hInstance, MAKEINTRESOURCE(IDD_PROGRESS), NULL, ProgressDlgProc);
-        ProgressFunc(0, scCache->GetProgressDenom(0), reinterpret_cast<long>(&pa));
-        HRESULT result = archiveHandler->Extract(&v[0], v.size(), false, extractCallback);
-// TODO: may need to distribute cached mark
-		scCache->CachedVector(v);
-		scCache->PurgeUnmarked();
-        DestroyWindow(pa.hwnd);
-    } else {
-        HRESULT result = archiveHandler->Extract(&iExtractFileIndex, 1, false, extractCallback);
-    }
-
-    if (fp) {
-        fclose(fp);
-    }
-
-    if (extractCallbackSpec->m_NumErrors != 0) {
-        ::DeleteFile(pOutFile);
-        return SPI_FILE_READ_ERROR;
-    }
-
-    return SPI_ALL_RIGHT;
-}
-
 int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinfo,
             SPI_PROGRESS lpPrgressCallback, long lData)
 {
@@ -668,20 +546,37 @@ int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinf
     }
 
     // ‰ð“€
-    if(!lstrcmp((char*)pinfo->method, "7zip_s")
-        && ((pinfo->method[7] == 'R' && g_nSolidEnableRar)
-            || (pinfo->method[7] == '7' && g_nSolidEnable7z))) {
-        SolidFileCache scCache = SolidCache::GetFileCache(filename);
-        if(scCache.IsCached(iExtractFileIndex)) { // Cached
-            return GetFileExImp_Cached(dest, pOutFile, iExtractFileIndex, unpackSize, scCache);
-        } else { // with Cache
-            return GetFileExImp_Normal(archiveHandler, dest, pOutFile, lpPrgressCallback, lData, iExtractFileIndex, unpackSize, &scCache);
-        }
-    } else { // Normal
-        return GetFileExImp_Normal(archiveHandler, dest, pOutFile, lpPrgressCallback, lData, iExtractFileIndex, unpackSize, NULL);
-    }
-}
+    CExtractCallbackImp *extractCallbackSpec = new CExtractCallbackImp;
+    CMyComPtr<IArchiveExtractCallback> extractCallback(extractCallbackSpec);
 
+    FILE* fp = NULL;
+    if (dest) {
+        *dest = LocalAlloc(LMEM_FIXED, static_cast<size_t>(unpackSize));
+        if (*dest == NULL) {
+            return SPI_NO_MEMORY;
+		}
+        extractCallbackSpec->Init(archiveHandler, (char*)*dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex);
+    } else {
+        fp = fopen(pOutFile, "wb");
+        if (fp == NULL) {
+            return SPI_FILE_WRITE_ERROR;
+		}
+        extractCallbackSpec->Init(archiveHandler, NULL, static_cast<UINT32>(unpackSize), fp, iExtractFileIndex);
+    }
+
+    HRESULT result = archiveHandler->Extract(&iExtractFileIndex, 1, false, extractCallback);
+
+    if (fp) {
+        fclose(fp);
+    }
+
+    if (extractCallbackSpec->m_NumErrors != 0) {
+        ::DeleteFile(pOutFile);
+        return SPI_FILE_READ_ERROR;
+    }
+
+   return SPI_ALL_RIGHT;
+}
 int GetFileWEx(wchar_t *filename, HLOCAL *dest, const wchar_t* pOutFile, fileInfoW *pinfo,
             SPI_PROGRESS lpPrgressCallback, long lData)
 {
@@ -735,13 +630,13 @@ int GetFileWEx(wchar_t *filename, HLOCAL *dest, const wchar_t* pOutFile, fileInf
         if (*dest == NULL) {
             return SPI_NO_MEMORY;
         }
-        extractCallbackSpec->Init(archiveHandler, (char*)*dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex, &SolidCache::GetFileCache(std::string()), lpPrgressCallback, lData);
+        extractCallbackSpec->Init(archiveHandler, (char*)*dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex);
     } else {
         fp = _wfopen(pOutFile, L"wb");
         if (fp == NULL) {
             return SPI_FILE_WRITE_ERROR;
         }
-        extractCallbackSpec->Init(archiveHandler, NULL, static_cast<UINT32>(unpackSize), fp, iExtractFileIndex, &SolidCache::GetFileCache(std::string()), lpPrgressCallback, lData);
+        extractCallbackSpec->Init(archiveHandler, NULL, static_cast<UINT32>(unpackSize), fp, iExtractFileIndex);
     }
 
     HRESULT result = archiveHandler->Extract(&iExtractFileIndex, 1, false, extractCallback);

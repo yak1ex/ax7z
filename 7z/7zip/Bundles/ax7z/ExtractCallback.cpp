@@ -12,7 +12,7 @@
 
 using namespace NWindows;
 
-void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index, SolidFileCache *cache, SPI_PROGRESS lpPrgressCallback, long lData)
+void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index)
 {
   assert(!pBuf || !fp);
   m_NumErrors = 0;
@@ -21,9 +21,6 @@ void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize,
   m_fp = fp;
   m_nBufSize = nBufSize;
   m_nIndex = index;
-  m_cache = cache;
-  m_lpPrgressCallback = lpPrgressCallback;
-  m_lData = lData;
   m_fPassword = false;
 }
 
@@ -53,15 +50,7 @@ class CMemOutStream:
 {
 public:
     CMemOutStream() : m_iPos(0), m_pBuf(NULL), m_nBufSize(0) {}
-    void Init(char* pBuf, UINT32 nBufSize, FILE* fp, bool bValid, SolidFileCache *cache, UINT32 nIndex)
-	{
-		m_pBuf = pBuf;
-		m_fp = fp;
-		m_nBufSize = nBufSize;
-		m_bValid = bValid;
-		m_cache = cache;
-		m_index = nIndex;
-	}
+    void Init(char* pBuf, UINT32 nBufSize, FILE* fp, bool bValid) { m_pBuf = pBuf; m_fp = fp; m_nBufSize = nBufSize; m_bValid = bValid; }
   MY_UNKNOWN_IMP
 
   STDMETHOD(Write)(const void *data, UINT32 size, UINT32 *processedSize);
@@ -72,8 +61,6 @@ protected:
     FILE* m_fp;
     UINT32 m_nBufSize;
     bool m_bValid;
-	SolidFileCache *m_cache;
-	UINT32 m_index;
 };
 
 STDMETHODIMP CMemOutStream::Write(const void *data, UINT32 size, UINT32 *processedSize)
@@ -83,8 +70,6 @@ STDMETHODIMP CMemOutStream::Write(const void *data, UINT32 size, UINT32 *process
         processedSize = &dummy;
     }
     
-    if(m_cache && !m_cache->IsCached(m_index)) m_cache->Append(m_index, data, size);
-
     if (!m_bValid) {
         *processedSize = size;
         return S_OK;
@@ -115,11 +100,8 @@ STDMETHODIMP CExtractCallbackImp::GetStream(UINT32 index,
 {
     CMemOutStream* pRealStream = new CMemOutStream;
     pRealStream->AddRef();
-    pRealStream->Init(m_pBuf, m_nBufSize, m_fp, index == m_nIndex, m_cache, index);
+    pRealStream->Init(m_pBuf, m_nBufSize, m_fp, index == m_nIndex);
     *outStream = pRealStream;
-// TODO: support abort?
-	if(m_lpPrgressCallback && m_cache)
-		m_lpPrgressCallback(m_cache->GetProgress(index), m_cache->GetProgressDenom(index), m_lData);
     return S_OK;
 }
 

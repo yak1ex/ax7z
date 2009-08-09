@@ -4,22 +4,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "00am", "00am.vcproj", "{BB1
 	EndProjectSection
 EndProject
 Global
-	GlobalSection(SourceCodeControl) = preSolution
-		SccNumberOfProjects = 2
-		SccProjectName0 = \u0022$/Hamana/00am\u0022,\u0020FHBAAAAA
-		SccLocalPath0 = ..
-		SccProvider0 = MSSCCI:Microsoft\u0020Visual\u0020SourceSafe
-		CanCheckoutShared = false
-		SccProjectFilePathRelativizedFromConnection0 = if7z\\
-		SolutionUniqueID = {F41EEF12-39F9-46A7-ABEF-136E24B830E0}
-		SccProjectUniqueName1 = 00am.vcproj
-		SccLocalPath1 = ..
-		CanCheckoutShared = false
-		SccProjectFilePathRelativizedFromConnection1 = if7z\\
-	EndGlobalSection
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
 		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{BB1F21AB-35C8-4474-AD0E-5138023DCD7C}.Debug.ActiveCfg = Debug|Win32
