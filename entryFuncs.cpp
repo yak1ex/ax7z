@@ -46,6 +46,7 @@ public:
 	typedef std::vector<std::pair<std::string, std::string> > Conf;
 	void Init(const Conf& conf);
 	bool IsEnable(LPSTR filename) const;
+	bool IsEnable(LPWSTR filename) const;
 	void SetEnable(const std::string &sExt, bool fEnable)
 	{
 		m_mTable[sExt].enable = fEnable;
@@ -82,6 +83,26 @@ bool ExtManager::IsEnable(LPSTR filename) const
 {
 	char buf[_MAX_EXT];
 	_splitpath(filename, NULL, NULL, NULL, buf);
+	if(buf[0] == 0) buf[1] = 0; // guard
+	std::string sBuf(buf+1); // skip period
+	std::map<Ext, Info, NoCaseLess>::const_iterator ci = m_mTable.find(sBuf);
+	if(ci != m_mTable.end()) {
+		return ci->second.enable;
+	}
+	std::set<Ext, NoCaseLess>::const_iterator ciUser = m_sTableUser.find(sBuf);
+	if(ciUser != m_sTableUser.end()) {
+		return true;
+	}
+	return false;
+}
+
+// TODO: Fix just a quick hack
+bool ExtManager::IsEnable(LPWSTR filename) const
+{
+	WCHAR buf_[_MAX_EXT];
+	_wsplitpath(filename, NULL, NULL, NULL, buf_);
+	char buf[_MAX_EXT];
+	if(wcstombs(buf, buf_, sizeof(buf)) == static_cast<std::size_t>(-1)) return false;
 	if(buf[0] == 0) buf[1] = 0; // guard
 	std::string sBuf(buf+1); // skip period
 	std::map<Ext, Info, NoCaseLess>::const_iterator ci = m_mTable.find(sBuf);
@@ -384,8 +405,8 @@ int __stdcall IsSupported(LPSTR filename, DWORD dw)
 
 int __stdcall IsSupportedW(LPWSTR filename, DWORD dw)
 {
-    // Unicode 未サポート
-    return 0;
+    // 現時点では名前のみで判断
+	return g_extManager.IsEnable(filename);
 }
 
 //---------------------------------------------------------------------------
