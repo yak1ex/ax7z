@@ -185,7 +185,7 @@ void ExtManager::SetPluginInfo(std::vector<std::string> &vsPluginInfo) const
 
 	vsPluginInfo.clear();
 	vsPluginInfo.push_back("00AM");
-    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ y3 (C) Makito Miyano / enhanced by Yak!"); 
+    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ y3b0 (C) Makito Miyano / enhanced by Yak!"); 
 
 	std::map<std::string, std::string>::const_iterator ci2, ciEnd2 = mResmap.end();
 	for(ci2 = mResmap.begin(); ci2 != ciEnd2; ++ci2) {
@@ -234,8 +234,6 @@ static InfoCacheW infocacheW; //アーカイブ情報キャッシュクラス
 static std::string g_sIniFileName; // ini ファイル名
 static ExtManager g_extManager;
 HINSTANCE g_hInstance;
-int g_nSolidEnable7z = 1;
-int g_nSolidEnableRar = 1;
 
 #ifndef _UNICODE
 bool g_IsNT = false;
@@ -253,9 +251,6 @@ void SetParamDefault()
 {
 	g_extManager.SetDefault();
 	g_extManager.SetUserExtensions(ExtManager::DEFAULT_EXTENSIONS);
-
-    g_nSolidEnable7z = 1;
-    g_nSolidEnableRar = 1;
 }
 
 std::string GetIniFileName()
@@ -270,9 +265,6 @@ void LoadFromIni()
     std::string sIniFileName = GetIniFileName();
 
 	g_extManager.Load(sIniFileName);
-
-    g_nSolidEnable7z = GetPrivateProfileInt(ExtManager::SECTION_NAME, "solid7z", g_nSolidEnable7z, sIniFileName.c_str());
-    g_nSolidEnableRar = GetPrivateProfileInt(ExtManager::SECTION_NAME, "solidrar", g_nSolidEnableRar, sIniFileName.c_str());
 }
 
 void SaveToIni()
@@ -280,9 +272,6 @@ void SaveToIni()
     std::string sIniFileName = GetIniFileName();
 
 	g_extManager.Save(sIniFileName);
-
-    WritePrivateProfileString(ExtManager::SECTION_NAME, "solid7z", g_nSolidEnable7z ? "1" : "0", sIniFileName.c_str());
-    WritePrivateProfileString(ExtManager::SECTION_NAME, "solidrar", g_nSolidEnableRar ? "1" : "0", sIniFileName.c_str());
 }
 
 void SetIniFileName(HANDLE hModule)
@@ -303,14 +292,12 @@ void SetIniFileName(HANDLE hModule)
 BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     bool bInitPath = false;
-    INITCOMMONCONTROLSEX ice = { sizeof(INITCOMMONCONTROLSEX), ICC_PROGRESS_CLASS };
     switch (ul_reason_for_call) {
         case DLL_PROCESS_ATTACH:
 #ifndef _UNICODE
             g_IsNT = IsItWindowsNT();
 #endif
             CoInitialize(NULL);
-            InitCommonControlsEx(&ice);
 		{
 			extern void GetFormats(ExtManager::Conf &res);
 			ExtManager::Conf v;
@@ -629,57 +616,6 @@ LRESULT CALLBACK AboutDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
 }
 
 //---------------------------------------------------------------------------
-static void UpdateSolidDialogItem(HWND hDlgWnd)
-{
-    SendDlgItemMessage(hDlgWnd, IDC_SOLID_7Z_CHECK, BM_SETCHECK, (WPARAM)g_nSolidEnable7z, 0L);
-    SendDlgItemMessage(hDlgWnd, IDC_SOLID_RAR_CHECK, BM_SETCHECK, (WPARAM)g_nSolidEnableRar, 0L);
-}
-
-static bool IsChecked2(HWND hDlgWnd, int nID, int &nVar)
-{
-    int nOldVar = nVar;
-    if (IsDlgButtonChecked(hDlgWnd, nID) == BST_CHECKED) {
-        nVar = 1;
-    } else {
-        nVar = 0;
-    }
-    return (nVar != nOldVar);
-}
-
-static bool UpdateSolidValue(HWND hDlgWnd)
-{
-    bool fChanged = false;
-    fChanged |= IsChecked2(hDlgWnd, IDC_SOLID_7Z_CHECK, g_nSolidEnable7z);
-    fChanged |= IsChecked2(hDlgWnd, IDC_SOLID_RAR_CHECK, g_nSolidEnableRar);
-
-    return fChanged;
-}
-
-LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
-{
-    switch (msg) {
-        case WM_INITDIALOG:
-            UpdateSolidDialogItem(hDlgWnd);
-            return FALSE;
-        case WM_COMMAND:
-            switch (LOWORD(wp)) {
-                case IDOK:
-                    if (UpdateSolidValue(hDlgWnd)) {
-                        SaveToIni();
-                    }
-                    EndDialog(hDlgWnd, IDOK);
-                    break;
-                case IDCANCEL:
-                    EndDialog(hDlgWnd, IDCANCEL);
-                    break;
-                default:
-                    return FALSE;
-            }
-    }
-    return FALSE;
-}
-
-//---------------------------------------------------------------------------
 struct MyConcat3
 {
 	std::string operator()(const std::string &s1, const std::string &s2) const
@@ -758,9 +694,6 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
                 case IDC_DEFAULT_BUTTON:
                     SetParamDefault();
                     UpdateDialogItem(hDlgWnd);
-                    break;
-                case IDC_SOLID_BUTTON:
-                    DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_SOLID_CONFIG_DIALOG), hDlgWnd, (DLGPROC)SolidConfigDlgProc);
                     break;
 				case IDC_SELECT_ALL_BUTTON:
 					SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_SELITEMRANGE, TRUE, MAKELPARAM(0, 0xFFFFU));
