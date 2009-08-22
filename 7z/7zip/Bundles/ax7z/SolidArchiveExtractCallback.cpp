@@ -9,6 +9,10 @@
 
 using namespace NWindows;
 
+extern UString g_usPassword;
+extern bool g_fPassword;
+extern UString g_usPasswordCachedFile;
+
 void CSolidArchiveExtractCallbackImp::Init(IInArchive *archive, SPI_OnWriteCallback pCallback, const std::map<UINT, const fileInfoW*>* pIndexToFileInfoMap)
 {
   m_NumErrors = 0;
@@ -123,10 +127,21 @@ STDMETHODIMP CSolidArchiveExtractCallbackImp::CryptoGetTextPassword(BSTR *passwo
   /*
   if (!m_PasswordIsDefined)
   {
-    g_StdOut << "\nEnter password:";
-    AString oemPassword = g_StdIn.ScanStringUntilNewLine();
-    m_Password = MultiByteToUnicodeString(oemPassword, CP_OEMCP); 
-    m_PasswordIsDefined = true;
+    if (g_fPassword)
+	{
+      m_usPassword = g_usPassword;
+      m_fPassword = true;
+	} else {
+      DialogBoxParam(g_hInstance, MAKEINTRESOURCE(IDD_PASSWORD), NULL, (DLGPROC)PasswordDlgProc, reinterpret_cast<LPARAM>(static_cast<void*>(this)));
+//    AString oemPassword = g_StdIn.ScanStringUntilNewLine();
+//    m_fPassword = MultiByteToUnicodeString(oemPassword, CP_OEMCP); 
+//    m_fPassword = true;
+	}
+  }
+  if (m_fPassword)
+  {
+    g_usPassword = m_usPassword;
+    g_fPassword = true;
   }
   CMyComBSTR tempName(m_Password);
   *password = tempName.Detach();
