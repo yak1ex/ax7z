@@ -14,6 +14,7 @@ using namespace NWindows;
 
 UString g_usPassword;
 bool g_fPassword;
+UString g_usPasswordCachedFile;
 
 void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index)
 {
