@@ -1,6 +1,10 @@
 VER = 0.7-457s_y3b1
 DIR = ax7z-$(VER)
 
+.PHONY: release dist build mkpatch tag gtag retag test
+
+release: build dist
+
 dist: mkpatch
 	rm -rf $(DIR)
 	mkdir -p $(DIR)
@@ -19,6 +23,9 @@ mkpatch:
 
 tag:
 	svn copy . https://yak.myhome.cx/repos/source/ax7z/tags/$(DIR)
+
+gtag:
+	git svn tag $(DIR)
 
 retag:
 	svn remove https://yak.myhome.cx/repos/source/ax7z/tags/$(DIR)
