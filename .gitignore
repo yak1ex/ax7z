@@ -1,4 +1,10 @@
-00am.ncb
-Debug
-Release
-dist.sh
+/Release
+/Debug
+/00am.ncb
+/00am.suo
+/ax7z.aps
+/*.patch
+/*.zip
+/ax7z.db
+/test.db
+/dist.sh
