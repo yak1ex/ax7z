@@ -12,6 +12,9 @@
 
 using namespace NWindows;
 
+UString g_usPassword;
+bool g_fPassword;
+
 void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index)
 {
   assert(!pBuf || !fp);
@@ -163,10 +166,21 @@ STDMETHODIMP CExtractCallbackImp::CryptoGetTextPassword(BSTR *password)
   extern HINSTANCE g_hInstance;
   if (!m_fPassword)
   {
-    DialogBoxParam(g_hInstance, MAKEINTRESOURCE(IDD_PASSWORD), NULL, (DLGPROC)PasswordDlgProc, reinterpret_cast<LPARAM>(static_cast<void*>(this)));
+    if (g_fPassword)
+	{
+      m_usPassword = g_usPassword;
+      m_fPassword = true;
+	} else {
+	  DialogBoxParam(g_hInstance, MAKEINTRESOURCE(IDD_PASSWORD), NULL, (DLGPROC)PasswordDlgProc, reinterpret_cast<LPARAM>(static_cast<void*>(this)));
 //    AString oemPassword = g_StdIn.ScanStringUntilNewLine();
 //    m_fPassword = MultiByteToUnicodeString(oemPassword, CP_OEMCP); 
 //    m_fPassword = true;
+	}
+  }
+  if (m_fPassword)
+  {
+    g_usPassword = m_usPassword;
+    g_fPassword = true;
   }
   CMyComBSTR tempName(m_usPassword);
   *password = tempName.Detach();
