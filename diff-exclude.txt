@@ -1,4 +1,5 @@
 .svn*
+.git*
 Debug
 Release
 Windows
