@@ -363,6 +363,8 @@ private:
 	int m_nMaxMemory;
 	int m_nPurgeMemory;
 
+	std::string MakeKey(const std::string &sArchive) const;
+
 #define BOOST_PP_ITERATION_PARAMS_1 (4, (0, 4, "Lock.h", 3))
 #include BOOST_PP_ITERATE()
 
@@ -409,18 +411,18 @@ public:
 	SolidCacheMemory():m_nMaxMemory(-1),m_nPurgeMemory(10) {}
 	SolidFileCacheMemory GetFileCache(const std::string& sArchive)
 	{
-		return SolidFileCacheMemory(m_mTable[sArchive], m_mAccess[sArchive]);
+		return SolidFileCacheMemory(m_mTable[MakeKey(sArchive)], m_mAccess[MakeKey(sArchive)]);
 	}
 	SolidFileCacheMemory GetFileCache(const std::string& sArchive) const
 	{
-		Table::const_iterator it = m_mTable.find(sArchive);
-		ArchiveTable::const_iterator it2 = m_mAccess.find(sArchive);
+		Table::const_iterator it = m_mTable.find(MakeKey(sArchive));
+		ArchiveTable::const_iterator it2 = m_mAccess.find(MakeKey(sArchive));
 		if(it == m_mTable.end() || it2 == m_mAccess.end()) throw std::domain_error("SolidCacheMemory::GetFileCache() const: not initialized");
 		return SolidFileCacheMemory(const_cast<Table::mapped_type&>(it->second), const_cast<ArchiveTable::mapped_type&>(it2->second));
 	}
 	bool Peek(bool (SolidFileCacheMemory::*method)(unsigned int) const, const std::string& sArchive, unsigned int index) const
 	{
-		return CallWithSharedLock(&SolidCacheMemory::Peek_, method, sArchive, index);
+		return CallWithSharedLock(&SolidCacheMemory::Peek_, method, MakeKey(sArchive), index);
 	}
 	void PurgeUnreferenced()
 	{
@@ -428,7 +430,7 @@ public:
 	}
 	bool Exists(const std::string &sArchive) const
 	{
-		return CallWithSharedLock(&SolidCacheMemory::Exists_, sArchive);
+		return CallWithSharedLock(&SolidCacheMemory::Exists_, MakeKey(sArchive));
 	}
 	boost::uint64_t GetSize() const
 	{
@@ -436,7 +438,7 @@ public:
 	}
 	boost::uint64_t ReduceSize(boost::uint64_t uiSize, void(*f)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const std::string& sExcludeArchive)
 	{
-		return CallWithLockGuard(&SolidCacheMemory::ReduceSize_, uiSize, f, pArg, sExcludeArchive);
+		return CallWithLockGuard(&SolidCacheMemory::ReduceSize_, uiSize, f, pArg, MakeKey(sExcludeArchive));
 	}
 	void Clear()
 	{

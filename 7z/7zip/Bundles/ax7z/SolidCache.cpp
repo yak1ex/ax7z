@@ -1,4 +1,7 @@
 #include <assert.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sstream>
 #include "SolidCache.h"
 
 SolidCache& SolidCache::GetInstance()
@@ -65,11 +68,22 @@ boost::uint64_t SolidFileCacheMemory::ReduceSize_(boost::uint64_t uiSize, void(*
 	return uiSize;
 }
 
+std::string SolidCacheMemory::MakeKey(const std::string &sArchive) const
+{
+	std::string sKey;
+	std::stringstream ss(sKey);
+	__stat64 st;
+// TODO: error check
+	_stat64(sArchive.c_str(), &st);
+	ss << ':' << st.st_mtime << ':' << st.st_size;
+	return ss.str();
+}
+
 void SolidCacheMemory::AccessArchive_(const char* archive)
 {
 	std::time_t atime;
 	std::time(&atime);
-	m_mAccess[archive] = atime;
+	m_mAccess[MakeKey(archive)] = atime;
 }
 
 std::string SolidCacheMemory::GetLRUArchive_(const std::string& sExcludeArchive) const
