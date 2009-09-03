@@ -364,6 +364,10 @@ private:
 	int m_nPurgeMemory;
 
 	std::string MakeKey(const std::string &sArchive) const;
+	std::string RestoreKey(const std::string &sArchive) const
+	{
+		return sArchive.substr(0, sArchive.find_last_of(':', sArchive.find_last_of(':') - 1));
+	}
 
 #define BOOST_PP_ITERATION_PARAMS_1 (4, (0, 4, "Lock.h", 3))
 #include BOOST_PP_ITERATE()
@@ -401,6 +405,17 @@ private:
 			return (SolidFileCacheMemory(const_cast<Table::mapped_type&>(it->second), const_cast<ArchiveTable::mapped_type&>(it2->second)).*method)(index);
 		}
 		return false;
+	}
+	SolidFileCacheMemory GetFileCache_(const std::string& sArchive)
+	{
+		return SolidFileCacheMemory(m_mTable[sArchive], m_mAccess[sArchive]);
+	}
+	SolidFileCacheMemory GetFileCache_(const std::string& sArchive) const
+	{
+		Table::const_iterator it = m_mTable.find(sArchive);
+		ArchiveTable::const_iterator it2 = m_mAccess.find(sArchive);
+		if(it == m_mTable.end() || it2 == m_mAccess.end()) throw std::domain_error("SolidCacheMemory::GetFileCache() const: not initialized");
+		return SolidFileCacheMemory(const_cast<Table::mapped_type&>(it->second), const_cast<ArchiveTable::mapped_type&>(it2->second));
 	}
 
 //

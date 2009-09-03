@@ -107,7 +107,7 @@ BEGIN
     LTEXT           "7Z/RAR/CBR/CAB/ARJ etc. plug-in using 7z",IDC_STATIC,7,
                     28,151,12
     LTEXT           "(c) Makito Miyano",IDC_STATIC,98,7,62,12
-    LTEXT           "for 7-zip 4.57+ s_y3b1",IDC_STATIC,22,17,62,10
+    LTEXT           "for 7-zip 4.57+ s_y3b2",IDC_STATIC,14,17,86,10
     LTEXT           "Enhanced by Yak!",IDC_STATIC,98,17,62,12
 END
 

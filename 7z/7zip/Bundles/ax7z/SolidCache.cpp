@@ -75,7 +75,7 @@ std::string SolidCacheMemory::MakeKey(const std::string &sArchive) const
 	__stat64 st;
 // TODO: error check
 	_stat64(sArchive.c_str(), &st);
-	ss << ':' << st.st_mtime << ':' << st.st_size;
+	ss << sArchive << ':' << st.st_mtime << ':' << st.st_size;
 	return ss.str();
 }
 
@@ -112,13 +112,15 @@ boost::uint64_t SolidCacheMemory::GetSize_() const
 
 boost::uint64_t SolidCacheMemory::ReduceSize_(boost::uint64_t uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const std::string& sExcludeArchive)
 {
-	OutputDebugPrintf("SolidCacheMemory::ReduceSize %" UINT64_S "u ", uiSize);
+	OutputDebugPrintf("SolidCacheMemory::ReduceSize %" UINT64_S "u %s", uiSize, sExcludeArchive.c_str());
 	while(uiSize > 0) {
+		OutputDebugPrintf("SolidCacheMemory::ReduceSize trace %" UINT64_S "u %s", uiSize, sExcludeArchive.c_str());
 		if(m_mTable.size() > 0) {
 			std::string sArchive = GetLRUArchive_(sExcludeArchive);
-			SolidFileCacheMemory scm = GetFileCache(sArchive);
+			SolidFileCacheMemory scm = GetFileCache_(sArchive);
 			if(scm.GetCount_() > 0) {
-				Argument2 arg2 = { sArchive, pArg };
+				Argument2 arg2 = { RestoreKey(sArchive), pArg };
+				OutputDebugPrintf("SolidCacheMemory::ReduceSize calling scm.ReduceSize_()");
 				uiSize = scm.ReduceSize_(uiSize, fCallback, &arg2);
 			} else {
 				m_mTable.erase(sArchive);
