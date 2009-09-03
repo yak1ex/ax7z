@@ -67,10 +67,10 @@ private:
 // private:
 	void InitDB_();
 	void CheckDB_();
-	bool ExistsArchive_(const char* archive);
+	bool ExistsArchive_(const char* archive) const;
 	void AddArchive_(const char* archive);
-	unsigned int GetArchiveIdx_(const char* archive);
-	bool ExistsEntry_(unsigned int aidx, unsigned int idx);
+	unsigned int GetArchiveIdx_(const char* archive) const;
+	bool ExistsEntry_(unsigned int aidx, unsigned int idx) const;
 	void AppendEntry_(unsigned int aidx, unsigned int idx, const void* data, unsigned int size);
 	void AddEntry_(unsigned int aidx, unsigned int idx, const void *data, unsigned int size);
 	void PurgeUnreferenced_();
