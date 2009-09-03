@@ -140,8 +140,9 @@ unsigned int SolidCacheDisk::GetArchiveIdx_(const char* archive) const
 	__stat64 st;
 // TODO: error check
 	_stat64(archive, &st);
-	Statement stmt(m_db, "SELECT idx FROM archive WHERE path = ? AND mtime =? AND size = ?");
+	Statement stmt(m_db, "SELECT idx FROM archive WHERE path = ? AND mtime = ? AND size = ?");
 	stmt.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size)();
+	OutputDebugPrintf("SolidCacheDisk::GetArchiveIdx_(): archive %s : [%d]", archive, stmt.get_int(0));
 	return stmt.get_int(0);
 }
 
@@ -363,7 +364,7 @@ bool SolidCacheDisk::Exists_(const char* archive, unsigned int idx) const
 bool SolidCacheDisk::IsProcessing_(const char *archive, unsigned int idx) const
 {
 	unsigned int aidx = GetArchiveIdx_(archive); 
-	Statement stmt(m_db, "SELECT COUNT(*) FROM entry WHERE entry.aidx = ? AND idx = ? AND completed <> 0");
+	Statement stmt(m_db, "SELECT COUNT(*) FROM entry WHERE aidx = ? AND idx = ? AND completed <> 0");
 	stmt.bind(1, aidx).bind(2, idx);
 	return stmt() && stmt.get_int(0) > 0;
 }
@@ -395,7 +396,7 @@ void SolidCacheDisk::GetContent_(const char *archive, unsigned int index, void* 
 {
 	unsigned int aidx = GetArchiveIdx_(archive); 
 	Statement stmt(m_db, "SELECT rowid, size FROM entry WHERE aidx = ? AND idx = ?");
-	stmt.bind(1, archive).bind(2, index)();
+	stmt.bind(1, aidx).bind(2, index)();
 	unsigned int uiSize = std::min<unsigned int>(size, stmt.get_int(1));
 	MMap mm(GetFileName(stmt.get_int64(0)), uiSize);
 	CopyMemory(dest, mm, uiSize);
