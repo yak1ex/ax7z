@@ -4,6 +4,9 @@
 #undef NOMINMAX
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#include <boost/algorithm/string/predicate.hpp>
+
 #include "sqlite3/sqlite3.h"
 #include "sqlite3/sqlite3helper.h"
 #include "SolidCache.h"
@@ -453,6 +456,7 @@ std::string SolidCacheDisk::SetCacheFolder(std::string sNew)
 {
 	boost::shared_lock<SolidCache::Mutex> guard(SolidCache::GetMutex());
 
+	if(!boost::algorithm::ends_with(sNew, "\\")) sNew += '\\';
 	if(sNew != m_sCacheFolder) {
 	    sqlite3_close(m_db);
 		std::string sNewDB = sNew + "ax7z_s.db";
