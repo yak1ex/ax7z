@@ -41,6 +41,7 @@ public:
   bool PasswordIsDefined;
   UString Password;
   COpenCallbackImp2(): PasswordIsDefined(false) {}
+  static INT_PTR CALLBACK PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
   void LoadFileInfo(const UString &folderPrefix,  const UString &fileName)
   {
     _folderPrefix = folderPrefix;

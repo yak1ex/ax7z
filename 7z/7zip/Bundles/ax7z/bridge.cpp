@@ -56,6 +56,11 @@ static bool MyOpenArchive(CCodecs *cc, const UString &archiveName,
         openCallbackSpec->Password = password;
     }
 
+    if (g_usPasswordCachedFile != archiveName) {
+        g_fPassword = false;
+        g_usPasswordCachedFile = archiveName;
+    }
+
     UString fullName;
     int fileNamePartStartIndex;
     NFile::NDirectory::MyGetFullPathName(archiveName, fullName, fileNamePartStartIndex);
@@ -80,11 +85,6 @@ static bool MyOpenArchive(CCodecs *cc, const UString &archiveName,
 //        archiverInfo.Extensions[subExtIndex].AddExtension);
     passwordEnabled = openCallbackSpec->PasswordIsDefined;
     password = openCallbackSpec->Password;
-
-	if (g_usPasswordCachedFile != archiveName) {
-        g_fPassword = false;
-		g_usPasswordCachedFile = archiveName;
-    }
 
     return true;
 }
