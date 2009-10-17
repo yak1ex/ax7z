@@ -16,7 +16,7 @@ UString g_usPassword;
 bool g_fPassword;
 UString g_usPasswordCachedFile;
 
-void CExtractCallbackImp::Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index)
+void CExtractCallbackImp::Init(IInArchive *archive, char** pBuf, UINT32 nBufSize, FILE* fp, UINT32 index)
 {
   assert(!pBuf || !fp);
   m_NumErrors = 0;
@@ -54,17 +54,24 @@ class CMemOutStream:
 {
 public:
     CMemOutStream() : m_iPos(0), m_pBuf(NULL), m_nBufSize(0) {}
-    void Init(char* pBuf, UINT32 nBufSize, FILE* fp, bool bValid) { m_pBuf = pBuf; m_fp = fp; m_nBufSize = nBufSize; m_bValid = bValid; }
+    void Init(char** pBuf, UINT32 nBufSize, FILE* fp, bool bValid) {
+		m_pBuf = pBuf;
+		m_fp = fp;
+		m_nBufSize = nBufSize;
+		m_bValid = bValid;
+		m_bIsSizeUnspecified = (nBufSize == 0);
+	}
   MY_UNKNOWN_IMP
 
   STDMETHOD(Write)(const void *data, UINT32 size, UINT32 *processedSize);
   STDMETHOD(WritePart)(const void *data, UINT32 size, UINT32 *processedSize);
 protected:
     UINT32 m_iPos;
-    char* m_pBuf;
+    char** m_pBuf;
     FILE* m_fp;
     UINT32 m_nBufSize;
     bool m_bValid;
+    bool m_bIsSizeUnspecified;
 };
 
 STDMETHODIMP CMemOutStream::Write(const void *data, UINT32 size, UINT32 *processedSize)
@@ -80,12 +87,23 @@ STDMETHODIMP CMemOutStream::Write(const void *data, UINT32 size, UINT32 *process
     }
 
     if (m_nBufSize < m_iPos + size) {
-        // 念のためチェック
-        return S_FALSE;
+		if(m_bIsSizeUnspecified) {
+			// Extend buffer
+			if(m_pBuf) {
+				char *pBuf = (char*)LocalAlloc(LMEM_FIXED, static_cast<size_t>(m_iPos + size));
+				if(!pBuf) return S_FALSE;
+				CopyMemory(pBuf, *m_pBuf, m_iPos);
+				LocalFree(*m_pBuf);
+				*m_pBuf = pBuf;
+			}
+		} else {
+			// 念のためチェック
+			return S_FALSE;
+		}
     }
 
     if (m_pBuf) {
-        memcpy(m_pBuf + m_iPos, data, size);
+        memcpy(*m_pBuf + m_iPos, data, size);
     } else {
         fwrite(data, size, 1, m_fp);
     }
