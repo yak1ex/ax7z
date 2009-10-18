@@ -38,10 +38,7 @@ private:
   UString _folderPrefix;
   NWindows::NFile::NFind::CFileInfoW _fileInfo;
 public:
-  bool PasswordIsDefined;
-  UString Password;
-  COpenCallbackImp2(): PasswordIsDefined(false) {}
-  static INT_PTR CALLBACK PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+  COpenCallbackImp2() {}
   void LoadFileInfo(const UString &folderPrefix,  const UString &fileName)
   {
     _folderPrefix = folderPrefix;

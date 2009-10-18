@@ -28,15 +28,12 @@
 #include "ExtractCallback.h"
 #include "SolidArchiveExtractCallback.h"
 #include "OpenCallback.h"
+#include "PasswordManager.h"
 #include "resource.h"
 
 extern HINSTANCE g_hInstance;
 extern int g_nSolidEnable7z;
 extern int g_nSolidEnableRar;
-
-extern UString g_usPassword;
-extern bool g_fPassword;
-extern UString g_usPasswordCachedFile;
 
 using namespace NWindows;
 using namespace NFile;
@@ -50,16 +47,8 @@ static bool MyOpenArchive(CCodecs *cc, const UString &archiveName,
 {
     COpenCallbackImp2 *openCallbackSpec = new COpenCallbackImp2;
     CMyComPtr<IArchiveOpenCallback> openCallback = openCallbackSpec;
-    if (passwordEnabled)
-    {
-        openCallbackSpec->PasswordIsDefined = passwordEnabled;
-        openCallbackSpec->Password = password;
-    }
 
-    if (g_usPasswordCachedFile != archiveName) {
-        g_fPassword = false;
-        g_usPasswordCachedFile = archiveName;
-    }
+    PasswordManager::Get().NotifyArchive(archiveName);
 
     UString fullName;
     int fileNamePartStartIndex;
@@ -80,11 +69,6 @@ static bool MyOpenArchive(CCodecs *cc, const UString &archiveName,
     if (result != S_OK) {
         return false;
     }
-//    defaultItemName = GetDefaultName(archiveName, 
-//        archiverInfo.Extensions[subExtIndex].Extension, 
-//        archiverInfo.Extensions[subExtIndex].AddExtension);
-    passwordEnabled = openCallbackSpec->PasswordIsDefined;
-    password = openCallbackSpec->Password;
 
     return true;
 }

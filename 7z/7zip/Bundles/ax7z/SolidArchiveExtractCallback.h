@@ -47,13 +47,10 @@ public:
 
 public:
   UINT64 m_NumErrors;
-  static INT_PTR CALLBACK PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 private:
   SPI_OnWriteCallback m_pCallback;
   bool m_bAbort;
   const std::map<UINT, const fileInfoW*>* m_pIndexToFileInfoMap;
-  bool m_fPassword;
-  UString m_usPassword;
 };
 
 #endif

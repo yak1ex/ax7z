@@ -1,6 +1,7 @@
 // SolidArchiveExtractCallback.h
 #include <windows.h>
 #include "SolidArchiveExtractCallback.h"
+#include "PasswordManager.h"
 #include "Common/StringConvert.h"
 #include "Windows/FileDir.h"
 #include "Windows/PropVariant.h"
@@ -10,10 +11,6 @@
 
 using namespace NWindows;
 
-extern UString g_usPassword;
-extern bool g_fPassword;
-extern UString g_usPasswordCachedFile;
-
 void CSolidArchiveExtractCallbackImp::Init(IInArchive *archive, SPI_OnWriteCallback pCallback, const std::map<UINT, const fileInfoW*>* pIndexToFileInfoMap)
 {
   m_NumErrors = 0;
@@ -21,7 +18,6 @@ void CSolidArchiveExtractCallbackImp::Init(IInArchive *archive, SPI_OnWriteCallb
   m_pCallback = pCallback;
   m_pIndexToFileInfoMap = pIndexToFileInfoMap;
   m_bAbort = false;
-  m_fPassword = false;
 }
 
 bool CSolidArchiveExtractCallbackImp::IsEncrypted(UINT32 index)
@@ -124,60 +120,10 @@ STDMETHODIMP CSolidArchiveExtractCallbackImp::SetOperationResult(INT32 resultEOp
   return S_OK;
 }
 
-INT_PTR CALLBACK CSolidArchiveExtractCallbackImp::PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-  switch(uMsg)
-  {
-  case WM_INITDIALOG:
-    SetWindowLongPtr(hwnd, DWLP_USER, lParam);
-    return TRUE;
-  case WM_COMMAND:
-    switch(LOWORD(wParam)) {
-    case IDOK:
-    {
-      CSolidArchiveExtractCallbackImp* p = static_cast<CSolidArchiveExtractCallbackImp*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
-      char buf[4096+1];
-      GetDlgItemText(hwnd, IDC_PASSWORD_EDIT, buf, sizeof(buf));
-	  AString oemPassword = buf;
-      p->m_usPassword = MultiByteToUnicodeString(oemPassword, CP_OEMCP);
-	  p->m_fPassword = true;
-      EndDialog(hwnd, TRUE);
-      break;
-	}
-    case IDCANCEL:
-      EndDialog(hwnd, FALSE);
-      break;
-	default:
-      return FALSE;
-	}
-  default:
-    return FALSE;
-  }
-  return FALSE; // not reached
-}
-
 STDMETHODIMP CSolidArchiveExtractCallbackImp::CryptoGetTextPassword(BSTR *password)
 {
-  extern HINSTANCE g_hInstance;
-  if (!m_fPassword)
-  {
-    if (g_fPassword)
-	{
-      m_usPassword = g_usPassword;
-      m_fPassword = true;
-	} else {
-      DialogBoxParam(g_hInstance, MAKEINTRESOURCE(IDD_PASSWORD), NULL, (DLGPROC)PasswordDlgProc, reinterpret_cast<LPARAM>(static_cast<void*>(this)));
-//    AString oemPassword = g_StdIn.ScanStringUntilNewLine();
-//    m_fPassword = MultiByteToUnicodeString(oemPassword, CP_OEMCP); 
-//    m_fPassword = true;
-	}
-  }
-  if (m_fPassword)
-  {
-    g_usPassword = m_usPassword;
-    g_fPassword = true;
-  }
-  CMyComBSTR tempName(m_usPassword);
+  UString usPassword = PasswordManager::Get().GetPassword(false);
+  CMyComBSTR tempName(usPassword);
   *password = tempName.Detach();
 
   return S_OK;

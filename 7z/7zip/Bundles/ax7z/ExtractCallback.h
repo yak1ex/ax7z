@@ -44,15 +44,11 @@ public:
   void Init(IInArchive *archive, char* pBuf, UINT32 nBufSize, FILE* fp, UINT32 index);
 
   UINT64 m_NumErrors;
-  static INT_PTR CALLBACK PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 private:
   char* m_pBuf;
   FILE* m_fp;
   UINT32 m_nBufSize;
   UINT32 m_nIndex;
-
-  bool m_fPassword;
-  UString m_usPassword;
 };
 
 #endif
