@@ -71,7 +71,7 @@ STDMETHODIMP COpenCallbackImp2::GetStream(const wchar_t *name,
 
 STDMETHODIMP COpenCallbackImp2::CryptoGetTextPassword(BSTR *password)
 {
-	UString usPassword = PasswordManager::Get().GetPassword(false);
+	UString usPassword = PasswordManager::Get().GetPassword(true);
 	CMyComBSTR temp(usPassword);
     *password = temp.Detach();
 

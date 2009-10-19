@@ -112,11 +112,17 @@ STDMETHODIMP CSolidArchiveExtractCallbackImp::SetOperationResult(INT32 resultEOp
     {
       break;
     }
+    case NArchive::NExtract::NOperationResult::kDataError:
+    case NArchive::NExtract::NOperationResult::kCRCError:
+    {
+      PasswordManager::Get().NotifyError();
+    }
     default:
     {
       m_NumErrors++;
     }
   }
+  PasswordManager::Get().NotfiyEndFile();
   return S_OK;
 }
 

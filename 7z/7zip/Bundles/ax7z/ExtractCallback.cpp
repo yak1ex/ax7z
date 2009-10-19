@@ -117,6 +117,11 @@ STDMETHODIMP CExtractCallbackImp::SetOperationResult(INT32 resultEOperationResul
     {
       break;
     }
+    case NArchive::NExtract::NOperationResult::kDataError:
+    case NArchive::NExtract::NOperationResult::kCRCError:
+    {
+      PasswordManager::Get().NotifyError();
+    }
     default:
     {
       m_NumErrors++;
