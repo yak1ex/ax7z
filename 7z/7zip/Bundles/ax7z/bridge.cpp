@@ -212,7 +212,7 @@ int GetArchiveInfoEx(LPSTR filename, long len, HLOCAL *lphInf)
         }
         UString filePath;
         if (propVariant.vt == VT_EMPTY) {
-            continue;
+            filePath = defaultItemName;
         } else if(propVariant.vt != VT_BSTR) {
             continue;
         } else {
@@ -221,9 +221,9 @@ int GetArchiveInfoEx(LPSTR filename, long len, HLOCAL *lphInf)
 
         UINT64 unpackSize = 0;
         if (!GetUINT64Value(archiveHandler, i, kpidSize, unpackSize)) {
-            continue;
-        }
-        if (unpackSize == 0) {
+            // Archive handlers for, at least, bzip2 can return no unpackSize.
+            //continue;
+        } else  if (unpackSize == 0) {
             continue;
         }
 
@@ -237,7 +237,10 @@ int GetArchiveInfoEx(LPSTR filename, long len, HLOCAL *lphInf)
             continue;
         }
         if (property.vt != VT_FILETIME) {
-            continue;
+            // Archive handlers for, at least, bzip2 and gzip can return no modified time.
+			property.filetime.dwHighDateTime = 0;
+			property.filetime.dwLowDateTime = 0;
+            //continue;
         }
         FILETIME fileTime = property.filetime;
         // first convert file time (UTC time) to local time
@@ -382,7 +385,7 @@ static int GetArchiveInfoWEx_impl(LPCWSTR filename, std::vector<fileInfoW>& vFil
         }
         UString filePath;
         if (propVariant.vt == VT_EMPTY) {
-            continue;
+            filePath = defaultItemName;
         } else if(propVariant.vt != VT_BSTR) {
             continue;
         } else {
@@ -391,9 +394,9 @@ static int GetArchiveInfoWEx_impl(LPCWSTR filename, std::vector<fileInfoW>& vFil
 
         UINT64 unpackSize = 0;
         if (!GetUINT64Value(archiveHandler, i, kpidSize, unpackSize)) {
-            continue;
-        }
-        if (unpackSize == 0) {
+            // Archive handlers for, at least, bzip2 can return no unpackSize.
+            //continue;
+        } else if (unpackSize == 0) {
             continue;
         }
 
@@ -407,7 +410,10 @@ static int GetArchiveInfoWEx_impl(LPCWSTR filename, std::vector<fileInfoW>& vFil
             continue;
         }
         if (property.vt != VT_FILETIME) {
-            continue;
+            // Archive handlers for, at least, bzip2 and gzip can return no modified time.
+            property.filetime.dwHighDateTime = 0;
+            property.filetime.dwLowDateTime = 0;
+            //continue;
         }
         FILETIME fileTime = property.filetime;
         // first convert file time (UTC time) to local time
@@ -551,7 +557,8 @@ int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinf
     UINT32 iExtractFileIndex = pinfo->position;
     UINT64 unpackSize = 0;
     if (!GetUINT64Value(archiveHandler, iExtractFileIndex, kpidSize, unpackSize)) {
-        return SPI_FILE_READ_ERROR;
+        // Archive handlers for, at least, bzip2 can return no unpackSize.
+        //return SPI_FILE_READ_ERROR;
     }
 
     // ‰ð“€
@@ -564,7 +571,7 @@ int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinf
         if (*dest == NULL) {
             return SPI_NO_MEMORY;
 		}
-        extractCallbackSpec->Init(archiveHandler, (char*)*dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex);
+        extractCallbackSpec->Init(archiveHandler, (char**)dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex);
     } else {
         fp = fopen(pOutFile, "wb");
         if (fp == NULL) {
@@ -580,7 +587,12 @@ int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinf
     }
 
     if (extractCallbackSpec->m_NumErrors != 0) {
-        ::DeleteFile(pOutFile);
+        if (dest) {
+            LocalFree(*dest);
+            *dest = NULL;
+        } else {
+            ::DeleteFile(pOutFile);
+        }
         return SPI_FILE_READ_ERROR;
     }
 
@@ -626,7 +638,8 @@ int GetFileWEx(wchar_t *filename, HLOCAL *dest, const wchar_t* pOutFile, fileInf
     UINT32 iExtractFileIndex = pinfo->position;
     UINT64 unpackSize = 0;
     if (!GetUINT64Value(archiveHandler, iExtractFileIndex, kpidSize, unpackSize)) {
-        return SPI_FILE_READ_ERROR;
+        // Archive handlers for, at least, bzip2 can return no unpackSize.  
+        //return SPI_FILE_READ_ERROR;
     }
 
     // ‰ð“€
@@ -639,7 +652,7 @@ int GetFileWEx(wchar_t *filename, HLOCAL *dest, const wchar_t* pOutFile, fileInf
         if (*dest == NULL) {
             return SPI_NO_MEMORY;
         }
-        extractCallbackSpec->Init(archiveHandler, (char*)*dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex);
+        extractCallbackSpec->Init(archiveHandler, (char**)dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex);
     } else {
         fp = _wfopen(pOutFile, L"wb");
         if (fp == NULL) {
@@ -655,7 +668,12 @@ int GetFileWEx(wchar_t *filename, HLOCAL *dest, const wchar_t* pOutFile, fileInf
     }
 
     if (extractCallbackSpec->m_NumErrors != 0) {
-        ::DeleteFileW(pOutFile);
+        if (dest) {
+            LocalFree(*dest);
+            *dest = NULL;
+        } else {
+            ::DeleteFileW(pOutFile);
+        }
         return SPI_FILE_READ_ERROR;
     }
 
