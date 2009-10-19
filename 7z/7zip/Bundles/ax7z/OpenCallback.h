@@ -38,9 +38,7 @@ private:
   UString _folderPrefix;
   NWindows::NFile::NFind::CFileInfoW _fileInfo;
 public:
-  bool PasswordIsDefined;
-  UString Password;
-  COpenCallbackImp2(): PasswordIsDefined(false) {}
+  COpenCallbackImp2() {}
   void LoadFileInfo(const UString &folderPrefix,  const UString &fileName)
   {
     _folderPrefix = folderPrefix;
