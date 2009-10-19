@@ -466,6 +466,12 @@
 					RelativePath="7z\7zip\Bundles\ax7z\OpenCallback.h">
 				</File>
 				<File
+					RelativePath=".\7z\7zip\Bundles\ax7z\PasswordManager.cpp">
+				</File>
+				<File
+					RelativePath=".\7z\7zip\Bundles\ax7z\PasswordManager.h">
+				</File>
+				<File
 					RelativePath=".\7z\7zip\Bundles\ax7z\SolidArchiveExtractCallback.cpp">
 					<FileConfiguration
 						Name="Release|Win32">
