@@ -13,6 +13,7 @@ public:
 	static PasswordManager& Get();
 	bool IsRetry() const;
 	bool IsDefined() const { return m_bPassword; }
+	bool IsValid() const;
 	const UString& GetPassword(bool bFilename);
 	void NotifyArchive(const UString& usArchive);
 	void NotfiyEndFile();
@@ -21,9 +22,10 @@ public:
 	void Reset();
 private:
 	static INT_PTR CALLBACK PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	PasswordManager() : m_bPassword(false), m_bPasswordUsed(false), m_bError(false), m_bSkip(false), m_bSkipArc(false) {}
+	PasswordManager() : m_bPassword(false), m_bPasswordUsed(false), m_bArchiveChanged(false), m_bError(false), m_bSkip(false), m_bSkipArc(false) {}
 	bool m_bPassword;
 	bool m_bPasswordUsed;
+	bool m_bArchiveChanged;
 	bool m_bError;
 	bool m_bFilename;
 	bool m_bSkip;

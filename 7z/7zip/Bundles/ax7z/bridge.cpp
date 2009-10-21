@@ -568,7 +568,7 @@ int PASCAL ProgressFunc(int nNum, int nDenom, long lData)
         return 0;
 }
 
-int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache *scCache)
+int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, fileInfo *pinfo, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache *scCache)
 {
     CExtractCallbackImp *extractCallbackSpec = new CExtractCallbackImp;
     CMyComPtr<IArchiveExtractCallback> extractCallback(extractCallbackSpec);
@@ -601,7 +601,7 @@ int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, cons
         }
         // Currently, password retry do not work for solid archive.
         // Therefore, password is force flushed.
-        PasswordManager::Get().Reset();
+        if(!PasswordManager::Get().IsValid()) PasswordManager::Get().Reset();
 
         std::vector<UINT32> v;
 // TODO: may need to call PurgeUnmarkedAll() somewhere
@@ -617,7 +617,11 @@ int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, cons
     } else {
 	    HRESULT result;
 
-		do {
+        // It seems that password retry can not work for solid RAR
+        if(!lstrcmp((LPSTR)pinfo->method, "7zip_s") && pinfo->method[7] == 'R' && !PasswordManager::Get().IsValid())
+            PasswordManager::Get().Reset();
+
+        do {
 	        extractCallbackSpec->m_NumErrors = 0;
             result = archiveHandler->Extract(&iExtractFileIndex, 1, false, extractCallback);
 			if(PasswordManager::Get().IsRetry()) {
@@ -697,10 +701,10 @@ int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinf
         if(scCache.IsCached(iExtractFileIndex)) { // Cached
             return GetFileExImp_Cached(dest, pOutFile, iExtractFileIndex, unpackSize, scCache);
         } else { // with Cache
-            return GetFileExImp_Normal(archiveHandler, dest, pOutFile, lpPrgressCallback, lData, iExtractFileIndex, unpackSize, &scCache);
+            return GetFileExImp_Normal(archiveHandler, dest, pOutFile, pinfo, lpPrgressCallback, lData, iExtractFileIndex, unpackSize, &scCache);
         }
     } else { // Normal
-        return GetFileExImp_Normal(archiveHandler, dest, pOutFile, lpPrgressCallback, lData, iExtractFileIndex, unpackSize, NULL);
+        return GetFileExImp_Normal(archiveHandler, dest, pOutFile, pinfo, lpPrgressCallback, lData, iExtractFileIndex, unpackSize, NULL);
     }
 }
 
@@ -768,6 +772,11 @@ int GetFileWEx(wchar_t *filename, HLOCAL *dest, const wchar_t* pOutFile, fileInf
     }
 
     HRESULT result;
+
+    // It seems that password retry can not work for solid RAR
+    if(!lstrcmp((LPSTR)pinfo->method, "7zip_s") && pinfo->method[7] == 'R' && !PasswordManager::Get().IsValid())
+        PasswordManager::Get().Reset();
+
 	do {
         extractCallbackSpec->m_NumErrors = 0;
 		result = archiveHandler->Extract(&iExtractFileIndex, 1, false, extractCallback);
@@ -799,7 +808,7 @@ int ExtractSolidArchiveEx(LPCWSTR filename, SPI_OnWriteCallback pCallback)
 {
 	// Currently, password retry do not work for solid archive.
 	// Therefore, password is force flushed.
-	PasswordManager::Get().Reset();
+	if(!PasswordManager::Get().IsValid()) PasswordManager::Get().Reset();
 
     // 解凍すべきファイルのインデックスを求める
     std::vector<fileInfoW> vFileInfos;
