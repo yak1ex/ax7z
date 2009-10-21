@@ -18,6 +18,7 @@ const UString& PasswordManager::GetPassword(bool bFilename)
 	}
 	if(!m_bPassword && !m_bSkip && !m_bSkipArc) {
 		DialogBoxParam(g_hInstance, MAKEINTRESOURCE(IDD_PASSWORD), NULL, (DLGPROC)PasswordDlgProc, reinterpret_cast<LPARAM>(static_cast<void*>(this)));
+		m_bError = false;
 	}
 	if(!m_bPassword) {
 		m_usPassword = L"";
@@ -31,10 +32,16 @@ bool PasswordManager::IsRetry() const
 	return m_bPasswordUsed && m_bError && !m_bSkip && !m_bSkipArc;
 }
 
+bool PasswordManager::IsValid() const
+{
+	return !m_bArchiveChanged && !m_bError && !m_bSkip && !m_bSkipArc;
+}
+
 void PasswordManager::NotifyArchive(const UString& usArchive)
 {
 	if(m_usArchive != usArchive) {
 		m_bPasswordUsed = false;
+		m_bArchiveChanged = true;
 		m_bError = false;
 		m_bSkip = false;
 		m_bSkipArc = false;
@@ -86,6 +93,7 @@ INT_PTR CALLBACK PasswordManager::PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM w
 			AString oemPassword = buf;
 			p->m_usPassword = MultiByteToUnicodeString(oemPassword, CP_OEMCP);
 			p->m_bPassword = true;
+			p->m_bArchiveChanged = false;
 			EndDialog(hwnd, TRUE);
 			break;
 		}
