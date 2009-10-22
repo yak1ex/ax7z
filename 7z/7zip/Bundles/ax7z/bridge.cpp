@@ -28,15 +28,12 @@
 #include "SolidArchiveExtractCallback.h"
 #include "OpenCallback.h"
 #include "SolidCache.h"
+#include "PasswordManager.h"
 #include "resource.h"
 
 extern HINSTANCE g_hInstance;
 extern int g_nSolidEnable7z;
 extern int g_nSolidEnableRar;
-
-extern UString g_usPassword;
-extern bool g_fPassword;
-extern UString g_usPasswordCachedFile;
 
 using namespace NWindows;
 using namespace NFile;
@@ -50,11 +47,8 @@ static bool MyOpenArchive(CCodecs *cc, const UString &archiveName,
 {
     COpenCallbackImp2 *openCallbackSpec = new COpenCallbackImp2;
     CMyComPtr<IArchiveOpenCallback> openCallback = openCallbackSpec;
-    if (passwordEnabled)
-    {
-        openCallbackSpec->PasswordIsDefined = passwordEnabled;
-        openCallbackSpec->Password = password;
-    }
+
+    PasswordManager::Get().NotifyArchive(archiveName);
 
     UString fullName;
     int fileNamePartStartIndex;
@@ -64,27 +58,21 @@ static bool MyOpenArchive(CCodecs *cc, const UString &archiveName,
         fullName.Mid(fileNamePartStartIndex));
 
     int dummy;
-    HRESULT result = OpenArchive(cc, archiveName, 
-        archiveHandler, 
-        dummy,
-        defaultItemName,
-        openCallback);
-    if (result == S_FALSE) {
-        return false;
-    }
-    if (result != S_OK) {
-        return false;
-    }
-//    defaultItemName = GetDefaultName(archiveName, 
-//        archiverInfo.Extensions[subExtIndex].Extension, 
-//        archiverInfo.Extensions[subExtIndex].AddExtension);
-    passwordEnabled = openCallbackSpec->PasswordIsDefined;
-    password = openCallbackSpec->Password;
-
-	if (g_usPasswordCachedFile != archiveName) {
-        g_fPassword = false;
-		g_usPasswordCachedFile = archiveName;
-    }
+    HRESULT result;
+	do {
+		result = OpenArchive(cc, archiveName, 
+			archiveHandler, 
+			dummy,
+			defaultItemName,
+			openCallback);
+		if (result != S_OK) {
+			PasswordManager::Get().NotifyError();
+			if(!PasswordManager::Get().IsRetry())
+				return false;
+		} else {
+			PasswordManager::Get().ClearError();
+		}
+	} while(result != S_OK && PasswordManager::Get().IsRetry());
 
     return true;
 }
@@ -212,7 +200,7 @@ int GetArchiveInfoEx(LPSTR filename, long len, HLOCAL *lphInf)
         }
         UString filePath;
         if (propVariant.vt == VT_EMPTY) {
-            continue;
+            filePath = defaultItemName;
         } else if(propVariant.vt != VT_BSTR) {
             continue;
         } else {
@@ -221,9 +209,9 @@ int GetArchiveInfoEx(LPSTR filename, long len, HLOCAL *lphInf)
 
         UINT64 unpackSize = 0;
         if (!GetUINT64Value(archiveHandler, i, kpidSize, unpackSize)) {
-            continue;
-        }
-        if (unpackSize == 0) {
+            // Archive handlers for, at least, bzip2 can return no unpackSize.
+            //continue;
+        } else  if (unpackSize == 0) {
             continue;
         }
 
@@ -237,7 +225,10 @@ int GetArchiveInfoEx(LPSTR filename, long len, HLOCAL *lphInf)
             continue;
         }
         if (property.vt != VT_FILETIME) {
-            continue;
+            // Archive handlers for, at least, bzip2 and gzip can return no modified time.
+			property.filetime.dwHighDateTime = 0;
+			property.filetime.dwLowDateTime = 0;
+            //continue;
         }
         FILETIME fileTime = property.filetime;
         // first convert file time (UTC time) to local time
@@ -382,7 +373,7 @@ static int GetArchiveInfoWEx_impl(LPCWSTR filename, std::vector<fileInfoW>& vFil
         }
         UString filePath;
         if (propVariant.vt == VT_EMPTY) {
-            continue;
+            filePath = defaultItemName;
         } else if(propVariant.vt != VT_BSTR) {
             continue;
         } else {
@@ -391,9 +382,9 @@ static int GetArchiveInfoWEx_impl(LPCWSTR filename, std::vector<fileInfoW>& vFil
 
         UINT64 unpackSize = 0;
         if (!GetUINT64Value(archiveHandler, i, kpidSize, unpackSize)) {
-            continue;
-        }
-        if (unpackSize == 0) {
+            // Archive handlers for, at least, bzip2 can return no unpackSize.
+            //continue;
+        } else if (unpackSize == 0) {
             continue;
         }
 
@@ -407,7 +398,10 @@ static int GetArchiveInfoWEx_impl(LPCWSTR filename, std::vector<fileInfoW>& vFil
             continue;
         }
         if (property.vt != VT_FILETIME) {
-            continue;
+            // Archive handlers for, at least, bzip2 and gzip can return no modified time.
+            property.filetime.dwHighDateTime = 0;
+            property.filetime.dwLowDateTime = 0;
+            //continue;
         }
         FILETIME fileTime = property.filetime;
         // first convert file time (UTC time) to local time
@@ -574,8 +568,7 @@ int PASCAL ProgressFunc(int nNum, int nDenom, long lData)
         return 0;
 }
 
-
-int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache *scCache)
+int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, fileInfo *pinfo, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache *scCache)
 {
     CExtractCallbackImp *extractCallbackSpec = new CExtractCallbackImp;
     CMyComPtr<IArchiveExtractCallback> extractCallback(extractCallbackSpec);
@@ -591,13 +584,13 @@ int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, cons
         *dest = LocalAlloc(LMEM_FIXED, static_cast<size_t>(unpackSize));
         if (*dest == NULL) {
             return SPI_NO_MEMORY;
-        }
-        extractCallbackSpec->Init(archiveHandler, (char*)*dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex, scCache, ProgressFunc, reinterpret_cast<long>(&pa));
+		}
+        extractCallbackSpec->Init(archiveHandler, (char**)dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex, scCache, ProgressFunc, reinterpret_cast<long>(&pa));
     } else {
         fp = fopen(pOutFile, "wb");
         if (fp == NULL) {
             return SPI_FILE_WRITE_ERROR;
-        }
+		}
         extractCallbackSpec->Init(archiveHandler, NULL, static_cast<UINT32>(unpackSize), fp, iExtractFileIndex, scCache, ProgressFunc, reinterpret_cast<long>(&pa));
     }
 
@@ -606,6 +599,10 @@ int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, cons
         if (S_OK != archiveHandler->GetNumberOfItems(&numItems)) {
             return SPI_FILE_READ_ERROR;
         }
+        // Currently, password retry do not work for solid archive.
+        // Therefore, password is force flushed.
+        if(!PasswordManager::Get().IsValid()) PasswordManager::Get().Reset();
+
         std::vector<UINT32> v;
 // TODO: may need to call PurgeUnmarkedAll() somewhere
 		scCache->PurgeUnmarked();
@@ -618,7 +615,19 @@ int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, cons
 		scCache->PurgeUnmarked();
         DestroyWindow(pa.hwnd);
     } else {
-        HRESULT result = archiveHandler->Extract(&iExtractFileIndex, 1, false, extractCallback);
+	    HRESULT result;
+
+        // It seems that password retry can not work for solid RAR
+        if(!lstrcmp((LPSTR)pinfo->method, "7zip_s") && pinfo->method[7] == 'R' && !PasswordManager::Get().IsValid())
+            PasswordManager::Get().Reset();
+
+        do {
+	        extractCallbackSpec->m_NumErrors = 0;
+            result = archiveHandler->Extract(&iExtractFileIndex, 1, false, extractCallback);
+			if(PasswordManager::Get().IsRetry()) {
+				if (fp) rewind(fp);
+			}
+	    } while(extractCallbackSpec->m_NumErrors != 0 && PasswordManager::Get().IsRetry());
     }
 
     if (fp) {
@@ -626,10 +635,17 @@ int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, cons
     }
 
     if (extractCallbackSpec->m_NumErrors != 0) {
-        ::DeleteFile(pOutFile);
+        if (dest) {
+            LocalFree(*dest);
+            *dest = NULL;
+        } else {
+            ::DeleteFile(pOutFile);
+        }
+        PasswordManager::Get().NotfiyEndFile();
         return SPI_FILE_READ_ERROR;
     }
 
+    PasswordManager::Get().NotfiyEndFile();
     return SPI_ALL_RIGHT;
 }
 
@@ -673,7 +689,8 @@ int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinf
     UINT32 iExtractFileIndex = pinfo->position;
     UINT64 unpackSize = 0;
     if (!GetUINT64Value(archiveHandler, iExtractFileIndex, kpidSize, unpackSize)) {
-        return SPI_FILE_READ_ERROR;
+        // Archive handlers for, at least, bzip2 can return no unpackSize.
+        //return SPI_FILE_READ_ERROR;
     }
 
     // 解凍
@@ -684,10 +701,10 @@ int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinf
         if(scCache.IsCached(iExtractFileIndex)) { // Cached
             return GetFileExImp_Cached(dest, pOutFile, iExtractFileIndex, unpackSize, scCache);
         } else { // with Cache
-            return GetFileExImp_Normal(archiveHandler, dest, pOutFile, lpPrgressCallback, lData, iExtractFileIndex, unpackSize, &scCache);
+            return GetFileExImp_Normal(archiveHandler, dest, pOutFile, pinfo, lpPrgressCallback, lData, iExtractFileIndex, unpackSize, &scCache);
         }
     } else { // Normal
-        return GetFileExImp_Normal(archiveHandler, dest, pOutFile, lpPrgressCallback, lData, iExtractFileIndex, unpackSize, NULL);
+        return GetFileExImp_Normal(archiveHandler, dest, pOutFile, pinfo, lpPrgressCallback, lData, iExtractFileIndex, unpackSize, NULL);
     }
 }
 
@@ -731,7 +748,8 @@ int GetFileWEx(wchar_t *filename, HLOCAL *dest, const wchar_t* pOutFile, fileInf
     UINT32 iExtractFileIndex = pinfo->position;
     UINT64 unpackSize = 0;
     if (!GetUINT64Value(archiveHandler, iExtractFileIndex, kpidSize, unpackSize)) {
-        return SPI_FILE_READ_ERROR;
+        // Archive handlers for, at least, bzip2 can return no unpackSize.  
+        //return SPI_FILE_READ_ERROR;
     }
 
     // 解凍
@@ -744,7 +762,7 @@ int GetFileWEx(wchar_t *filename, HLOCAL *dest, const wchar_t* pOutFile, fileInf
         if (*dest == NULL) {
             return SPI_NO_MEMORY;
         }
-        extractCallbackSpec->Init(archiveHandler, (char*)*dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex, &SolidCache::GetFileCache(std::string()), lpPrgressCallback, lData);
+        extractCallbackSpec->Init(archiveHandler, (char**)*dest, static_cast<UINT32>(unpackSize), NULL, iExtractFileIndex, &SolidCache::GetFileCache(std::string()), lpPrgressCallback, lData);
     } else {
         fp = _wfopen(pOutFile, L"wb");
         if (fp == NULL) {
@@ -753,22 +771,45 @@ int GetFileWEx(wchar_t *filename, HLOCAL *dest, const wchar_t* pOutFile, fileInf
         extractCallbackSpec->Init(archiveHandler, NULL, static_cast<UINT32>(unpackSize), fp, iExtractFileIndex, &SolidCache::GetFileCache(std::string()), lpPrgressCallback, lData);
     }
 
-    HRESULT result = archiveHandler->Extract(&iExtractFileIndex, 1, false, extractCallback);
+    HRESULT result;
+
+    // It seems that password retry can not work for solid RAR
+    if(!lstrcmp((LPSTR)pinfo->method, "7zip_s") && pinfo->method[7] == 'R' && !PasswordManager::Get().IsValid())
+        PasswordManager::Get().Reset();
+
+	do {
+        extractCallbackSpec->m_NumErrors = 0;
+		result = archiveHandler->Extract(&iExtractFileIndex, 1, false, extractCallback);
+		if(PasswordManager::Get().IsRetry()) {
+			if (fp) rewind(fp);
+		}
+	} while(extractCallbackSpec->m_NumErrors != 0 && PasswordManager::Get().IsRetry());
 
     if (fp) {
         fclose(fp);
     }
 
     if (extractCallbackSpec->m_NumErrors != 0) {
-        ::DeleteFileW(pOutFile);
+        if (dest) {
+            LocalFree(*dest);
+            *dest = NULL;
+        } else {
+            ::DeleteFileW(pOutFile);
+        }
+        PasswordManager::Get().NotfiyEndFile();
         return SPI_FILE_READ_ERROR;
     }
 
+   PasswordManager::Get().NotfiyEndFile();
     return SPI_ALL_RIGHT;
 }
 
 int ExtractSolidArchiveEx(LPCWSTR filename, SPI_OnWriteCallback pCallback)
 {
+	// Currently, password retry do not work for solid archive.
+	// Therefore, password is force flushed.
+	if(!PasswordManager::Get().IsValid()) PasswordManager::Get().Reset();
+
     // 解凍すべきファイルのインデックスを求める
     std::vector<fileInfoW> vFileInfos;
     int nRet = GetArchiveInfoWEx_impl(filename, vFileInfos);

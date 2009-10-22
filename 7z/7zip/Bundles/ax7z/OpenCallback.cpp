@@ -1,6 +1,7 @@
 // OpenCallback.cpp
 #include <windows.h>
 #include "OpenCallback.h"
+#include "PasswordManager.h"
 
 #include "Common/StdOutStream.h"
 #include "Common/StdInStream.h"
@@ -70,17 +71,10 @@ STDMETHODIMP COpenCallbackImp2::GetStream(const wchar_t *name,
 
 STDMETHODIMP COpenCallbackImp2::CryptoGetTextPassword(BSTR *password)
 {
-    /*
-    if (!PasswordIsDefined)
-    {
-    g_StdOut << "\nEnter password:";
-    AString oemPassword = g_StdIn.ScanStringUntilNewLine();
-    Password = MultiByteToUnicodeString(oemPassword, CP_OEMCP); 
-    PasswordIsDefined = true;
-    }
-    CMyComBSTR temp(Password);
+	UString usPassword = PasswordManager::Get().GetPassword(true);
+	CMyComBSTR temp(usPassword);
     *password = temp.Detach();
-    */
+
     return S_OK;
 }
 
