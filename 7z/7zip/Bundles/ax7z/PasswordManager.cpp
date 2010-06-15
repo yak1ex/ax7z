@@ -79,10 +79,39 @@ INT_PTR CALLBACK PasswordManager::PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM w
 	{
 		SetWindowLongPtr(hwnd, DWLP_USER, lParam);
 		PasswordManager* p = static_cast<PasswordManager*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
-		if(p->m_bFilename) EnableWindow(GetDlgItem(hwnd, IDC_BUTTON_SKIP), FALSE);
-		if(p->IsRetry()) SetWindowText(GetDlgItem(hwnd, IDC_STATIC_GUIDE), "Extract error, maybe caused by wrong password,\nretype password:");
+		if(p->m_bFilename) EnableWindow(GetDlgItem(hwnd, IDC_SKIP_BUTTON), FALSE);
+		if(p->IsRetry()) SetWindowText(GetDlgItem(hwnd, IDC_GUIDE_STATIC), "Extract error, maybe caused by wrong password,\nretype password:");
+		HMENU hSysMenu = GetSystemMenu(hwnd, FALSE);
+		InsertMenu(hSysMenu, SC_CLOSE, MF_STRING | (p->m_bTopMost ? MF_CHECKED : 0), IDM_TOPMOST, TEXT("TopMost"));
+		InsertMenu(hSysMenu, SC_CLOSE, MF_SEPARATOR, 0, 0);
+		if(p->m_bTopMost) {
+			SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+		} else {
+			SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+		}
 		return TRUE;
 	}
+	case WM_INITMENUPOPUP:
+	{
+		HMENU hSysMenu = GetSystemMenu(hwnd, FALSE);
+		if(hSysMenu == static_cast<HANDLE>(reinterpret_cast<void*>(wParam))) {
+			PasswordManager* p = static_cast<PasswordManager*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
+			ModifyMenu(hSysMenu, IDM_TOPMOST, MF_BYCOMMAND | MF_STRING | (p->m_bTopMost ? MF_CHECKED : 0), IDM_TOPMOST, TEXT("TopMost"));
+		}
+		return TRUE;
+	}
+	case WM_SYSCOMMAND:
+		if((wParam & 0xFFF0) == IDM_TOPMOST) {
+			PasswordManager* p = static_cast<PasswordManager*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
+			p->m_bTopMost = !p->m_bTopMost;
+			if(p->m_bTopMost) {
+				SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			} else {
+				SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			}
+			return TRUE;
+		}
+		return FALSE;
 	case WM_COMMAND:
 		switch(LOWORD(wParam)) {
 		case IDOK:
@@ -97,7 +126,7 @@ INT_PTR CALLBACK PasswordManager::PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM w
 			EndDialog(hwnd, TRUE);
 			break;
 		}
-		case IDC_BUTTON_SKIP:
+		case IDC_SKIP_BUTTON:
 		{
 			PasswordManager* p = static_cast<PasswordManager*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
 			p->m_bSkip = true;
@@ -105,7 +134,7 @@ INT_PTR CALLBACK PasswordManager::PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM w
 			EndDialog(hwnd, FALSE);
 			break;
 		}
-		case IDC_BUTTON_SKIPARC:
+		case IDC_SKIPARC_BUTTON:
 		{
 			PasswordManager* p = static_cast<PasswordManager*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
 			p->m_bSkipArc = true;

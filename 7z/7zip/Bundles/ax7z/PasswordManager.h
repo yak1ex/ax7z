@@ -20,6 +20,13 @@ public:
 	void NotifyError();
 	void ClearError();
 	void Reset();
+	bool SetTopMost(bool flag)
+	{
+		bool bPrev = m_bTopMost;
+		m_bTopMost = flag;
+		return bPrev;
+	}
+	bool GetTopMost() const { return m_bTopMost; }
 private:
 	static INT_PTR CALLBACK PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	PasswordManager() : m_bPassword(false), m_bPasswordUsed(false), m_bArchiveChanged(false), m_bError(false), m_bSkip(false), m_bSkipArc(false) {}
@@ -30,6 +37,7 @@ private:
 	bool m_bFilename;
 	bool m_bSkip;
 	bool m_bSkipArc;
+	bool m_bTopMost;
 	UString m_usPassword;
 	UString m_usArchive;
 };
