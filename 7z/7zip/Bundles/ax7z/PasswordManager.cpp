@@ -84,6 +84,11 @@ INT_PTR CALLBACK PasswordManager::PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM w
 		HMENU hSysMenu = GetSystemMenu(hwnd, FALSE);
 		InsertMenu(hSysMenu, SC_CLOSE, MF_STRING | (p->m_bTopMost ? MF_CHECKED : 0), IDM_TOPMOST, TEXT("TopMost"));
 		InsertMenu(hSysMenu, SC_CLOSE, MF_SEPARATOR, 0, 0);
+		if(p->m_bTopMost) {
+			SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+		} else {
+			SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+		}
 		return TRUE;
 	}
 	case WM_INITMENUPOPUP:
