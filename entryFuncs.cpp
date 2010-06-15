@@ -16,6 +16,7 @@ ax7z entry funcs
 #include "infcache.h"
 #include <sstream>
 #include "resource.h"
+#include "7z/7zip/Bundles/ax7z/PasswordManager.h"
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 
@@ -265,6 +266,16 @@ void LoadFromIni()
     std::string sIniFileName = GetIniFileName();
 
 	g_extManager.Load(sIniFileName);
+
+	std::vector<char> vBuf(1024);
+
+	DWORD dwSize;
+	do {
+		vBuf.resize(vBuf.size() * 2);
+		dwSize = GetPrivateProfileString(ExtManager::SECTION_NAME, "topmost", "false", &vBuf[0], vBuf.size(), sIniFileName.c_str());
+	} while(dwSize == vBuf.size() - 1);
+	std::string sResult(&vBuf[0]);
+	PasswordManager::Get().SetTopMost(sResult == "true");
 }
 
 void SaveToIni()
@@ -272,6 +283,8 @@ void SaveToIni()
     std::string sIniFileName = GetIniFileName();
 
 	g_extManager.Save(sIniFileName);
+
+	WritePrivateProfileString(ExtManager::SECTION_NAME, "topmost", PasswordManager::Get().GetTopMost() ? "true" : "false", sIniFileName.c_str());
 }
 
 void SetIniFileName(HANDLE hModule)
@@ -654,6 +667,8 @@ void UpdateDialogItem(HWND hDlgWnd)
 	SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_SETCARETINDEX, 0, 0);
 
 	SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_EDIT, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(static_cast<const void*>(g_extManager.GetUserExtensions().c_str())));
+
+	SendDlgItemMessage(hDlgWnd, IDC_TOPMOST_CHECK, BM_SETCHECK, PasswordManager::Get().GetTopMost() ? BST_CHECKED : BST_UNCHECKED, 0);
 }
 
 bool UpdateValue(HWND hDlgWnd)
@@ -669,6 +684,8 @@ bool UpdateValue(HWND hDlgWnd)
 	std::vector<char> vBuf(lLen+1);
 	SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_EDIT, WM_GETTEXT, lLen+1, reinterpret_cast<LPARAM>(&vBuf[0]));
 	g_extManager.SetUserExtensions(&vBuf[0]);
+
+	PasswordManager::Get().SetTopMost(SendDlgItemMessage(hDlgWnd, IDC_TOPMOST_CHECK, BM_GETCHECK, 0, 0) == BST_CHECKED);
 
     return true;
 }

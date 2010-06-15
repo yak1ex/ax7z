@@ -81,8 +81,32 @@ INT_PTR CALLBACK PasswordManager::PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM w
 		PasswordManager* p = static_cast<PasswordManager*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
 		if(p->m_bFilename) EnableWindow(GetDlgItem(hwnd, IDC_BUTTON_SKIP), FALSE);
 		if(p->IsRetry()) SetWindowText(GetDlgItem(hwnd, IDC_STATIC_GUIDE), "Extract error, maybe caused by wrong password,\nretype password:");
+		HMENU hSysMenu = GetSystemMenu(hwnd, FALSE);
+		InsertMenu(hSysMenu, SC_CLOSE, MF_STRING | (p->m_bTopMost ? MF_CHECKED : 0), IDM_TOPMOST, TEXT("TopMost"));
+		InsertMenu(hSysMenu, SC_CLOSE, MF_SEPARATOR, 0, 0);
 		return TRUE;
 	}
+	case WM_INITMENUPOPUP:
+	{
+		HMENU hSysMenu = GetSystemMenu(hwnd, FALSE);
+		if(hSysMenu == static_cast<HANDLE>(reinterpret_cast<void*>(wParam))) {
+			PasswordManager* p = static_cast<PasswordManager*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
+			ModifyMenu(hSysMenu, IDM_TOPMOST, MF_BYCOMMAND | MF_STRING | (p->m_bTopMost ? MF_CHECKED : 0), IDM_TOPMOST, TEXT("TopMost"));
+		}
+		return TRUE;
+	}
+	case WM_SYSCOMMAND:
+		if((wParam & 0xFFF0) == IDM_TOPMOST) {
+			PasswordManager* p = static_cast<PasswordManager*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
+			p->m_bTopMost = !p->m_bTopMost;
+			if(p->m_bTopMost) {
+				SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			} else {
+				SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			}
+			return TRUE;
+		}
+		return FALSE;
 	case WM_COMMAND:
 		switch(LOWORD(wParam)) {
 		case IDOK:
