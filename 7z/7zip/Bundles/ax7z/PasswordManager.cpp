@@ -79,8 +79,8 @@ INT_PTR CALLBACK PasswordManager::PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM w
 	{
 		SetWindowLongPtr(hwnd, DWLP_USER, lParam);
 		PasswordManager* p = static_cast<PasswordManager*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
-		if(p->m_bFilename) EnableWindow(GetDlgItem(hwnd, IDC_BUTTON_SKIP), FALSE);
-		if(p->IsRetry()) SetWindowText(GetDlgItem(hwnd, IDC_STATIC_GUIDE), "Extract error, maybe caused by wrong password,\nretype password:");
+		if(p->m_bFilename) EnableWindow(GetDlgItem(hwnd, IDC_SKIP_BUTTON), FALSE);
+		if(p->IsRetry()) SetWindowText(GetDlgItem(hwnd, IDC_GUIDE_STATIC), "Extract error, maybe caused by wrong password,\nretype password:");
 		HMENU hSysMenu = GetSystemMenu(hwnd, FALSE);
 		InsertMenu(hSysMenu, SC_CLOSE, MF_STRING | (p->m_bTopMost ? MF_CHECKED : 0), IDM_TOPMOST, TEXT("TopMost"));
 		InsertMenu(hSysMenu, SC_CLOSE, MF_SEPARATOR, 0, 0);
@@ -121,7 +121,7 @@ INT_PTR CALLBACK PasswordManager::PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM w
 			EndDialog(hwnd, TRUE);
 			break;
 		}
-		case IDC_BUTTON_SKIP:
+		case IDC_SKIP_BUTTON:
 		{
 			PasswordManager* p = static_cast<PasswordManager*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
 			p->m_bSkip = true;
@@ -129,7 +129,7 @@ INT_PTR CALLBACK PasswordManager::PasswordDlgProc(HWND hwnd, UINT uMsg, WPARAM w
 			EndDialog(hwnd, FALSE);
 			break;
 		}
-		case IDC_BUTTON_SKIPARC:
+		case IDC_SKIPARC_BUTTON:
 		{
 			PasswordManager* p = static_cast<PasswordManager*>(reinterpret_cast<void*>(GetWindowLongPtr(hwnd, DWLP_USER)));
 			p->m_bSkipArc = true;

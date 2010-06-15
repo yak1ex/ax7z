@@ -33,9 +33,9 @@
 #define IDC_SELECT_ALL_BUTTON           1022
 #define IDC_UNSELECT_ALL_BUTTON         1023
 #define IDC_EXTENSION_EDIT              1024
-#define IDC_BUTTON_SKIPARC              1028
-#define IDC_BUTTON_SKIP                 1029
-#define IDC_STATIC_GUIDE                1030
+#define IDC_SKIPARC_BUTTON              1028
+#define IDC_SKIP_BUTTON                 1029
+#define IDC_GUIDE_STATIC                1030
 #define IDC_TOPMOST_CHECK               1031
 #define IDM_TOPMOST                     40000
 
