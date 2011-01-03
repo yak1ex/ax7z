@@ -56,7 +56,7 @@ boost::uint64_t SolidFileCacheMemory::ReduceSize_(boost::uint64_t uiSize, void(*
 	return uiSize;
 }
 
-SolidCacheMemory::Key SolidCacheMemory::MakeKey(const std::string &sArchive) const
+SolidCacheMemory::Key SolidCacheMemory::MakeKey(const std::string &sArchive)
 {
 	__stat64 st;
 // TODO: error check

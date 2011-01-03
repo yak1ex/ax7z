@@ -148,8 +148,11 @@ STDMETHODIMP CExtractCallbackImp::SetOperationResult(INT32 resultEOperationResul
   {
     case NArchive::NExtract::NOperationResult::kOK:
     {
-      m_cache->Cached(m_nCurIndex);
-      break;
+	  if(m_cache) {
+		m_cache->Cached(m_nCurIndex);
+		boost::this_thread::yield();
+	  }
+	  break;
     }
     case NArchive::NExtract::NOperationResult::kDataError:
     case NArchive::NExtract::NOperationResult::kCRCError:

@@ -633,13 +633,27 @@ class Extractor
 	SolidFileCache scCache;
 	SPI_PROGRESS lpPrgressCallback;
 	long lData;
+	std::string sFilename;
+	class Cleanup
+	{
+		std::string sArchive;
+	public:
+		Cleanup(const std::string &s) : sArchive(s) {}
+		void operator()()
+		{
+			SolidCache::GetInstance().GetQueue().Cleanup(sArchive);
+			FreeLibraryAndExitThread(g_hInstance, 0);
+		}
+	};
 public:
-	Extractor(CMyComPtr<IInArchive> archiveHandler, const SolidFileCache &scCache, SPI_PROGRESS lpPrgressCallback, long lData) :
-		archiveHandler(archiveHandler), scCache(scCache), lpPrgressCallback(lpPrgressCallback), lData(lData)
+	Extractor(CMyComPtr<IInArchive> archiveHandler, const SolidFileCache &scCache, SPI_PROGRESS lpPrgressCallback, long lData, const char* filename) :
+		archiveHandler(archiveHandler), scCache(scCache), lpPrgressCallback(lpPrgressCallback), lData(lData), sFilename(filename)
 	{
 	}
 	void operator()()
 	{
+		boost::this_thread::at_thread_exit(Cleanup(sFilename));
+
 	    CExtractCallbackImp *extractCallbackSpec = new CExtractCallbackImp;
 	    CMyComPtr<IArchiveExtractCallback> extractCallback(extractCallbackSpec);
 
@@ -675,9 +689,21 @@ public:
 	}
 };
 
-int GetFileExImp_Caching(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, fileInfo *pinfo, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache scCache)
+void IncrementDLLRefCount()
 {
-    FILE* fp = NULL;
+	std::vector<char> buf(1024);
+	DWORD dwLen;
+	do {
+		dwLen = GetModuleFileName(g_hInstance, &buf[0], buf.size());
+	} while(dwLen == buf.size());
+	buf.resize(dwLen);
+	std::string s(buf.begin(), buf.end());
+	LoadLibraryEx(s.c_str(), NULL, DONT_RESOLVE_DLL_REFERENCES);
+}
+
+int GetFileExImp_Caching(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, fileInfo *pinfo, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache scCache, const char* filename)
+{
+	FILE* fp = NULL;
     if (dest) {
         *dest = LocalAlloc(LMEM_FIXED, static_cast<size_t>(unpackSize));
         if (*dest == NULL) {
@@ -690,20 +716,22 @@ int GetFileExImp_Caching(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, con
 		}
     }
 
-    scCache.Extract(Extractor(archiveHandler, scCache, lpPrgressCallback, lData), iExtractFileIndex);
+	IncrementDLLRefCount();
+    scCache.Extract(Extractor(archiveHandler, scCache, lpPrgressCallback, lData, filename), iExtractFileIndex);
 
-    if (dest) {
-        scCache.GetContent(iExtractFileIndex, dest, static_cast<UINT32>(unpackSize));
-    } else {
-        scCache.OutputContent(iExtractFileIndex, static_cast<UINT32>(unpackSize), fp);
-    }
+	if(scCache.IsCached(iExtractFileIndex)) {
+		if (dest) {
+			scCache.GetContent(iExtractFileIndex, *dest, static_cast<UINT32>(unpackSize));
+		} else {
+			scCache.OutputContent(iExtractFileIndex, static_cast<UINT32>(unpackSize), fp);
+		}
+	}
 
     if (fp) {
         fclose(fp);
     }
 
-#if 0
-	if (extractCallbackSpec->m_NumErrors != 0) {
+	if (!scCache.IsCached(iExtractFileIndex)) {
         if (dest) {
             LocalFree(*dest);
             *dest = NULL;
@@ -714,14 +742,13 @@ int GetFileExImp_Caching(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, con
         return SPI_FILE_READ_ERROR;
     }
 
-    PasswordManager::Get().NotfiyEndFile();
-#endif
 	return SPI_ALL_RIGHT;
 }
 
 int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinfo,
             SPI_PROGRESS lpPrgressCallback, long lData)
 {
+	OutputDebugPrintf("GetFileEx(): called %s %d\n", filename, pinfo->position);
     UString archiveName = MultiByteToUnicodeString(filename);
 
     NFind::CFileInfoW archiveFileInfo;
@@ -770,11 +797,14 @@ int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinf
         SolidFileCache scCache = SolidCache::GetFileCache(filename);
         // TODO: There's race condition between IsCached and GetFileExImp_Normal
         if(scCache.IsCached(iExtractFileIndex)) { // Cached
+			OutputDebugPrintf("GetFileEx(): %s %d, calling GetFileExImp_Cached\n", filename, pinfo->position);
             return GetFileExImp_Cached(dest, pOutFile, iExtractFileIndex, unpackSize, scCache);
         } else { // with Cache
-            return GetFileExImp_Caching(archiveHandler, dest, pOutFile, pinfo, lpPrgressCallback, lData, iExtractFileIndex, unpackSize, scCache);
+			OutputDebugPrintf("GetFileEx(): %s %d, calling GetFileExImp_Caching\n", filename, pinfo->position);
+            return GetFileExImp_Caching(archiveHandler, dest, pOutFile, pinfo, lpPrgressCallback, lData, iExtractFileIndex, unpackSize, scCache, filename);
         }
     } else { // Normal
+		OutputDebugPrintf("GetFileEx(): %s %d, calling GetFileExImp_Normal\n", filename, pinfo->position);
         return GetFileExImp_Normal(archiveHandler, dest, pOutFile, pinfo, lpPrgressCallback, lData, iExtractFileIndex, unpackSize);
     }
 }

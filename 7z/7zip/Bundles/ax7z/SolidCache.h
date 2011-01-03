@@ -58,7 +58,7 @@ class SolidFileCacheDisk;
 class SolidCacheDisk
 {
 // TODO: Bad design
-	friend struct SolidCacheDiskCallback;
+	friend class SolidCache;
 private:
 	int m_nMaxDisk;
 	int m_nPurgeDisk;
@@ -361,6 +361,7 @@ public:
 class SolidCacheMemory
 {
 private:
+	friend class SolidCache;
 	typedef boost::tuple<std::string, __int64, __int64> Key;
 	typedef std::map<Key, SolidFileCacheMemory::FileCache> Table;
 	typedef std::map<Key, std::time_t> ArchiveTable;
@@ -369,8 +370,8 @@ private:
 	int m_nMaxMemory;
 	int m_nPurgeMemory;
 
-	Key MakeKey(const std::string &sArchive) const;
-	std::string RestoreKey(const Key &sArchive) const
+	static Key MakeKey(const std::string &sArchive);
+	static std::string RestoreKey(const Key &sArchive)
 	{
 		return sArchive.get<0>();
 	}
@@ -494,29 +495,34 @@ class Queue
 	ThreadMap threads;
 	typedef std::map<std::pair<Key, unsigned int>, boost::shared_ptr<boost::condition_variable_any> > CondVarMap;
 	CondVarMap cvs;
-	void cleanup()
+	void CleanupAll()
 	{
 		for(ThreadMap::iterator mi = threads.begin(); mi != threads.end(); ++mi) {
 			if(mi->second->timed_join(boost::posix_time::seconds(0))) {
-				for(CondVarMap::iterator mi2 = cvs.begin(); mi2 != cvs.end(); ++mi2) {
-					if(mi2->first.first == mi->first) {
-						mi2 = cvs.erase(mi2);
-					}
-				}
+				Cleanup(mi->first);
 				mi = threads.erase(mi);
+			}
+		}
+	}
+	void Cleanup(const Key& key)
+	{
+		for(CondVarMap::iterator mi = cvs.begin(); mi != cvs.end(); ++mi) {
+			if(mi->first.first == key) {
+				mi->second->notify_all();
+				mi = cvs.erase(mi);
 			}
 		}
 	}
 public:
 	bool IsQueued(const std::string &s)
 	{
-		cleanup();
+		CleanupAll();
 		return threads.count(MakeKey(s)) != 0;
 	}
 	template<typename Callable>
 	void Invoke(const std::string &s, Callable c)
 	{
-		cleanup();
+		CleanupAll();
 		if(threads.count(MakeKey(s))) {
 			OutputDebugPrintf("Queue::Invoke(): thread for %s already invoked", s.c_str());
 		} else {
@@ -524,14 +530,23 @@ public:
 			threads[MakeKey(s)].swap(ptr);
 		}
 	}
+	bool ExistsCondVar(const std::string &s, unsigned int index)
+	{
+		CleanupAll();
+		return cvs.count(make_pair(MakeKey(s), index)) != 0;
+	}
 	boost::shared_ptr<boost::condition_variable_any> GetCondVar(const std::string &s, unsigned int index)
 	{
-		cleanup();
+		CleanupAll();
 		if(cvs.count(make_pair(MakeKey(s), index)) == 0) {
 			boost::shared_ptr<boost::condition_variable_any> ptr(new boost::condition_variable_any);
 			cvs[make_pair(MakeKey(s), index)] = ptr;
 		}
 		return cvs[make_pair(MakeKey(s), index)];
+	}
+	void Cleanup(const std::string &sArchive)
+	{
+		Cleanup(MakeKey(sArchive));
 	}
 };
 
@@ -558,6 +573,10 @@ public:
 	{
 		return m_scm.Peek(SolidFileCacheMemory::IsCached_, sArchive, index) || m_scd.IsCached(sArchive.c_str(), index);
 	}
+	bool IsCached_(const std::string& sArchive, unsigned int index) const
+	{
+		return m_scm.Peek_(SolidFileCacheMemory::IsCached_, SolidCacheMemory::MakeKey(sArchive), index) || m_scd.IsCached_(sArchive.c_str(), index);
+	}
 	void Append(const std::string& sArchvie, unsigned int index, const void* data, unsigned int size);
 	void Cached(const std::string& sArchive, unsigned int index)
 	{
@@ -571,14 +590,10 @@ public:
 		} else {
 			assert("SolidCache::Cached: Not reached\n");
 		}
-		m_queue.GetCondVar(sArchive, index)->notify_all();
-	}
-	void CachedVector(const std::string& sArchive, std::vector<unsigned int>& vIndex)
-	{
-		if(m_scm.Exists(sArchive)) {
-			m_scm.GetFileCache(sArchive).CachedVector(vIndex);
+		if(m_queue.ExistsCondVar(sArchive, index)) {
+			OutputDebugPrintf("SolidCache::Cached calling notify_all() for %s [%d]\n", sArchive.c_str(), index);
+			m_queue.GetCondVar(sArchive, index)->notify_all();
 		}
-		m_scd.CachedVector(sArchive.c_str(), vIndex);
 	}
 	void PurgeUnmarked(const std::string& sArchive)
 	{
@@ -646,6 +661,7 @@ private:
 	std::string m_sArchive;
 	UINT32 m_nMaxNum;
 	SolidFileCache(SolidCache &sc, const std::string &sArchive) : m_sc(sc), m_sArchive(sArchive) {}
+	bool IsCached_(unsigned int index) const { return m_sc.IsCached_(m_sArchive, index); }
 public:
 	bool IsCached(unsigned int index) const { return m_sc.IsCached(m_sArchive, index); }
 	void Append(unsigned int index, const void* data, unsigned int size)
@@ -653,7 +669,6 @@ public:
 		m_sc.Append(m_sArchive, index, data, size);
 	}
 	void Cached(unsigned int index) { m_sc.Cached(m_sArchive, index); }
-	void CachedVector(std::vector<unsigned int>& vIndex) { m_sc.CachedVector(m_sArchive, vIndex); }
 	void PurgeUnmarked() { m_sc.PurgeUnmarked(m_sArchive); }
 	void GetContent(unsigned int index, void* dest, unsigned int size) const
 	{
@@ -674,12 +689,12 @@ public:
 	void Extract(Callable c, unsigned int index)
 	{
 		boost::unique_lock<SolidCache::Mutex> lock(SolidCache::GetMutex());
-		if(!IsCached(index)) {
+		if(!IsCached_(index)) {
 			if(!m_sc.GetQueue().IsQueued(m_sArchive)) {
 				m_sc.GetQueue().Invoke(m_sArchive, c);
 			}
 			boost::shared_ptr<boost::condition_variable_any> cv = m_sc.GetQueue().GetCondVar(m_sArchive,index);
-			while(!IsCached(index)) {
+			while(!IsCached_(index)) {
 				cv->wait(lock);
 			}
 		}
