@@ -688,9 +688,12 @@ public:
 	template<typename Callable>
 	void Extract(Callable c, unsigned int index)
 	{
+		OutputDebugPrintf("SolidFileCache::Extract(): called for %s %d\n", m_sArchive.c_str(), index);
 		boost::unique_lock<SolidCache::Mutex> lock(SolidCache::GetMutex());
 		if(!IsCached_(index)) {
+			OutputDebugPrintf("SolidFileCache::Extract(): Not cached for %s %d\n", m_sArchive.c_str(), index);
 			if(!m_sc.GetQueue().IsQueued(m_sArchive)) {
+				OutputDebugPrintf("SolidFileCache::Extract(): Not queued for %s\n", m_sArchive.c_str());
 				m_sc.GetQueue().Invoke(m_sArchive, c);
 			}
 			boost::shared_ptr<boost::condition_variable_any> cv = m_sc.GetQueue().GetCondVar(m_sArchive,index);
@@ -698,6 +701,7 @@ public:
 				cv->wait(lock);
 			}
 		}
+		OutputDebugPrintf("SolidFileCache::Extract(): cached for %s %d\n", m_sArchive.c_str(), index);
 	}
 	int GetProgress(UINT32 index)
 	{
