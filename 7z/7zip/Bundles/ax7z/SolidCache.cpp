@@ -56,15 +56,12 @@ boost::uint64_t SolidFileCacheMemory::ReduceSize_(boost::uint64_t uiSize, void(*
 	return uiSize;
 }
 
-std::string SolidCacheMemory::MakeKey(const std::string &sArchive) const
+SolidCacheMemory::Key SolidCacheMemory::MakeKey(const std::string &sArchive) const
 {
-	std::string sKey;
-	std::stringstream ss(sKey);
 	__stat64 st;
 // TODO: error check
 	_stat64(sArchive.c_str(), &st);
-	ss << sArchive << ':' << st.st_mtime << ':' << st.st_size;
-	return ss.str();
+	return boost::make_tuple(sArchive, st.st_mtime, st.st_size);
 }
 
 void SolidCacheMemory::AccessArchive_(const char* archive)
@@ -74,11 +71,11 @@ void SolidCacheMemory::AccessArchive_(const char* archive)
 	m_mAccess[MakeKey(archive)] = atime;
 }
 
-std::string SolidCacheMemory::GetLRUArchive_(const std::string& sExcludeArchive) const
+SolidCacheMemory::Key SolidCacheMemory::GetLRUArchive_(const Key& sExcludeArchive) const
 {
-	std::string sArchive = m_mAccess.begin()->first;
+	Key sArchive = m_mAccess.begin()->first;
 	std::time_t atime = m_mAccess.begin()->second;
-	for(std::map<std::string, std::time_t>::const_iterator it = m_mAccess.begin(); it != m_mAccess.end(); ++it) {
+	for(ArchiveTable::const_iterator it = m_mAccess.begin(); it != m_mAccess.end(); ++it) {
 		if(sArchive == sExcludeArchive || (it->first != sExcludeArchive && atime > it->second)) {
 			sArchive = it->first;
 			atime = it->second;
@@ -90,7 +87,7 @@ std::string SolidCacheMemory::GetLRUArchive_(const std::string& sExcludeArchive)
 boost::uint64_t SolidCacheMemory::GetSize_() const
 {
 	boost::uint64_t nResult = 0;
-	for(std::map<std::string, SolidFileCacheMemory::FileCache>::const_iterator it1 = m_mTable.begin(); it1 != m_mTable.end(); ++it1) {
+	for(Table::const_iterator it1 = m_mTable.begin(); it1 != m_mTable.end(); ++it1) {
 		for(SolidFileCacheMemory::FileCache::const_iterator it2 = it1->second.begin(); it2 != it1->second.end(); ++it2) {
 			nResult += it2->second.vBuffer.size();
 		}
@@ -98,13 +95,13 @@ boost::uint64_t SolidCacheMemory::GetSize_() const
 	return nResult;
 }
 
-boost::uint64_t SolidCacheMemory::ReduceSize_(boost::uint64_t uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const std::string& sExcludeArchive)
+boost::uint64_t SolidCacheMemory::ReduceSize_(boost::uint64_t uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const Key& sExcludeArchive)
 {
-	OutputDebugPrintf("SolidCacheMemory::ReduceSize %" UINT64_S "u %s\n", uiSize, sExcludeArchive.c_str());
+	OutputDebugPrintf("SolidCacheMemory::ReduceSize %" UINT64_S "u %s:%" UINT64_S "u:%" UINT64_S "u", uiSize, sExcludeArchive.get<0>().c_str(),sExcludeArchive.get<1>(),sExcludeArchive.get<2>());
 	while(uiSize > 0) {
-		OutputDebugPrintf("SolidCacheMemory::ReduceSize trace %" UINT64_S "u %s\n", uiSize, sExcludeArchive.c_str());
+		OutputDebugPrintf("SolidCacheMemory::ReduceSize trace %" UINT64_S "u %s:%" UINT64_S "u:%" UINT64_S "u", uiSize, sExcludeArchive.get<0>().c_str(),sExcludeArchive.get<1>(),sExcludeArchive.get<2>());
 		if(m_mTable.size() > 0) {
-			std::string sArchive = GetLRUArchive_(sExcludeArchive);
+			Key sArchive = GetLRUArchive_(sExcludeArchive);
 			SolidFileCacheMemory scm = GetFileCache_(sArchive);
 			if(scm.GetCount_() > 0) {
 				Argument2 arg2 = { RestoreKey(sArchive), pArg };

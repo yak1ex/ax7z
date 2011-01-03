@@ -25,6 +25,8 @@
 #include <boost/mpl/at.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/call_traits.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 
 #include <boost/preprocessor/iteration/iterate.hpp>
 #include <boost/preprocessor/repetition/enum_params.hpp>
@@ -357,17 +359,18 @@ public:
 class SolidCacheMemory
 {
 private:
-	typedef std::map<std::string, SolidFileCacheMemory::FileCache> Table;
-	typedef std::map<std::string, std::time_t> ArchiveTable;
+	typedef boost::tuple<std::string, __int64, __int64> Key;
+	typedef std::map<Key, SolidFileCacheMemory::FileCache> Table;
+	typedef std::map<Key, std::time_t> ArchiveTable;
 	Table m_mTable;
 	ArchiveTable m_mAccess;
 	int m_nMaxMemory;
 	int m_nPurgeMemory;
 
-	std::string MakeKey(const std::string &sArchive) const;
-	std::string RestoreKey(const std::string &sArchive) const
+	Key MakeKey(const std::string &sArchive) const;
+	std::string RestoreKey(const Key &sArchive) const
 	{
-		return sArchive.substr(0, sArchive.find_last_of(':', sArchive.find_last_of(':') - 1));
+		return sArchive.get<0>();
 	}
 
 #define BOOST_PP_ITERATION_PARAMS_1 (4, (0, 4, "Lock.h", 3))
@@ -375,11 +378,11 @@ private:
 
 // private:
 	void AccessArchive_(const char* archive);
-	std::string GetLRUArchive_(const std::string& sExcludeArchive) const;
+	Key GetLRUArchive_(const Key& sExcludeArchive) const;
 
 // public:
 	boost::uint64_t GetSize_() const;
-	boost::uint64_t ReduceSize_(boost::uint64_t uiSize, void(*)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const std::string &sExcludeArchive);
+	boost::uint64_t ReduceSize_(boost::uint64_t uiSize, void(*)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const Key &sExcludeArchive);
 	void Clear_()
 	{
 		m_mTable.clear();
@@ -394,11 +397,11 @@ private:
 			} else ++it;
 		}
 	}
-	bool Exists_(const std::string &sArchive) const
+	bool Exists_(const Key &sArchive) const
 	{
 		return m_mTable.count(sArchive) > 0;
 	}
-	bool Peek_(bool (SolidFileCacheMemory::*method)(unsigned int) const, const std::string& sArchive, unsigned int index) const
+	bool Peek_(bool (SolidFileCacheMemory::*method)(unsigned int) const, const Key& sArchive, unsigned int index) const
 	{
 		Table::const_iterator it = m_mTable.find(sArchive);
 		ArchiveTable::const_iterator it2 = m_mAccess.find(sArchive);
@@ -407,11 +410,11 @@ private:
 		}
 		return false;
 	}
-	SolidFileCacheMemory GetFileCache_(const std::string& sArchive)
+	SolidFileCacheMemory GetFileCache_(const Key& sArchive)
 	{
 		return SolidFileCacheMemory(m_mTable[sArchive], m_mAccess[sArchive]);
 	}
-	SolidFileCacheMemory GetFileCache_(const std::string& sArchive) const
+	SolidFileCacheMemory GetFileCache_(const Key& sArchive) const
 	{
 		Table::const_iterator it = m_mTable.find(sArchive);
 		ArchiveTable::const_iterator it2 = m_mAccess.find(sArchive);
