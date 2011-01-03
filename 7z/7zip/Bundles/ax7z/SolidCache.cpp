@@ -15,18 +15,6 @@ SolidFileCache SolidCache::GetFileCache(const std::string& filename)
 	return SolidFileCache(GetInstance(), filename);
 }
 
-// TODO: probably, this operation itself should be moved to SolidCacheDisk
-struct SolidCacheDiskCallback
-{
-	static void ReduceSizeCallback(void *pArg, const std::string& sArchive, unsigned int index, void* data, unsigned int size, bool flag)
-	{
-		SolidCacheDisk *pscd = static_cast<SolidCacheDisk*>(pArg);
-		assert(!pscd->Exists_(sArchive.c_str(), index));
-		pscd->Append_(sArchive.c_str(), index, data, size);
-		if(flag) pscd->Cached_(sArchive.c_str(), index);
-	}
-};
-
 void SolidCache::Append(const std::string& sArchive, unsigned int index, const void* data, unsigned int size)
 {
 	OutputDebugPrintf("SolidCache::Append %s %u %u bytes\n", sArchive.c_str(), index, size);
@@ -38,7 +26,7 @@ void SolidCache::Append(const std::string& sArchive, unsigned int index, const v
 		OutputDebugPrintf("SolidCache::Append:memory %s %u %u bytes\n", sArchive.c_str(), index, size);
 		if(m_scm.GetMaxMemory() > 0 && m_scm.GetSize() > m_scm.GetMaxMemoryInBytes()) {
 			OutputDebugPrintf("SolidCache::Append:purge_memory2disk %s %u %u maxmem: %" UINT64_S "u curmem: %" UINT64_S "u\n", sArchive.c_str(), index, m_scm.GetFileCache(sArchive).GetCurSize(index), m_scm.GetMaxMemoryInBytes(), m_scm.GetSize());
-			m_scm.ReduceSize(std::min(m_scm.GetSize(), std::max(m_scm.GetPurgeMemoryInBytes(), m_scm.GetSize() - m_scm.GetMaxMemoryInBytes())), SolidCacheDiskCallback::ReduceSizeCallback, &m_scd, sArchive);
+			m_scm.ReduceSize(std::min(m_scm.GetSize(), std::max(m_scm.GetPurgeMemoryInBytes(), m_scm.GetSize() - m_scm.GetMaxMemoryInBytes())), SolidCacheDisk::ReduceSizeCallback, &m_scd, sArchive);
 		}
 	}
 }

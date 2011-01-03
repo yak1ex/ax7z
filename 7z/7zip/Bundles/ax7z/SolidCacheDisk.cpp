@@ -485,3 +485,11 @@ std::string SolidCacheDisk::SetCacheFolder(std::string sNew)
 	}
 	return sNew;
 }
+
+void SolidCacheDisk::ReduceSizeCallback(void *pArg, const std::string& sArchive, unsigned int index, void* data, unsigned int size, bool flag)
+{
+	SolidCacheDisk *pscd = static_cast<SolidCacheDisk*>(pArg);
+	assert(!pscd->Exists_(sArchive.c_str(), index));
+	pscd->Append_(sArchive.c_str(), index, data, size);
+	if(flag) pscd->Cached_(sArchive.c_str(), index);
+}

@@ -161,6 +161,7 @@ public:
 	}
 	const std::string& GetCacheFolder() const { return m_sCacheFolder; }
 	std::string SetCacheFolder(std::string sNew);
+	static void ReduceSizeCallback(void *pArg, const std::string& sArchive, unsigned int index, void* data, unsigned int size, bool flag);
 };
 
 class SolidFileCacheDisk
