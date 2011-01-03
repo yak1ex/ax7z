@@ -29,15 +29,15 @@ struct SolidCacheDiskCallback
 
 void SolidCache::Append(const std::string& sArchive, unsigned int index, const void* data, unsigned int size)
 {
-	OutputDebugPrintf("SolidCache::Append %s %u %u bytes", sArchive.c_str(), index, size);
+	OutputDebugPrintf("SolidCache::Append %s %u %u bytes\n", sArchive.c_str(), index, size);
 	if(m_scd.Exists(sArchive.c_str(), index) || GetMaxMemory() <= 0) {
 		m_scd.Append(sArchive.c_str(), index, data, size);
-		OutputDebugPrintf("SolidCache::Append:disk %s %u %u bytes", sArchive.c_str(), index, size);
+		OutputDebugPrintf("SolidCache::Append:disk %s %u %u bytes\n", sArchive.c_str(), index, size);
 	} else {
 		m_scm.GetFileCache(sArchive).Append(index, data, size);
-		OutputDebugPrintf("SolidCache::Append:memory %s %u %u bytes", sArchive.c_str(), index, size);
+		OutputDebugPrintf("SolidCache::Append:memory %s %u %u bytes\n", sArchive.c_str(), index, size);
 		if(m_scm.GetMaxMemory() > 0 && m_scm.GetSize() > m_scm.GetMaxMemoryInBytes()) {
-			OutputDebugPrintf("SolidCache::Append:purge_memory2disk %s %u %u maxmem: %" UINT64_S "u curmem: %" UINT64_S "u", sArchive.c_str(), index, m_scm.GetFileCache(sArchive).GetCurSize(index), m_scm.GetMaxMemoryInBytes(), m_scm.GetSize());
+			OutputDebugPrintf("SolidCache::Append:purge_memory2disk %s %u %u maxmem: %" UINT64_S "u curmem: %" UINT64_S "u\n", sArchive.c_str(), index, m_scm.GetFileCache(sArchive).GetCurSize(index), m_scm.GetMaxMemoryInBytes(), m_scm.GetSize());
 			m_scm.ReduceSize(std::min(m_scm.GetSize(), std::max(m_scm.GetPurgeMemoryInBytes(), m_scm.GetSize() - m_scm.GetMaxMemoryInBytes())), SolidCacheDiskCallback::ReduceSizeCallback, &m_scd, sArchive);
 		}
 	}
@@ -58,7 +58,7 @@ boost::uint64_t SolidFileCacheMemory::ReduceSize_(boost::uint64_t uiSize, void(*
 {
 	Argument2 *pArg2 = static_cast<Argument2*>(pArg);
 	while(uiSize > 0 && m_cache.size() > 0) {
-		OutputDebugPrintf("SolidFileCacheMemory::ReduceSize %" UINT64_S "u ", uiSize);
+		OutputDebugPrintf("SolidFileCacheMemory::ReduceSize %" UINT64_S "u\n", uiSize);
 		unsigned int index = m_cache.begin()->first;
 		fCallback(pArg2->pArg, pArg2->sArchive, index, &m_cache[index].vBuffer[0], m_cache[index].vBuffer.size(), m_cache[index].fCached);
 		if(uiSize < m_cache[index].vBuffer.size()) uiSize = 0;
@@ -112,15 +112,15 @@ boost::uint64_t SolidCacheMemory::GetSize_() const
 
 boost::uint64_t SolidCacheMemory::ReduceSize_(boost::uint64_t uiSize, void(*fCallback)(void*, const std::string&, unsigned int, void*, unsigned int, bool), void* pArg, const std::string& sExcludeArchive)
 {
-	OutputDebugPrintf("SolidCacheMemory::ReduceSize %" UINT64_S "u %s", uiSize, sExcludeArchive.c_str());
+	OutputDebugPrintf("SolidCacheMemory::ReduceSize %" UINT64_S "u %s\n", uiSize, sExcludeArchive.c_str());
 	while(uiSize > 0) {
-		OutputDebugPrintf("SolidCacheMemory::ReduceSize trace %" UINT64_S "u %s", uiSize, sExcludeArchive.c_str());
+		OutputDebugPrintf("SolidCacheMemory::ReduceSize trace %" UINT64_S "u %s\n", uiSize, sExcludeArchive.c_str());
 		if(m_mTable.size() > 0) {
 			std::string sArchive = GetLRUArchive_(sExcludeArchive);
 			SolidFileCacheMemory scm = GetFileCache_(sArchive);
 			if(scm.GetCount_() > 0) {
 				Argument2 arg2 = { RestoreKey(sArchive), pArg };
-				OutputDebugPrintf("SolidCacheMemory::ReduceSize calling scm.ReduceSize_()");
+				OutputDebugPrintf("SolidCacheMemory::ReduceSize calling scm.ReduceSize_()\n");
 				uiSize = scm.ReduceSize_(uiSize, fCallback, &arg2);
 			} else {
 				m_mTable.erase(sArchive);

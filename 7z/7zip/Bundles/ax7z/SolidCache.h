@@ -227,7 +227,7 @@ class SolidFileCacheMemory
 		m_cache[index].vBuffer.insert(m_cache[index].vBuffer.end(), 
 			static_cast<const unsigned char*>(data), 
 			static_cast<const unsigned char*>(data)+size);
-		OutputDebugPrintf("SolidCacheMemory::Append: %d %p %d %d, %02X %02X %02X %02X", index, data, size, m_cache[index].vBuffer.size(), m_cache[index].vBuffer[0], m_cache[index].vBuffer[1], m_cache[index].vBuffer[2], m_cache[index].vBuffer[3]);
+		OutputDebugPrintf("SolidCacheMemory::Append: %d %p %d %d, %02X %02X %02X %02X\n", index, data, size, m_cache[index].vBuffer.size(), m_cache[index].vBuffer[0], m_cache[index].vBuffer[1], m_cache[index].vBuffer[2], m_cache[index].vBuffer[3]);
 	}
 	void Cached_(unsigned int index)
 	{
@@ -239,7 +239,7 @@ class SolidFileCacheMemory
 		std::vector<unsigned int>::iterator it = vIndex.begin(), itEnd = vIndex.end();
 		for(; it != itEnd; ++it) {
 			if(m_cache.count(*it)) {
-				OutputDebugPrintf("SolidCacheMemory::CachedVector %d", *it);
+				OutputDebugPrintf("SolidCacheMemory::CachedVector %d\n", *it);
 				m_cache[*it].fCached = true;
 			}
 		}
@@ -272,14 +272,14 @@ class SolidFileCacheMemory
 	}
 	void GetContent_(unsigned int index, void* dest, unsigned int size) const
 	{
-		OutputDebugPrintf("SolidCacheMemory::GetContent: %d %p %d %d %02X %02X %02X %02X", index, dest, size, m_cache[index].vBuffer.size(), m_cache[index].vBuffer[0], m_cache[index].vBuffer[1], m_cache[index].vBuffer[2], m_cache[index].vBuffer[3]);
+		OutputDebugPrintf("SolidCacheMemory::GetContent: %d %p %d %d %02X %02X %02X %02X\n", index, dest, size, m_cache[index].vBuffer.size(), m_cache[index].vBuffer[0], m_cache[index].vBuffer[1], m_cache[index].vBuffer[2], m_cache[index].vBuffer[3]);
 		// TODO: error check
 		CopyMemory(dest, &m_cache[index].vBuffer[0], std::min(size, m_cache[index].vBuffer.size()));
 		AccessArchive_();
 	}
 	void OutputContent_(unsigned int index, unsigned int size, FILE* fp) const
 	{
-		OutputDebugPrintf("SolidCacheMemory::OutputContent: %d %p %d %d %02X %02X %02X %02X", index, fp, size, m_cache[index].vBuffer.size(), m_cache[index].vBuffer[0], m_cache[index].vBuffer[1], m_cache[index].vBuffer[2], m_cache[index].vBuffer[3]);
+		OutputDebugPrintf("SolidCacheMemory::OutputContent: %d %p %d %d %02X %02X %02X %02X\n", index, fp, size, m_cache[index].vBuffer.size(), m_cache[index].vBuffer[0], m_cache[index].vBuffer[1], m_cache[index].vBuffer[2], m_cache[index].vBuffer[3]);
 		fwrite(&m_cache[index].vBuffer[0], std::min(size, m_cache[index].vBuffer.size()), 1, fp);
 		AccessArchive_();
 	}
@@ -504,15 +504,15 @@ public:
 	void Append(const std::string& sArchvie, unsigned int index, const void* data, unsigned int size);
 	void Cached(const std::string& sArchive, unsigned int index)
 	{
-		OutputDebugPrintf("SolidCache::Cached %s %d", sArchive.c_str(), index);
+		OutputDebugPrintf("SolidCache::Cached %s %d\n", sArchive.c_str(), index);
 		if(m_scm.Peek(SolidFileCacheMemory::Exists_, sArchive, index)) {
-			OutputDebugPrintf("SolidCache::Cached:memory %s %d", sArchive.c_str(), index);
+			OutputDebugPrintf("SolidCache::Cached:memory %s %d\n", sArchive.c_str(), index);
 			m_scm.GetFileCache(sArchive).Cached(index);
 		} else if(m_scd.Exists(sArchive.c_str(), index)) {
-			OutputDebugPrintf("SolidCache::Cached:disk %s %d", sArchive.c_str(), index);
+			OutputDebugPrintf("SolidCache::Cached:disk %s %d\n", sArchive.c_str(), index);
 			m_scd.Cached(sArchive.c_str(), index);
 		} else {
-			assert("SolidCache::Cached: Not reached");
+			assert("SolidCache::Cached: Not reached\n");
 		}
 	}
 	void CachedVector(const std::string& sArchive, std::vector<unsigned int>& vIndex)
@@ -530,24 +530,24 @@ public:
 	}
 	void GetContent(const std::string& sArchive, unsigned int index, void* dest, unsigned int size) const
 	{
-		OutputDebugPrintf("SolidCache::GetContent %s %d %d bytes", sArchive.c_str(), index, size);
+		OutputDebugPrintf("SolidCache::GetContent %s %d %d bytes\n", sArchive.c_str(), index, size);
 		if(m_scm.Peek(SolidFileCacheMemory::IsCached_, sArchive, index)) {
 			m_scm.GetFileCache(sArchive).GetContent(index, dest, size);
 		} else if(m_scd.IsCached(sArchive.c_str(), index)) {
 			m_scd.GetContent(sArchive.c_str(), index, dest, size);
 		} else {
-			assert("SolidCache::GetContent: Not reached");
+			assert("SolidCache::GetContent: Not reached\n");
 		}
 	}
 	void OutputContent(const std::string& sArchive, unsigned int index, unsigned int size, FILE* fp) const
 	{
-		OutputDebugPrintf("SolidCache::OutputContent %s %d %d bytes", sArchive.c_str(), index, size);
+		OutputDebugPrintf("SolidCache::OutputContent %s %d %d bytes\n", sArchive.c_str(), index, size);
 		if(m_scm.Peek(SolidFileCacheMemory::IsCached_, sArchive, index)) {
 			m_scm.GetFileCache(sArchive).OutputContent(index, size, fp);
 		} else if(m_scd.IsCached(sArchive.c_str(), index)) {
 			m_scd.OutputContent(sArchive.c_str(), index, size, fp);
 		} else {
-			assert("SolidCache::OutputContent: Not reached");
+			assert("SolidCache::OutputContent: Not reached\n");
 		}
 	}
 

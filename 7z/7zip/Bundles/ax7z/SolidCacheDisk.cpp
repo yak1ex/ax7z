@@ -60,13 +60,13 @@ void SolidCacheDisk::InitDB_()
 	if(stmt() && stmt.get_int(0) > 0) {
 		switch(stmt.get_int(0)) {
 		case 1:
-			OutputDebugPrintf("SolidCacheDisk::InitDB: version 1 exists, need to update");
+			OutputDebugPrintf("SolidCacheDisk::InitDB: version 1 exists, need to update\n");
 			sqlite3_exec(m_db, "ALTER TABLE archive ADD COLUMN mtime INTEGER", NULL, NULL, NULL);
 			sqlite3_exec(m_db, "ALTER TABLE archive ADD COLUMN size INTEGER", NULL, NULL, NULL);
 			{
 				Statement stmt2(m_db, "SELECT rowid FROM entry WHERE completed <> 1");
 				while(stmt2()) {
-					OutputDebugPrintf("SolidCacheDisk::InitDB(): DeleteFile %s", GetFileName(stmt2.get_int64(0)).c_str());
+					OutputDebugPrintf("SolidCacheDisk::InitDB(): DeleteFile %s\n", GetFileName(stmt2.get_int64(0)).c_str());
 					DeleteFile(GetFileName(stmt2.get_int64(0)).c_str());
 				}
 			}
@@ -75,14 +75,14 @@ void SolidCacheDisk::InitDB_()
 			sqlite3_exec(m_db, "PRAGMA user_version = 2", NULL, NULL, NULL);
 			break;
 		case 2:
-			OutputDebugPrintf("SolidCacheDisk::InitDB: version 2 exists, skip");
+			OutputDebugPrintf("SolidCacheDisk::InitDB: version 2 exists, skip\n");
 			break;
 		default:
-			OutputDebugPrintf("SolidCacheDisk::InitDB: Unknown version %d", stmt.get_int(0));
+			OutputDebugPrintf("SolidCacheDisk::InitDB: Unknown version %d\n", stmt.get_int(0));
 			break;
 		}
 	} else {
-		OutputDebugPrintf("SolidCacheDisk::InitDB: Create version 2");
+		OutputDebugPrintf("SolidCacheDisk::InitDB: Create version 2\n");
 		sqlite3_exec(m_db, "PRAGMA user_version = 2", NULL, NULL, NULL);
 		sqlite3_exec(m_db, "CREATE TABLE archive (idx INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT, atime INTEGER, mtime INTEGER, size INTEGER)", NULL, NULL, NULL);
 		sqlite3_exec(m_db, "CREATE TABLE entry (aidx INTERGER, idx INTEGER, size INTEGER, completed INTEGER, CONSTRAINT pkey PRIMARY KEY (aidx, idx) )", NULL, NULL, NULL);
@@ -100,11 +100,11 @@ void SolidCacheDisk::CheckDB_()
 		Statement stmt2(m_db, "SELECT rowid FROM entry WHERE aidx = ?");
 		stmt2.bind(1, stmt.get_int(0));
 		while(stmt2()) {
-			OutputDebugPrintf("SolidCacheDisk::CheckDB(): DeleteFile %s", GetFileName(stmt2.get_int64(0)).c_str());
+			OutputDebugPrintf("SolidCacheDisk::CheckDB(): DeleteFile %s\n", GetFileName(stmt2.get_int64(0)).c_str());
 			DeleteFile(GetFileName(stmt2.get_int64(0)).c_str());
 		}
 		Statement(m_db, "DELETE FROM entry WHERE aidx = ?").bind(1, stmt.get_int(0))();
-		OutputDebugPrintf("SolidCacheDisk::CheckDB invalid %s %u actualtime %" UINT64_S "u dbmtime %" UINT64_S "u actualsize %" UINT64_S "u dbsize %" UINT64_S "u", stmt.get_text(1), stmt.get_int(0), st.st_mtime, stmt.get_int64(2), st.st_size, stmt.get_int64(3));
+		OutputDebugPrintf("SolidCacheDisk::CheckDB invalid %s %u actualtime %" UINT64_S "u dbmtime %" UINT64_S "u actualsize %" UINT64_S "u dbsize %" UINT64_S "u\n", stmt.get_text(1), stmt.get_int(0), st.st_mtime, stmt.get_int64(2), st.st_size, stmt.get_int64(3));
 	}
 	PurgeUnreferenced_();
 }
@@ -135,7 +135,7 @@ void SolidCacheDisk::AddArchive_(const char* archive)
 	_stat64(archive, &st);
 	Statement(m_db, "INSERT INTO archive (path, atime, mtime, size) VALUES (?, 0, ?, ?)")
 		.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size)();
-	OutputDebugPrintf("SolidCacheDisk::AddArchive archive %s mtime %" UINT64_S "u size %" UINT64_S "u", archive, st.st_mtime, st.st_size);
+	OutputDebugPrintf("SolidCacheDisk::AddArchive archive %s mtime %" UINT64_S "u size %" UINT64_S "u\n", archive, st.st_mtime, st.st_size);
 }
 
 unsigned int SolidCacheDisk::GetArchiveIdx_(const char* archive) const
@@ -145,7 +145,7 @@ unsigned int SolidCacheDisk::GetArchiveIdx_(const char* archive) const
 	_stat64(archive, &st);
 	Statement stmt(m_db, "SELECT idx FROM archive WHERE path = ? AND mtime = ? AND size = ?");
 	stmt.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size)();
-	OutputDebugPrintf("SolidCacheDisk::GetArchiveIdx_(): archive %s : [%d]", archive, stmt.get_int(0));
+	OutputDebugPrintf("SolidCacheDisk::GetArchiveIdx_(): archive %s : [%d]\n", archive, stmt.get_int(0));
 	return stmt.get_int(0);
 }
 
@@ -184,7 +184,7 @@ void SolidCacheDisk::AddEntry_(unsigned int aidx, unsigned int idx, const void *
 
 void SolidCacheDisk::Append_(const char* archive, unsigned int idx, const void* data, unsigned int size)
 {
-	OutputDebugPrintf("SolidCacheDisk::Append: archive %s idx %u size %u", archive, idx, size);
+	OutputDebugPrintf("SolidCacheDisk::Append: archive %s idx %u size %u\n", archive, idx, size);
 	if(!ExistsArchive_(archive)) {
 		AddArchive_(archive);
 	}
@@ -199,7 +199,7 @@ void SolidCacheDisk::Append_(const char* archive, unsigned int idx, const void* 
 	if(!ExistsArchive_(archive)) {
 		AddArchive_(archive);
 		aidx = GetArchiveIdx_(archive);
-		OutputDebugPrintf("SolidCacheDisk::Append: Should not reach: new aidx %d", aidx);
+		OutputDebugPrintf("SolidCacheDisk::Append: Should not reach: new aidx %d\n", aidx);
 	}
 	if(ExistsEntry_(aidx, idx)) {
 		AppendEntry_(aidx, idx, data, size);
@@ -225,7 +225,7 @@ void SolidCacheDisk::CachedVector_(const char* archive, std::vector<unsigned int
 	std::vector<unsigned int>::iterator it = vIndex.begin(), itEnd = vIndex.end();
 	for(; it != itEnd; ++it) {
 		if(IsProcessing_(archive, *it)) {
-			OutputDebugPrintf("SolidCacheDisk::CachedVector %s %u", archive, *it);
+			OutputDebugPrintf("SolidCacheDisk::CachedVector %s %u\n", archive, *it);
 			stmt.bind(1, *it)();
 			stmt.reset();
 		}
@@ -234,32 +234,32 @@ void SolidCacheDisk::CachedVector_(const char* archive, std::vector<unsigned int
 
 void SolidCacheDisk::PurgeUnreferenced_()
 {
-	OutputDebugPrintf("SolidCacheDisk::PurgeUnreferenced()");
+	OutputDebugPrintf("SolidCacheDisk::PurgeUnreferenced()\n");
 	sqlite3_exec(m_db, "DELETE FROM archive WHERE idx NOT IN (SELECT aidx FROM entry)", NULL, NULL, NULL);
 }
 
 void SolidCacheDisk::PurgeUnreferencedOther_(unsigned int aidx)
 {
-	OutputDebugPrintf("SolidCacheDisk::PurgeUnreferencedOther(): aidx %u", aidx);
+	OutputDebugPrintf("SolidCacheDisk::PurgeUnreferencedOther(): aidx %u\n", aidx);
 	Statement(m_db, "DELETE FROM archive WHERE idx NOT IN (SELECT aidx FROM entry) AND idx <> ?").bind(1, aidx)();
 }
 
 void SolidCacheDisk::PurgeUnreferencedWithAIdx_(unsigned int aidx)
 {
-	OutputDebugPrintf("SolidCacheDisk::PurgeUnreferencedWithAIdx(): aidx %u", aidx);
+	OutputDebugPrintf("SolidCacheDisk::PurgeUnreferencedWithAIdx(): aidx %u\n", aidx);
 	Statement(m_db, "DELETE FROM archive WHERE idx NOT IN (SELECT aidx FROM entry) AND idx = ?").bind(1, aidx)();
 }
 
 void SolidCacheDisk::PurgeUnmarked_(const char *archive)
 {
-	OutputDebugPrintf("SolidCacheDisk::PurgeUnmarked(): archive %s", archive);
+	OutputDebugPrintf("SolidCacheDisk::PurgeUnmarked(): archive %s\n", archive);
 	unsigned int aidx = SolidCacheDisk::GetArchiveIdx_(archive);
 // TODO: transaction
 // TODO: may need to restrict rows affected by current thread
 	Statement stmt(m_db, "SELECT rowid FROM entry WHERE completed <> 0 AND aidx = ?");
 	stmt.bind(1, aidx);
 	while(stmt()) {
-		OutputDebugPrintf("SolidCacheDisk::PurgeUnmarked(): DeleteFile %s", GetFileName(stmt.get_int64(0)).c_str());
+		OutputDebugPrintf("SolidCacheDisk::PurgeUnmarked(): DeleteFile %s\n", GetFileName(stmt.get_int64(0)).c_str());
 		DeleteFile(GetFileName(stmt.get_int64(0)).c_str());
 	}
 	Statement(m_db, "DELETE FROM entry WHERE completed <> 0 AND aidx = ?")
@@ -272,7 +272,7 @@ void SolidCacheDisk::PurgeUnmarkedAll_()
 // TODO: transaction
 	Statement stmt(m_db, "SELECT rowid FROM entry WHERE completed <> 0");
 	while(stmt()) {
-		OutputDebugPrintf("SolidCacheDisk::PurgeUnmarkedAll(): DeleteFile %s", GetFileName(stmt.get_int64(0)).c_str());
+		OutputDebugPrintf("SolidCacheDisk::PurgeUnmarkedAll(): DeleteFile %s\n", GetFileName(stmt.get_int64(0)).c_str());
 		DeleteFile(GetFileName(stmt.get_int64(0)).c_str());
 	}
 	sqlite3_exec(m_db, "DELETE FROM entry WHERE completed <> 0", NULL, NULL, NULL);
@@ -285,7 +285,7 @@ void SolidCacheDisk::PurgeUnmarkedOther_(unsigned int aidx)
 	Statement stmt(m_db, "SELECT rowid FROM entry WHERE aidx <> ? AND completed <> 0");
 	stmt.bind(1,aidx);
 	while(stmt()) {
-		OutputDebugPrintf("SolidCacheDisk::PurgeUnmarkedOther(): DeleteFile %s", GetFileName(stmt.get_int64(0)).c_str());
+		OutputDebugPrintf("SolidCacheDisk::PurgeUnmarkedOther(): DeleteFile %s\n", GetFileName(stmt.get_int64(0)).c_str());
 		DeleteFile(GetFileName(stmt.get_int64(0)).c_str());
 	}
 	Statement(m_db, "DELETE FROM entry WHERE aidx <> ? AND completed <> 0").bind(1,aidx)();
@@ -302,7 +302,7 @@ boost::uint64_t SolidCacheDisk::GetSize_() const
 void SolidCacheDisk::ReduceSizeWithAIdx_(unsigned int aidx, boost::uint64_t size)
 {
 // TODO: transaction
-	OutputDebugPrintf("SolidCacheDisk::ReduceSizeWithAidx: aidx %u size %" UINT64_S "u", aidx, size);
+	OutputDebugPrintf("SolidCacheDisk::ReduceSizeWithAidx: aidx %u size %" UINT64_S "u\n", aidx, size);
 	boost::uint64_t total = 0;
 	int idx = -1;
 	Statement stmt(m_db, "SELECT idx, size, rowid FROM entry WHERE aidx = ? AND completed = 0 ORDER BY idx");
@@ -310,7 +310,7 @@ void SolidCacheDisk::ReduceSizeWithAIdx_(unsigned int aidx, boost::uint64_t size
 	while(stmt()) {
 		idx = stmt.get_int(0);
 		total += stmt.get_int64(1);
-		OutputDebugPrintf("SolidCacheDisk::ReduceSizeWithAIdx(): DeleteFile %s", GetFileName(stmt.get_int64(2)).c_str());
+		OutputDebugPrintf("SolidCacheDisk::ReduceSizeWithAIdx(): DeleteFile %s\n", GetFileName(stmt.get_int64(2)).c_str());
 		DeleteFile(GetFileName(stmt.get_int64(2)).c_str());
 		if(total >= size) break;
 	}
@@ -322,7 +322,7 @@ void SolidCacheDisk::ReduceSizeWithAIdx_(unsigned int aidx, boost::uint64_t size
 
 void SolidCacheDisk::ReduceSize_(boost::uint64_t size, unsigned int exclude_aidx)
 {
-	OutputDebugPrintf("SolidCacheDisk::ReduceSize: size %" UINT64_S "u exclude_aidx %u", size, exclude_aidx);
+	OutputDebugPrintf("SolidCacheDisk::ReduceSize: size %" UINT64_S "u exclude_aidx %u\n", size, exclude_aidx);
 	boost::uint64_t cur_size = GetSize_();
 	while(size > 0 && cur_size != 0) {
 		Statement stmt(m_db, "SELECT archive.idx FROM archive, entry WHERE archive.idx <> ? AND archive.idx = entry.aidx AND entry.completed = 0 GROUP BY archive.idx HAVING count(entry.idx) > 0 ORDER BY atime LIMIT 1");
@@ -331,7 +331,7 @@ void SolidCacheDisk::ReduceSize_(boost::uint64_t size, unsigned int exclude_aidx
 			unsigned int aidx = stmt.get_int(0);
 			ReduceSizeWithAIdx_(aidx, size);
 			boost::uint64_t new_size = GetSize_();
-			OutputDebugPrintf("SolidCacheDisk::ReduceSize: size %" UINT64_S "u cur_size %" UINT64_S "u new_size %" UINT64_S "u", size, cur_size, new_size);
+			OutputDebugPrintf("SolidCacheDisk::ReduceSize: size %" UINT64_S "u cur_size %" UINT64_S "u new_size %" UINT64_S "u\n", size, cur_size, new_size);
 			if(cur_size - new_size < size) size -= (cur_size - new_size);
 			else size = 0;
 			cur_size = new_size;
@@ -403,7 +403,7 @@ void SolidCacheDisk::GetContent_(const char *archive, unsigned int index, void* 
 	unsigned int uiSize = std::min<unsigned int>(size, stmt.get_int(1));
 	MMap mm(GetFileName(stmt.get_int64(0)), uiSize);
 	CopyMemory(dest, mm, uiSize);
-	OutputDebugPrintf("SolidCacheDisk::GetContent: %s %u %p reqsize: %u dbsize: %u", archive, index, dest, size, stmt.get_int(1));
+	OutputDebugPrintf("SolidCacheDisk::GetContent: %s %u %p reqsize: %u dbsize: %u\n", archive, index, dest, size, stmt.get_int(1));
 }
 
 void SolidCacheDisk::OutputContent_(const char *archive, unsigned int index, unsigned int size, FILE* fp) const
@@ -414,7 +414,7 @@ void SolidCacheDisk::OutputContent_(const char *archive, unsigned int index, uns
 	unsigned int uiSize = std::min<unsigned int>(size, stmt.get_int(1));
 	MMap mm(GetFileName(stmt.get_int64(0)), uiSize);
 	fwrite(mm, uiSize, 1, fp);
-	OutputDebugPrintf("SolidCacheDisk::OutputContent: %s %u %p reqsize: %u dbsize: %u", archive, index, fp, size, stmt.get_int(1));
+	OutputDebugPrintf("SolidCacheDisk::OutputContent: %s %u %p reqsize: %u dbsize: %u\n", archive, index, fp, size, stmt.get_int(1));
 }
 
 SolidCacheDisk& SolidCacheDisk::GetInstance()
@@ -447,7 +447,7 @@ void SolidCacheDisk::Clear_()
 		CloseHandle(hFind);
 	}
 	if(sqlite3_open(sDB.c_str(), &m_db) != SQLITE_OK) {
-		OutputDebugPrintf("SolidCache::Clear: sqlite3_open for %s failed by %s", sDB.c_str(), sqlite3_errmsg(m_db));
+		OutputDebugPrintf("SolidCache::Clear: sqlite3_open for %s failed by %s\n", sDB.c_str(), sqlite3_errmsg(m_db));
 	}
 	InitDB_();
 }
@@ -478,7 +478,7 @@ std::string SolidCacheDisk::SetCacheFolder(std::string sNew)
 		}
 		std::swap(sNew, m_sCacheFolder);
 		if(sqlite3_open(sNewDB.c_str(), &m_db) != SQLITE_OK) {
-			OutputDebugPrintf("SetCacheFolder: sqlite3_open for %s failed by %s", sNewDB.c_str(), sqlite3_errmsg(m_db));
+			OutputDebugPrintf("SetCacheFolder: sqlite3_open for %s failed by %s\n", sNewDB.c_str(), sqlite3_errmsg(m_db));
 		}
 		InitDB_();
 		CheckDB_();
