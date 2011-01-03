@@ -50,6 +50,7 @@ private:
   FILE* m_fp;
   UINT32 m_nBufSize;
   UINT32 m_nIndex;
+  UINT32 m_nCurIndex;
   SolidFileCache *m_cache;
   SPI_PROGRESS m_lpPrgressCallback;
   long m_lData;

@@ -27,6 +27,7 @@
 #include <boost/call_traits.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <boost/preprocessor/iteration/iterate.hpp>
 #include <boost/preprocessor/repetition/enum_params.hpp>
@@ -34,6 +35,7 @@
 
 #include <boost/thread/locks.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
 
 #ifdef NDEBUG
 #define OutputDebugPrintf (void)
@@ -484,6 +486,55 @@ public:
 
 class SolidFileCache;
 
+class Queue
+{
+	typedef boost::tuple<std::string, __int64, __int64> Key;
+	Key MakeKey(const std::string &sArchive) const;
+	typedef std::map<Key, boost::shared_ptr<boost::thread> > ThreadMap;
+	ThreadMap threads;
+	typedef std::map<std::pair<Key, unsigned int>, boost::shared_ptr<boost::condition_variable_any> > CondVarMap;
+	CondVarMap cvs;
+	void cleanup()
+	{
+		for(ThreadMap::iterator mi = threads.begin(); mi != threads.end(); ++mi) {
+			if(mi->second->timed_join(boost::posix_time::seconds(0))) {
+				for(CondVarMap::iterator mi2 = cvs.begin(); mi2 != cvs.end(); ++mi2) {
+					if(mi2->first.first == mi->first) {
+						mi2 = cvs.erase(mi2);
+					}
+				}
+				mi = threads.erase(mi);
+			}
+		}
+	}
+public:
+	bool IsQueued(const std::string &s)
+	{
+		cleanup();
+		return threads.count(MakeKey(s)) != 0;
+	}
+	template<typename Callable>
+	void Invoke(const std::string &s, Callable c)
+	{
+		cleanup();
+		if(threads.count(MakeKey(s))) {
+			OutputDebugPrintf("Queue::Invoke(): thread for %s already invoked", s.c_str());
+		} else {
+			boost::shared_ptr<boost::thread> ptr(new boost::thread(c));
+			threads[MakeKey(s)].swap(ptr);
+		}
+	}
+	boost::shared_ptr<boost::condition_variable_any> GetCondVar(const std::string &s, unsigned int index)
+	{
+		cleanup();
+		if(cvs.count(make_pair(MakeKey(s), index)) == 0) {
+			boost::shared_ptr<boost::condition_variable_any> ptr(new boost::condition_variable_any);
+			cvs[make_pair(MakeKey(s), index)] = ptr;
+		}
+		return cvs[make_pair(MakeKey(s), index)];
+	}
+};
+
 class SolidCache
 {
 private:
@@ -491,6 +542,7 @@ private:
 	SolidCacheDisk m_scd;
 	SolidCacheMemory m_scm;
 	boost::shared_mutex m_sm;
+	Queue m_queue;
 	SolidCache() : m_nMaxLookAhead(-1) {}
 public:
 	static SolidCache& GetInstance();
@@ -500,6 +552,7 @@ public:
 	{
 		return GetInstance().m_sm;
 	}
+	Queue& GetQueue() {	return m_queue; }
 
 	bool IsCached(const std::string& sArchive, unsigned int index) const
 	{
@@ -518,6 +571,7 @@ public:
 		} else {
 			assert("SolidCache::Cached: Not reached\n");
 		}
+		m_queue.GetCondVar(sArchive, index)->notify_all();
 	}
 	void CachedVector(const std::string& sArchive, std::vector<unsigned int>& vIndex)
 	{
@@ -610,16 +664,25 @@ public:
 		m_sc.OutputContent(m_sArchive, index, size, fp);
 	}
 
-	void GetExtractVector(std::vector<UINT32> &v, UINT32 index, UINT32 num, UINT32 max_num)
+	void GetExtractVector(std::vector<UINT32> &v, UINT32 max_num)
 	{
-// Need to co-operate with Append() / Cached()
-//		UINT32 start = m_cache.size() ? std::min((--m_cache.end())->first, index) : 0;
-//		UINT32 end = std::min(std::max(start + num, index), max_num - 1);
-		UINT32 start = 0;
 		m_nMaxNum = max_num;
-		UINT32 end = m_nMaxNum - 1;
-		v.resize(end - start + 1);
-		for(UINT32 i = start; i <= end; ++i) v[i - start] = i;
+		v.resize(m_nMaxNum);
+		for(UINT32 i = 0; i < m_nMaxNum; ++i) v[i] = i;
+	}
+	template<typename Callable>
+	void Extract(Callable c, unsigned int index)
+	{
+		boost::unique_lock<SolidCache::Mutex> lock(SolidCache::GetMutex());
+		if(!IsCached(index)) {
+			if(!m_sc.GetQueue().IsQueued(m_sArchive)) {
+				m_sc.GetQueue().Invoke(m_sArchive, c);
+			}
+			boost::shared_ptr<boost::condition_variable_any> cv = m_sc.GetQueue().GetCondVar(m_sArchive,index);
+			while(!IsCached(index)) {
+				cv->wait(lock);
+			}
+		}
 	}
 	int GetProgress(UINT32 index)
 	{

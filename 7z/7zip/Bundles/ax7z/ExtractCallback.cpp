@@ -21,6 +21,7 @@ void CExtractCallbackImp::Init(IInArchive *archive, char** pBuf, UINT32 nBufSize
   m_fp = fp;
   m_nBufSize = nBufSize;
   m_nIndex = index;
+  m_nCurIndex = 0xFFFFFFFF;
   m_cache = cache;
   m_lpPrgressCallback = lpPrgressCallback;
   m_lData = lData;
@@ -125,6 +126,7 @@ STDMETHODIMP CMemOutStream::WritePart(const void *data, UINT32 size, UINT32 *pro
 STDMETHODIMP CExtractCallbackImp::GetStream(UINT32 index,
     ISequentialOutStream **outStream, INT32 askExtractMode)
 {
+    m_nCurIndex = index;
     CMemOutStream* pRealStream = new CMemOutStream;
     pRealStream->AddRef();
     pRealStream->Init(m_pBuf, m_nBufSize, m_fp, index == m_nIndex, m_cache, index);
@@ -146,6 +148,7 @@ STDMETHODIMP CExtractCallbackImp::SetOperationResult(INT32 resultEOperationResul
   {
     case NArchive::NExtract::NOperationResult::kOK:
     {
+      m_cache->Cached(m_nCurIndex);
       break;
     }
     case NArchive::NExtract::NOperationResult::kDataError:

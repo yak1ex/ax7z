@@ -115,3 +115,11 @@ boost::uint64_t SolidCacheMemory::ReduceSize_(boost::uint64_t uiSize, void(*fCal
 	}
 	return uiSize;
 }
+
+Queue::Key Queue::MakeKey(const std::string &sArchive) const
+{
+	__stat64 st;
+// TODO: error check
+	_stat64(sArchive.c_str(), &st);
+	return boost::make_tuple(sArchive, st.st_mtime, st.st_size);
+}
