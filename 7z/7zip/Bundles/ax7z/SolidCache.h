@@ -698,7 +698,14 @@ public:
 			}
 			boost::shared_ptr<boost::condition_variable_any> cv = m_sc.GetQueue().GetCondVar(m_sArchive,index);
 			while(!IsCached_(index)) {
-				cv->wait(lock);
+				cv->timed_wait(lock, boost::posix_time::milliseconds(500));
+				lock.unlock();
+				MSG msg;
+				while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+					TranslateMessage(&msg); 
+					DispatchMessage(&msg); 
+				}
+				lock.lock();
 			}
 		}
 		OutputDebugPrintf("SolidFileCache::Extract(): cached for %s %d\n", m_sArchive.c_str(), index);
