@@ -9,9 +9,6 @@
 #include <initguid.h>
 #include <time.h>
 
-#include <boost/interprocess/sync/scoped_lock.hpp>
-#include <boost/interprocess/sync/named_mutex.hpp>
-
 #include "entryFuncs.h"
 
 #include "Common/StringConvert.h"
@@ -655,8 +652,22 @@ public:
 	}
 	void operator()()
 	{
-		boost::interprocess::named_mutex mutex(boost::interprocess::open_or_create, "cx.myhome.yak.ax_7z_s");
-		boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(mutex);
+		OutputDebugPrintf("Extractor::operator(): filename: %s", sFilename.c_str());
+        class mutex
+        {
+			HANDLE hMutex;
+		public:
+            mutex()
+			{
+				hMutex = CreateMutex(NULL, FALSE, "cx.myhome.yak.ax_7z_s");
+				WaitForSingleObject(hMutex, INFINITE);
+			}
+            ~mutex()
+			{
+				ReleaseMutex(hMutex);
+				CloseHandle(hMutex);
+			}
+        } lock;
 		boost::this_thread::at_thread_exit(Cleanup(sFilename));
 
 	    CExtractCallbackImp *extractCallbackSpec = new CExtractCallbackImp;
