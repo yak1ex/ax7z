@@ -498,7 +498,7 @@ class Queue
 	void CleanupAll()
 	{
 		for(ThreadMap::iterator mi = threads.begin(), mie = threads.end(); mi != mie;) {
-			if(mi->second->timed_join(boost::posix_time::seconds(0))) {
+			if(!mi->second->joinable() || mi->second->timed_join(boost::posix_time::seconds(0))) {
 				Cleanup(mi->first);
 				mi = threads.erase(mi);
 			} else ++mi;
@@ -544,9 +544,18 @@ public:
 		}
 		return cvs[make_pair(MakeKey(s), index)];
 	}
+	void NotifyCondVar(const std::string &s, unsigned int index)
+	{
+		if(ExistsCondVar(s, index)) {
+			cvs[make_pair(MakeKey(s), index)]->notify_all();
+			cvs.erase(make_pair(MakeKey(s), index));
+		}
+	}
 	void Cleanup(const std::string &sArchive)
 	{
+OutputDebugPrintf("Queue::Cleanup(): %s", sArchive.c_str());
 		Cleanup(MakeKey(sArchive));
+		threads.erase(MakeKey(sArchive));
 	}
 };
 
@@ -592,7 +601,7 @@ public:
 		}
 		if(m_queue.ExistsCondVar(sArchive, index)) {
 			OutputDebugPrintf("SolidCache::Cached calling notify_all() for %s [%d]\n", sArchive.c_str(), index);
-			m_queue.GetCondVar(sArchive, index)->notify_all();
+			m_queue.NotifyCondVar(sArchive, index);
 		}
 	}
 	void PurgeUnmarked(const std::string& sArchive)
