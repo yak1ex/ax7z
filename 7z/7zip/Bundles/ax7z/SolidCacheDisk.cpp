@@ -125,28 +125,35 @@ bool SolidCacheDisk::ExistsArchive_(const char* archive) const
 		return stmt() && stmt.get_int(0) > 0;
 	}
 // TODO: proper error handling
+	OutputDebugPrintf("ERROR on SolidCacheDisk::ExistArchive_ archive %s\n", archive);
 	return false;
 }
 
 void SolidCacheDisk::AddArchive_(const char* archive)
 {
 	__stat64 st;
-// TODO: error check
-	_stat64(archive, &st);
-	Statement(m_db, "INSERT INTO archive (path, atime, mtime, size) VALUES (?, 0, ?, ?)")
-		.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size)();
-	OutputDebugPrintf("SolidCacheDisk::AddArchive archive %s mtime %" UINT64_S "u size %" UINT64_S "u\n", archive, st.st_mtime, st.st_size);
+	if(!_stat64(archive, &st)) {
+		Statement(m_db, "INSERT INTO archive (path, atime, mtime, size) VALUES (?, 0, ?, ?)")
+			.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size)();
+		OutputDebugPrintf("SolidCacheDisk::AddArchive archive %s mtime %" UINT64_S "u size %" UINT64_S "u\n", archive, st.st_mtime, st.st_size);
+	} else {
+// TODO: proper error handling
+		OutputDebugPrintf("ERROR on SolidCacheDisk::AddArchive_ archive %s\n", archive);
+	}
 }
 
 unsigned int SolidCacheDisk::GetArchiveIdx_(const char* archive) const
 {
 	__stat64 st;
-// TODO: error check
-	_stat64(archive, &st);
-	Statement stmt(m_db, "SELECT idx FROM archive WHERE path = ? AND mtime = ? AND size = ?");
-	stmt.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size)();
-	OutputDebugPrintf("SolidCacheDisk::GetArchiveIdx_(): archive %s : [%d]\n", archive, stmt.get_int(0));
-	return stmt.get_int(0);
+	if(!_stat64(archive, &st)) {
+		Statement stmt(m_db, "SELECT idx FROM archive WHERE path = ? AND mtime = ? AND size = ?");
+		stmt.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size)();
+		OutputDebugPrintf("SolidCacheDisk::GetArchiveIdx_(): archive %s : [%d]\n", archive, stmt.get_int(0));
+		return stmt.get_int(0);
+	}
+// TODO: proper error handling
+	OutputDebugPrintf("ERROR on SolidCacheDisk::GetArchiveIdx_ archive %s\n", archive);
+	return 0;
 }
 
 bool SolidCacheDisk::ExistsEntry_(unsigned int aidx, unsigned int idx) const
