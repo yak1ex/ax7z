@@ -756,17 +756,17 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
         case WM_COMMAND:
             switch (LOWORD(wp)) {
                 case IDOK:
-                    if (UpdateSolidValue(hDlgWnd)) {
-						if (IsExistentFolder(hDlgWnd, SolidCache::GetInstance().GetCacheFolder())) {
-							SaveToIni();
-		                    EndDialog(hDlgWnd, IDOK);
+				{
+				    char buf[2048];
+					SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_GETTEXT, sizeof(buf), (LPARAM)buf);
+					if (IsExistentFolder(hDlgWnd, buf)) {
+						if (UpdateSolidValue(hDlgWnd)) {
+								SaveToIni();
 						}
-					} else {
-						if (IsExistentFolder(hDlgWnd, SolidCache::GetInstance().GetCacheFolder())) {
-		                    EndDialog(hDlgWnd, IDOK);
-						}
+						EndDialog(hDlgWnd, IDOK);
 					}
 					break;
+				}
                 case IDCANCEL:
                     EndDialog(hDlgWnd, IDCANCEL);
                     break;
