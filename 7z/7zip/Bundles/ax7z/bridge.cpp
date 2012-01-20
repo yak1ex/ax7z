@@ -536,7 +536,13 @@ INT_PTR CALLBACK ProgressDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
         case WM_INITDIALOG:
+			SetWindowLongPtr(hDlgWnd, DWLP_USER, 0);
             return FALSE;
+		case WM_COMMAND:
+			if(HIWORD(wp) == BN_CLICKED && LOWORD(wp) == IDCANCEL)
+				SetWindowLongPtr(hDlgWnd, DWLP_USER, 1);
+			break;
+
     }
     return FALSE;
 }
@@ -562,10 +568,7 @@ int PASCAL ProgressFunc(int nNum, int nDenom, long lData)
         TranslateMessage(&msg); 
         DispatchMessage(&msg); 
     }
-    if(pArg->procTrueProgress)
-        return (pArg->procTrueProgress)(nNum, nDenom, pArg->lTrueData);
-    else
-        return 0;
+	return ((pArg->procTrueProgress) ? (pArg->procTrueProgress)(nNum, nDenom, pArg->lTrueData) : 0) || GetWindowLongPtr(pArg->hwnd, DWLP_USER);
 }
 
 int GetFileExImp_Normal(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, fileInfo *pinfo, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize)

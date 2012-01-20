@@ -133,7 +133,8 @@ STDMETHODIMP CExtractCallbackImp::GetStream(UINT32 index,
     *outStream = pRealStream;
 // TODO: support abort?
 	if(m_lpPrgressCallback && m_cache)
-		m_lpPrgressCallback(m_cache->GetProgress(index), m_cache->GetProgressDenom(index), m_lData);
+		if(m_lpPrgressCallback(m_cache->GetProgress(index), m_cache->GetProgressDenom(index), m_lData))
+			return E_ABORT;
     return S_OK;
 }
 
