@@ -489,7 +489,8 @@ std::string SolidCacheDisk::SetCacheFolder(std::string sNew)
 			}
 		}
 		std::swap(sNew, m_sCacheFolder);
-		if(sqlite3_open(sNewDB.c_str(), &m_db) != SQLITE_OK) {
+		UString us = GetUnicodeString(sNewDB.c_str());
+		if(sqlite3_open16(us.GetBuffer(0), &m_db) != SQLITE_OK) {
 			OutputDebugPrintf("SetCacheFolder: sqlite3_open for %s failed by %s\n", sNewDB.c_str(), sqlite3_errmsg(m_db));
 		}
 		InitDB_();
