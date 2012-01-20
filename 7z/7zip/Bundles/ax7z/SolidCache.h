@@ -497,20 +497,20 @@ class Queue
 	CondVarMap cvs;
 	void CleanupAll()
 	{
-		for(ThreadMap::iterator mi = threads.begin(); mi != threads.end(); ++mi) {
+		for(ThreadMap::iterator mi = threads.begin(), mie = threads.end(); mi != mie;) {
 			if(mi->second->timed_join(boost::posix_time::seconds(0))) {
 				Cleanup(mi->first);
 				mi = threads.erase(mi);
-			}
+			} else ++mi;
 		}
 	}
 	void Cleanup(const Key& key)
 	{
-		for(CondVarMap::iterator mi = cvs.begin(); mi != cvs.end(); ++mi) {
+		for(CondVarMap::iterator mi = cvs.begin(), mie = cvs.end(); mi != mie;) {
 			if(mi->first.first == key) {
 				mi->second->notify_all();
 				mi = cvs.erase(mi);
-			}
+			} else ++mi;
 		}
 	}
 public:
