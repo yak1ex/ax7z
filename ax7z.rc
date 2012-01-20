@@ -64,7 +64,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // Dialog
 //
 
-IDD_PROGRESS DIALOGEX 0, 0, 143, 76
+IDD_PROGRESS DIALOGEX 0, 0, 143, 67
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | 
     WS_VISIBLE | WS_CAPTION
 CAPTION "ax7z_s.spi"
@@ -110,7 +110,7 @@ BEGIN
     LTEXT           "7Z/RAR/CBR/CAB/ARJ etc. plug-in using 7z",IDC_STATIC,7,
                     28,151,12
     LTEXT           "(c) Makito Miyano",IDC_STATIC,98,7,62,12
-    LTEXT           "for 7-zip 4.57+ s_y4a1",IDC_STATIC,14,17,86,10
+    LTEXT           "for 7-zip 4.57+ s_y4a2",IDC_STATIC,14,17,86,10
     LTEXT           "Enhanced by Yak!",IDC_STATIC,98,17,62,12
 END
 
@@ -175,7 +175,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 136
         TOPMARGIN, 7
-        BOTTOMMARGIN, 69
+        BOTTOMMARGIN, 60
     END
 
     IDD_CONFIG_DIALOG, DIALOG
