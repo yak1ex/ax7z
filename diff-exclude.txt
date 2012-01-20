@@ -39,8 +39,10 @@ dist.sh
 sqlite3.h
 sqlite3ext.h
 sqlite3.c
+shell.c
 test.exe
 test.cpp
 test.sh
 test.db
 *.iso
+temp
