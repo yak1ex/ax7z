@@ -123,7 +123,9 @@ bool SolidCacheDisk::ExistsArchive_(const char* archive) const
 	if(!_stat64(archive, &st)) {
 		Statement stmt(m_db, "SELECT COUNT(*) FROM archive WHERE path = ? AND mtime = ? AND size = ?");
 		stmt.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size);
-		return stmt() && stmt.get_int(0) > 0;
+		bool success = stmt();
+		OutputDebugPrintf("SolidCacheDisk::ExistsArchive_(): archive %s : %d [%d]\n", archive, int(success), stmt.get_int(0));
+		return success && stmt.get_int(0) > 0;
 	}
 // TODO: proper error handling
 	OutputDebugPrintf("ERROR on SolidCacheDisk::ExistArchive_ archive %s\n", archive);
@@ -148,8 +150,8 @@ unsigned int SolidCacheDisk::GetArchiveIdx_(const char* archive) const
 	__stat64 st;
 	if(!_stat64(archive, &st)) {
 		Statement stmt(m_db, "SELECT idx FROM archive WHERE path = ? AND mtime = ? AND size = ?");
-		stmt.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size)();
-		OutputDebugPrintf("SolidCacheDisk::GetArchiveIdx_(): archive %s : [%d]\n", archive, stmt.get_int(0));
+		bool success = stmt.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size)();
+		OutputDebugPrintf("SolidCacheDisk::GetArchiveIdx_(): archive %s : %d [%d]\n", archive, int(success), stmt.get_int(0));
 		return stmt.get_int(0);
 	}
 // TODO: proper error handling
@@ -349,6 +351,7 @@ void SolidCacheDisk::ReduceSize_(boost::uint64_t size, unsigned int exclude_aidx
 
 void SolidCacheDisk::AccessArchive_(const char* archive)
 {
+	OutputDebugPrintf("SolidCacheDisk::AccessArchive(): archive: %s\n", archive);
 	unsigned int aidx = GetArchiveIdx_(archive); 
 	std::time_t atime;
 	std::time(&atime);
@@ -358,6 +361,7 @@ void SolidCacheDisk::AccessArchive_(const char* archive)
 
 bool SolidCacheDisk::IsCached_(const char* archive, unsigned int idx) const
 {
+	OutputDebugPrintf("SolidCacheDisk::IsCached(): archive: %s idx %d\n", archive, idx);
 	if(!ExistsArchive_(archive)) return false;
 	unsigned int aidx = GetArchiveIdx_(archive); 
 	Statement stmt(m_db, "SELECT COUNT(*) FROM entry WHERE aidx = ? AND idx = ? AND completed = 0");
@@ -367,6 +371,7 @@ bool SolidCacheDisk::IsCached_(const char* archive, unsigned int idx) const
 
 bool SolidCacheDisk::Exists_(const char* archive, unsigned int idx) const
 {
+	OutputDebugPrintf("SolidCacheDisk::Exists(): archive: %s idx %d\n", archive, idx);
 	if(!ExistsArchive_(archive)) return false;
 	unsigned int aidx = GetArchiveIdx_(archive); 
 	Statement stmt(m_db, "SELECT COUNT(*) FROM entry WHERE aidx = ? AND idx = ?");
@@ -376,6 +381,7 @@ bool SolidCacheDisk::Exists_(const char* archive, unsigned int idx) const
 
 bool SolidCacheDisk::IsProcessing_(const char *archive, unsigned int idx) const
 {
+	OutputDebugPrintf("SolidCacheDisk::IsProcessing(): archive: %s idx %d\n", archive, idx);
 	unsigned int aidx = GetArchiveIdx_(archive); 
 	Statement stmt(m_db, "SELECT COUNT(*) FROM entry WHERE aidx = ? AND idx = ? AND completed <> 0");
 	stmt.bind(1, aidx).bind(2, idx);

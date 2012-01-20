@@ -729,6 +729,7 @@ int GetFileExImp_Caching(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, con
 	IncrementDLLRefCount();
     scCache.Extract(Extractor(archiveHandler, scCache, lpPrgressCallback, lData, filename), iExtractFileIndex);
 
+OutputDebugPrintf("IsCached(): calling 1 %p %d\n", &scCache, iExtractFileIndex);
 	if(scCache.IsCached(iExtractFileIndex)) {
 		if (dest) {
 			scCache.GetContent(iExtractFileIndex, *dest, static_cast<UINT32>(unpackSize));
@@ -741,6 +742,7 @@ int GetFileExImp_Caching(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, con
         fclose(fp);
     }
 
+OutputDebugPrintf("IsCached(): calling 2 %p %d\n", &scCache, iExtractFileIndex);
 	if (!scCache.IsCached(iExtractFileIndex)) {
         if (dest) {
             LocalFree(*dest);
@@ -806,6 +808,7 @@ int GetFileEx(char *filename, HLOCAL *dest, const char* pOutFile, fileInfo *pinf
             || (pinfo->method[7] == '7' && g_nSolidEnable7z))) {
         SolidFileCache scCache = SolidCache::GetFileCache(filename);
         // TODO: There's race condition between IsCached and GetFileExImp_Normal
+OutputDebugPrintf("IsCached(): calling 3 %p %d\n", &scCache, iExtractFileIndex);
         if(scCache.IsCached(iExtractFileIndex)) { // Cached
 			OutputDebugPrintf("GetFileEx(): %s %d, calling GetFileExImp_Cached\n", filename, pinfo->position);
             return GetFileExImp_Cached(dest, pOutFile, iExtractFileIndex, unpackSize, scCache);

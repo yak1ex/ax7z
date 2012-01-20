@@ -497,9 +497,11 @@ class Queue
 	CondVarMap cvs;
 	void CleanupAll()
 	{
+OutputDebugPrintf("Queue::CleanupAll(): Cleanup %d", threads.size());
 		for(ThreadMap::iterator mi = threads.begin(), mie = threads.end(); mi != mie;) {
 			if(!mi->second->joinable() || mi->second->timed_join(boost::posix_time::seconds(0))) {
 				Cleanup(mi->first);
+OutputDebugPrintf("Queue::CleanupAll(): Cleanup %s", mi->first.get<0>().c_str());
 				mi = threads.erase(mi);
 			} else ++mi;
 		}
@@ -517,11 +519,13 @@ public:
 	bool IsQueued(const std::string &s)
 	{
 		CleanupAll();
+OutputDebugPrintf("Queue::IsQueued(): %s [%d]", s.c_str(), int(threads.count(MakeKey(s)) != 0));
 		return threads.count(MakeKey(s)) != 0;
 	}
 	template<typename Callable>
 	void Invoke(const std::string &s, Callable c)
 	{
+OutputDebugPrintf("Queue::Invoke(): s: %s", s.c_str());
 		CleanupAll();
 		if(threads.count(MakeKey(s))) {
 			OutputDebugPrintf("Queue::Invoke(): thread for %s already invoked", s.c_str());
@@ -532,6 +536,7 @@ public:
 	}
 	bool ExistsCondVar(const std::string &s, unsigned int index)
 	{
+OutputDebugPrintf("Queue::ExistsCondVar(): %s %d [%d]", s.c_str(), index, int(cvs.count(make_pair(MakeKey(s), index)) != 0));
 		CleanupAll();
 		return cvs.count(make_pair(MakeKey(s), index)) != 0;
 	}
@@ -546,6 +551,7 @@ public:
 	}
 	void NotifyCondVar(const std::string &s, unsigned int index)
 	{
+OutputDebugPrintf("Queue::NotifyCondVar(): %s %d [%d]", s.c_str(), index, int(cvs.count(make_pair(MakeKey(s), index)) != 0));
 		if(ExistsCondVar(s, index)) {
 			cvs[make_pair(MakeKey(s), index)]->notify_all();
 			cvs.erase(make_pair(MakeKey(s), index));
