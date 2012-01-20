@@ -705,15 +705,18 @@ public:
 			if(!m_sc.GetQueue().IsQueued(m_sArchive)) {
 				OutputDebugPrintf("SolidFileCache::Extract(): Not queued for %s\n", m_sArchive.c_str());
 				m_sc.GetQueue().Invoke(m_sArchive, c);
+				boost::this_thread::yield();
 			}
 			bool signaled = false;
 			while(!signaled && !IsCached_(index) && /* Defensive to avoid deadlock */ m_sc.GetQueue().IsQueued(m_sArchive)) {
 				signaled = cv->timed_wait(lock, boost::posix_time::milliseconds(500));
 				lock.unlock();
+				boost::this_thread::yield();
 				MSG msg;
 				while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 					TranslateMessage(&msg); 
 					DispatchMessage(&msg); 
+					boost::this_thread::yield();
 				}
 				lock.lock();
 			}
