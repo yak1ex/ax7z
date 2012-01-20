@@ -640,12 +640,15 @@ class Extractor
 	class Cleanup
 	{
 		std::string sArchive;
+		HANDLE hMutex;
 	public:
-		Cleanup(const std::string &s) : sArchive(s) {}
+		Cleanup(const std::string &s, HANDLE h) : sArchive(s), hMutex(h) {}
 		void operator()()
 		{
 			SolidCache::GetInstance().GetQueue().Cleanup(sArchive);
 			FreeLibraryAndExitThread(g_hInstance, 0);
+			ReleaseMutex(hMutex);
+			CloseHandle(hMutex);
 		}
 	};
 public:
@@ -656,22 +659,10 @@ public:
 	void operator()()
 	{
 		OutputDebugPrintf("Extractor::operator(): filename: %s", sFilename.c_str());
-        class mutex
-        {
-			HANDLE hMutex;
-		public:
-            mutex()
-			{
-				hMutex = CreateMutex(NULL, FALSE, "cx.myhome.yak.ax_7z_s");
-				WaitForSingleObject(hMutex, INFINITE);
-			}
-            ~mutex()
-			{
-				ReleaseMutex(hMutex);
-				CloseHandle(hMutex);
-			}
-        } lock;
-		boost::this_thread::at_thread_exit(Cleanup(sFilename));
+		HANDLE hMutex;
+		hMutex = CreateMutex(NULL, FALSE, "cx.myhome.yak.ax_7z_s.extractor");
+		WaitForSingleObject(hMutex, INFINITE);
+OutputDebugPrintf("Extractor::operator(): Lock acquired: filename: %s", sFilename.c_str());
 
 	    CExtractCallbackImp *extractCallbackSpec = new CExtractCallbackImp;
 	    CMyComPtr<IArchiveExtractCallback> extractCallback(extractCallbackSpec);

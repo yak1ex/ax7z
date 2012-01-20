@@ -701,13 +701,14 @@ public:
 		boost::unique_lock<SolidCache::Mutex> lock(SolidCache::GetMutex());
 		if(!IsCached_(index)) {
 			OutputDebugPrintf("SolidFileCache::Extract(): Not cached for %s %d\n", m_sArchive.c_str(), index);
+			boost::shared_ptr<boost::condition_variable_any> cv = m_sc.GetQueue().GetCondVar(m_sArchive,index);
 			if(!m_sc.GetQueue().IsQueued(m_sArchive)) {
 				OutputDebugPrintf("SolidFileCache::Extract(): Not queued for %s\n", m_sArchive.c_str());
 				m_sc.GetQueue().Invoke(m_sArchive, c);
 			}
-			boost::shared_ptr<boost::condition_variable_any> cv = m_sc.GetQueue().GetCondVar(m_sArchive,index);
-			while(!IsCached_(index)) {
-				cv->timed_wait(lock, boost::posix_time::milliseconds(500));
+			bool signaled = false;
+			while(!signaled && !IsCached_(index) && /* Defensive to avoid deadlock */ m_sc.GetQueue().IsQueued(m_sArchive)) {
+				signaled = cv->timed_wait(lock, boost::posix_time::milliseconds(500));
 				lock.unlock();
 				MSG msg;
 				while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
