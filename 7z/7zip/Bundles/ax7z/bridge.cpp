@@ -668,7 +668,7 @@ OutputDebugPrintf("Extractor::operator(): Lock acquired: filename: %s", sFilenam
 	    CMyComPtr<IArchiveExtractCallback> extractCallback(extractCallbackSpec);
 
 	    ProgressArgument pa = {
-	        lpPrgressCallback,
+	        0 /*lpPrgressCallback */,
 	        lData,
 	        0
 	    };
