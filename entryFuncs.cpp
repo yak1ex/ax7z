@@ -15,12 +15,12 @@ ax7z entry funcs
 #include "entryFuncs.h"
 #include "infcache.h"
 #include <sstream>
-#include <boost/filesystem.hpp>
 #include "resource.h"
 #include "7z/7zip/Bundles/ax7z/PasswordManager.h"
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include "7z/7zip/Bundles/ax7z/SolidCache.h"
+#include "7z/Windows/FileDir.h"
 
 struct NoCaseLess
 {
@@ -724,23 +724,22 @@ static bool UpdateSolidValue(HWND hDlgWnd)
 
 static bool IsExistentFolder(HWND hwnd, const std::string &sPath)
 {
-	boost::filesystem::path p(sPath);
-	if(boost::filesystem::is_directory(p)) {
-		return true;
-	}
-	if(boost::filesystem::exists(p)) {
-		std::string sText = "Path: " + sPath + " already exists and is not a directory.";
-		MessageBox(hwnd, sText.c_str(), ExtManager::SECTION_NAME, MB_ICONERROR | MB_OK);
-		return false;
-	}
-	std::string sText = "Directory: " + sPath + " is not found, create?";
-	if(MessageBox(hwnd, sText.c_str(), ExtManager::SECTION_NAME, MB_YESNO) == IDYES) {
-		try {
-			boost::filesystem::create_directories(p);
+	DWORD dwAttr = GetFileAttributes(sPath.c_str());
+	if(dwAttr == -1) {
+		std::string sText = "Directory: " + sPath + " is not found, create?";
+		if(MessageBox(hwnd, sText.c_str(), ExtManager::SECTION_NAME, MB_YESNO) == IDYES) {
+			if(NWindows::NFile::NDirectory::CreateComplexDirectory(sPath.c_str())) {
+				return true;
+			} else {
+				std::string sText = "Directory: " + sPath + " can't be created.";
+				MessageBox(hwnd, sText.c_str(), ExtManager::SECTION_NAME, MB_ICONERROR | MB_OK);
+			}
+		}
+	} else {
+		if(dwAttr & FILE_ATTRIBUTE_DIRECTORY) {
 			return true;
-		} catch (boost::filesystem::filesystem_error &e) {
-			static_cast<void>(e);
-			std::string sText = "Directory: " + sPath + " can't be created.";
+		} else {
+			std::string sText = "Path: " + sPath + " already exists and is not a directory.";
 			MessageBox(hwnd, sText.c_str(), ExtManager::SECTION_NAME, MB_ICONERROR | MB_OK);
 		}
 	}

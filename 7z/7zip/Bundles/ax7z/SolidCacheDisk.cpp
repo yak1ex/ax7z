@@ -5,11 +5,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <boost/algorithm/string/predicate.hpp>
-
 #include "sqlite3/sqlite3.h"
 #include "sqlite3/sqlite3helper.h"
 #include "SolidCache.h"
+
+#include "7z/Common/MyString.h"
+#include "7z/Common/StringConvert.h"
 
 using yak::sqlite::Statement;
 
@@ -463,7 +464,11 @@ std::string SolidCacheDisk::SetCacheFolder(std::string sNew)
 {
 	boost::shared_lock<SolidCache::Mutex> guard(SolidCache::GetMutex());
 
-	if(!boost::algorithm::ends_with(sNew, "\\")) sNew += '\\';
+	{
+		const char* temp = sNew.c_str();
+		const char* temp2 = temp + sNew.size();
+		if(*CharPrev(temp, temp2) != '\\') sNew += '\\';
+	}
 	if(sNew != m_sCacheFolder) {
 	    sqlite3_close(m_db);
 		std::string sNewDB = sNew + "ax7z_s.db";
