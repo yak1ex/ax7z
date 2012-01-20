@@ -1,4 +1,4 @@
-VER = 0.7-457s_y4a1
+VER = 0.7-457s_y4a2
 DIR = ax7z-$(VER)
 
 .PHONY: release dist build mkpatch tag gtag retag test
