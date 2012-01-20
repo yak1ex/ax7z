@@ -407,7 +407,7 @@ public:
   {
     if (_length == 0)
       return -1;
-    T *p = _chars + _length - 1;
+    T *p = _chars + _length /* - 1 */; // for string ended with 0x5c
     for (;;)
     {
       if (*p == c)
