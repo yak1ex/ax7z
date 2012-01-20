@@ -358,6 +358,7 @@ void SolidCacheDisk::AccessArchive_(const char* archive)
 
 bool SolidCacheDisk::IsCached_(const char* archive, unsigned int idx) const
 {
+	if(!ExistsArchive_(archive)) return false;
 	unsigned int aidx = GetArchiveIdx_(archive); 
 	Statement stmt(m_db, "SELECT COUNT(*) FROM entry WHERE aidx = ? AND idx = ? AND completed = 0");
 	stmt.bind(1, aidx).bind(2, idx);
@@ -366,6 +367,7 @@ bool SolidCacheDisk::IsCached_(const char* archive, unsigned int idx) const
 
 bool SolidCacheDisk::Exists_(const char* archive, unsigned int idx) const
 {
+	if(!ExistsArchive_(archive)) return false;
 	unsigned int aidx = GetArchiveIdx_(archive); 
 	Statement stmt(m_db, "SELECT COUNT(*) FROM entry WHERE aidx = ? AND idx = ?");
 	stmt.bind(1, aidx).bind(2, idx);
