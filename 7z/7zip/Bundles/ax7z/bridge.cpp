@@ -505,7 +505,7 @@ int GetArchiveInfoWEx(LPWSTR filename, long len, HLOCAL *lphInf)
     return SPI_ALL_RIGHT;
 }
 
-int GetFileExImp_Cached(HLOCAL *dest, const char* pOutFile, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache scCache)
+int GetFileExImp_Cached(HLOCAL *dest, const char* pOutFile, UINT32 iExtractFileIndex, UINT64 unpackSize, const SolidFileCache &scCache)
 {
     FILE* fp = NULL;
     if (dest) {
@@ -711,7 +711,7 @@ void IncrementDLLRefCount()
 	LoadLibraryEx(s.c_str(), NULL, DONT_RESOLVE_DLL_REFERENCES);
 }
 
-int GetFileExImp_Caching(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, fileInfo *pinfo, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache scCache, const char* filename)
+int GetFileExImp_Caching(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, fileInfo *pinfo, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache &scCache, const char* filename)
 {
 	FILE* fp = NULL;
     if (dest) {
