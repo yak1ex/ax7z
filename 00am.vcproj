@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="00am"
+	RootNamespace="00am"
 	SccProjectName="&quot;$/Hamana/00am&quot;, FHBAAAAA"
 	SccAuxPath=""
 	SccLocalPath=".."
@@ -29,6 +30,7 @@
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="TRUE"
+				TreatWChar_tAsBuiltInType="TRUE"
 				RuntimeTypeInfo="TRUE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile=".\Release/00am.pch"
@@ -767,13 +769,13 @@
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						PreprocessorDefinitions="SQLITE_THREADSAFE"/>
+						PreprocessorDefinitions="SQLITE_THREADSAFE;_WIN32_WINNT=0x500"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						PreprocessorDefinitions="SQLITE_THREADSAFE"/>
+						PreprocessorDefinitions="SQLITE_THREADSAFE;_WIN32_WINNT=0x500"/>
 				</FileConfiguration>
 			</File>
 			<File
