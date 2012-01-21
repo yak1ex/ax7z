@@ -12,3 +12,6 @@
 *.o
 *.exe
 *.BAK
+.gitbranch
+*.spi
+/test
