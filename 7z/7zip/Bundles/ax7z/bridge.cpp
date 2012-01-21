@@ -645,10 +645,11 @@ class Extractor
 		Cleanup(const std::string &s, HANDLE h) : sArchive(s), hMutex(h) {}
 		void operator()()
 		{
+			OutputDebugPrintf("Extractor::Cleanup::operator(): filename: %s", sArchive.c_str());
 			SolidCache::GetInstance().GetQueue().Cleanup(sArchive);
-			FreeLibraryAndExitThread(g_hInstance, 0);
 			ReleaseMutex(hMutex);
 			CloseHandle(hMutex);
+			FreeLibraryAndExitThread(g_hInstance, 0);
 		}
 	};
 public:
@@ -663,6 +664,7 @@ public:
 		hMutex = CreateMutex(NULL, FALSE, "cx.myhome.yak.ax_7z_s.extractor");
 		WaitForSingleObject(hMutex, INFINITE);
 OutputDebugPrintf("Extractor::operator(): Lock acquired: filename: %s", sFilename.c_str());
+        boost::this_thread::at_thread_exit(Cleanup(sFilename, hMutex));
 
 	    CExtractCallbackImp *extractCallbackSpec = new CExtractCallbackImp;
 	    CMyComPtr<IArchiveExtractCallback> extractCallback(extractCallbackSpec);
@@ -708,7 +710,7 @@ void IncrementDLLRefCount()
 	} while(dwLen == buf.size());
 	buf.resize(dwLen);
 	std::string s(buf.begin(), buf.end());
-	LoadLibraryEx(s.c_str(), NULL, DONT_RESOLVE_DLL_REFERENCES);
+	LoadLibrary(s.c_str()); // LoadLibraryEx with DONT_RESOLVE_DLL_REFERENCES is deprecated
 }
 
 int GetFileExImp_Caching(CMyComPtr<IInArchive> archiveHandler, HLOCAL *dest, const char* pOutFile, fileInfo *pinfo, SPI_PROGRESS lpPrgressCallback, long lData, UINT32 iExtractFileIndex, UINT64 unpackSize, SolidFileCache &scCache, const char* filename)

@@ -501,7 +501,7 @@ OutputDebugPrintf("Queue::CleanupAll(): Cleanup %d", threads.size());
 		for(ThreadMap::iterator mi = threads.begin(), mie = threads.end(); mi != mie;) {
 			if(!mi->second->joinable() || mi->second->timed_join(boost::posix_time::seconds(0))) {
 				Cleanup(mi->first);
-OutputDebugPrintf("Queue::CleanupAll(): Cleanup %s", mi->first.get<0>().c_str());
+OutputDebugPrintf("Queue::CleanupAll(): Cleanup thread for %s", mi->first.get<0>().c_str());
 				mi = threads.erase(mi);
 			} else ++mi;
 		}
@@ -561,7 +561,7 @@ OutputDebugPrintf("Queue::NotifyCondVar(): %s %d [%d]", s.c_str(), index, int(cv
 	{
 OutputDebugPrintf("Queue::Cleanup(): %s", sArchive.c_str());
 		Cleanup(MakeKey(sArchive));
-		threads.erase(MakeKey(sArchive));
+//		threads.erase(MakeKey(sArchive));  // Not sure but seems to cause application error
 	}
 };
 
