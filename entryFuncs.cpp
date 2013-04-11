@@ -20,6 +20,9 @@ ax7z entry funcs
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include "7z/7zip/Bundles/ax7z/SolidCache.h"
+
+#include "version.hpp"
+
 #include "7z/Windows/FileDir.h"
 
 struct NoCaseLess
@@ -635,12 +638,55 @@ int __stdcall GetFileW(LPWSTR src, long len,
     }
     return nRet;
 }
+static std::string Get7zPath(HKEY hkParent)
+{
+	HKEY hkey;
+	if(RegOpenKey(hkParent, "Software\\7-zip", &hkey) == ERROR_SUCCESS) {
+		std::vector<BYTE> buf(4096);
+		DWORD dwSize = buf.size();
+		if(RegQueryValueEx(hkey, "Path", 0, 0, &buf[0], &dwSize) == ERROR_SUCCESS) {
+			buf.resize(dwSize ? dwSize - 1 : 0);
+			return std::string(buf.begin(), buf.end());
+		}
+	}
+	return std::string();
+}
+
+static HINSTANCE LoadLibrary7z()
+{
+	HINSTANCE h = LoadLibrary("7z.dll");
+	if(h) return h;
+	std::string s = Get7zPath(HKEY_CURRENT_USER) + "7z.dll";
+	h = LoadLibrary(s.c_str());
+	if(h) return h;
+	s = Get7zPath(HKEY_LOCAL_MACHINE) + "7z.dll";
+	h = LoadLibrary(s.c_str());
+	return h;
+}
+
+static std::string Find7zPath()
+{
+	HINSTANCE h = LoadLibrary7z();
+	if(!h) return std::string();
+	std::string s(4096, '\0');
+	DWORD dwLen = GetModuleFileName(h, &s[0], s.size());
+	s.resize(dwLen);
+	FreeLibrary(h);
+	return s;
+}
 //---------------------------------------------------------------------------
 LRESULT CALLBACK AboutDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
         case WM_INITDIALOG:
+        {
+OutputDebugString(Find7zPath().c_str());
+			yak::util::windows::VersionResource vr(Find7zPath().c_str());
+			std::string s = vr.GetValue(yak::util::windows::VersionResource::FILE_VERSION);
+OutputDebugString(s.c_str());
+            SendDlgItemMessage(hDlgWnd, IDC_7ZVERSION, WM_SETTEXT, 0, (LPARAM)s.c_str());
             return FALSE;
+        }
         case WM_COMMAND:
             switch (LOWORD(wp)) {
                 case IDOK:

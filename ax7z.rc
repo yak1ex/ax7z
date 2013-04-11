@@ -99,19 +99,21 @@ BEGIN
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,122,107,10
 END
 
-IDD_ABOUT_DIALOG DIALOGEX 0, 0, 167, 61
+IDD_ABOUT_DIALOG DIALOGEX 0, 0, 167, 72
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
     WS_SYSMENU
 CAPTION "About ax7z_s.spi"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,55,40,50,14
+    DEFPUSHBUTTON   "OK",IDOK,55,51,50,14
     LTEXT           "ax7z_s.spi  v0.7",IDC_STATIC,7,7,62,10
     LTEXT           "7Z/RAR/CBR/CAB/ARJ etc. plug-in using 7z",IDC_STATIC,7,
                     28,151,12
     LTEXT           "(c) Makito Miyano",IDC_STATIC,98,7,62,12
     LTEXT           "for 7-zip 4.57+ s_y4a2",IDC_STATIC,14,17,86,10
     LTEXT           "Enhanced by Yak!",IDC_STATIC,98,17,62,12
+    LTEXT           "Using 7z.dll version",IDC_STATIC,27,40,62,8
+    LTEXT           "",IDC_7ZVERSION,92,40,50,8
 END
 
 IDD_SOLID_CONFIG_DIALOG DIALOGEX 0, 0, 294, 105
@@ -230,7 +232,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 160
         TOPMARGIN, 7
-        BOTTOMMARGIN, 54
+        BOTTOMMARGIN, 65
     END
 
     IDD_SOLID_CONFIG_DIALOG, DIALOG
