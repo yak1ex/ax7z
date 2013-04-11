@@ -118,6 +118,45 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// Version
+//
+
+IDV_VERSIONINFO VERSIONINFO
+ FILEVERSION 0,7,4,2
+ PRODUCTVERSION 0,7,4,2
+ FILEFLAGSMASK 0x0L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+            VALUE "CompanyName", "Yak!"
+            VALUE "FileDescription", "ax7z_s.spi - 7Z/RAR/CBR/CAB/ARJ etc. plug-in using 7z with solid cache"
+            VALUE "FileVersion", "v0.7 s_y4a2"
+            VALUE "InternalName", "ax7z_s.spi"
+            VALUE "LegalCopyright", "(c) Makito Miyano, enhanced by Yak!"
+            VALUE "OriginalFilename", "ax7z_s.spi"
+            VALUE "ProductName", "ax7z_s.spi"
+            VALUE "ProductVersion", "v0.7 s_y4a2"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1252
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // DESIGNINFO
 //
 

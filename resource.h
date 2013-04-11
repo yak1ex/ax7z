@@ -2,6 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by ax7z.rc
 //
+#define IDV_VERSIONINFO                 1
 #define IDC_BROWSE_BUTTON               3
 #define IDD_CONFIG_DIALOG               101
 #define IDD_ABOUT_DIALOG                102
