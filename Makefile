@@ -13,7 +13,7 @@ dist: mkpatch
 	rm -rf $(DIR)
 	
 build:
-	/cygdrive/c/Program\ Files/Application/Microsoft\ Visual\ Studio\ .NET\ 2003/Common7/IDE/devenv.exe ./00am.sln /Rebuild Release
+	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Rebuild Release
 
 mkpatch:
 	rm -f $(DIR).patch
