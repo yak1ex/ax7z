@@ -587,17 +587,17 @@ public:
 
 	bool IsCached(const std::string& sArchive, unsigned int index) const
 	{
-		return m_scm.Peek(SolidFileCacheMemory::IsCached_, sArchive, index) || m_scd.IsCached(sArchive.c_str(), index);
+		return m_scm.Peek(&SolidFileCacheMemory::IsCached_, sArchive, index) || m_scd.IsCached(sArchive.c_str(), index);
 	}
 	bool IsCached_(const std::string& sArchive, unsigned int index) const
 	{
-		return m_scm.Peek_(SolidFileCacheMemory::IsCached_, SolidCacheMemory::MakeKey(sArchive), index) || m_scd.IsCached_(sArchive.c_str(), index);
+		return m_scm.Peek_(&SolidFileCacheMemory::IsCached_, SolidCacheMemory::MakeKey(sArchive), index) || m_scd.IsCached_(sArchive.c_str(), index);
 	}
 	void Append(const std::string& sArchvie, unsigned int index, const void* data, unsigned int size);
 	void Cached(const std::string& sArchive, unsigned int index)
 	{
 		OutputDebugPrintf("SolidCache::Cached %s %d\n", sArchive.c_str(), index);
-		if(m_scm.Peek(SolidFileCacheMemory::Exists_, sArchive, index)) {
+		if(m_scm.Peek(&SolidFileCacheMemory::Exists_, sArchive, index)) {
 			OutputDebugPrintf("SolidCache::Cached:memory %s %d\n", sArchive.c_str(), index);
 			m_scm.GetFileCache(sArchive).Cached(index);
 		} else if(m_scd.Exists(sArchive.c_str(), index)) {
@@ -620,7 +620,7 @@ public:
 	void GetContent(const std::string& sArchive, unsigned int index, void* dest, unsigned int size) const
 	{
 		OutputDebugPrintf("SolidCache::GetContent %s %d %d bytes\n", sArchive.c_str(), index, size);
-		if(m_scm.Peek(SolidFileCacheMemory::IsCached_, sArchive, index)) {
+		if(m_scm.Peek(&SolidFileCacheMemory::IsCached_, sArchive, index)) {
 			m_scm.GetFileCache(sArchive).GetContent(index, dest, size);
 		} else if(m_scd.IsCached(sArchive.c_str(), index)) {
 			m_scd.GetContent(sArchive.c_str(), index, dest, size);
@@ -631,7 +631,7 @@ public:
 	void OutputContent(const std::string& sArchive, unsigned int index, unsigned int size, FILE* fp) const
 	{
 		OutputDebugPrintf("SolidCache::OutputContent %s %d %d bytes\n", sArchive.c_str(), index, size);
-		if(m_scm.Peek(SolidFileCacheMemory::IsCached_, sArchive, index)) {
+		if(m_scm.Peek(&SolidFileCacheMemory::IsCached_, sArchive, index)) {
 			m_scm.GetFileCache(sArchive).OutputContent(index, size, fp);
 		} else if(m_scd.IsCached(sArchive.c_str(), index)) {
 			m_scd.OutputContent(sArchive.c_str(), index, size, fp);

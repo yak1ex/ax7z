@@ -753,11 +753,11 @@ static bool UpdateSolidValue(HWND hDlgWnd)
     bool fChanged = false;
     fChanged |= IsChecked2(hDlgWnd, IDC_SOLID_7Z_CHECK, g_nSolidEnable7z);
     fChanged |= IsChecked2(hDlgWnd, IDC_SOLID_RAR_CHECK, g_nSolidEnableRar);
-	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT, SolidCache::GetMaxLookAhead, SolidCache::SetMaxLookAhead);
-	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_MEMORY_EDIT, SolidCache::GetMaxMemory, SolidCache::SetMaxMemory);
-	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_DISK_EDIT, SolidCache::GetMaxDisk, SolidCache::SetMaxDisk);
-	fChanged |= GetIntValue(hDlgWnd, IDC_PURGE_MEMORY_EDIT, SolidCache::GetPurgeMemory, SolidCache::SetPurgeMemory);
-	fChanged |= GetIntValue(hDlgWnd, IDC_PURGE_DISK_EDIT, SolidCache::GetPurgeDisk, SolidCache::SetPurgeDisk);
+	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT, &SolidCache::GetMaxLookAhead, &SolidCache::SetMaxLookAhead);
+	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_MEMORY_EDIT, &SolidCache::GetMaxMemory, &SolidCache::SetMaxMemory);
+	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_DISK_EDIT, &SolidCache::GetMaxDisk, &SolidCache::SetMaxDisk);
+	fChanged |= GetIntValue(hDlgWnd, IDC_PURGE_MEMORY_EDIT, &SolidCache::GetPurgeMemory, &SolidCache::SetPurgeMemory);
+	fChanged |= GetIntValue(hDlgWnd, IDC_PURGE_DISK_EDIT, &SolidCache::GetPurgeDisk, &SolidCache::SetPurgeDisk);
     char buf[2048];
     SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_GETTEXT, sizeof(buf), (LPARAM)buf);
 	if(lstrcmp(buf, SolidCache::GetInstance().GetCacheFolder().c_str())) {
