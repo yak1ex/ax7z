@@ -1,0 +1,232 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{bc81bfe4-18f5-4499-af81-2506eec4439c}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{7d9bb849-91e9-46c2-8099-a8e73c05be34}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    </Filter>
+    <Filter Include="7-zip">
+      <UniqueIdentifier>{d55998b6-8860-4d8b-9d36-6c2717f54c32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="7-zip\Common">
+      <UniqueIdentifier>{7210fb95-299b-46ef-b4d2-527e3dba152f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="7-zip\bridge">
+      <UniqueIdentifier>{6b27c23d-b4c5-441b-8650-f2535e4a95ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="7-zip\7-zip Common">
+      <UniqueIdentifier>{6a767c8f-d844-4595-a3d9-3edccc019ad0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="7-zip\Windows">
+      <UniqueIdentifier>{35a9db38-e1c7-46b0-99d6-608967e2fcdb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="7-zip\UI Common">
+      <UniqueIdentifier>{ecb11459-0174-44a6-8c63-16a8fc696184}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{03e9e4d5-0f3f-4d0a-91ca-fa43d0ee3a85}</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ax7z.def">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ax7z.rc">
+      <Filter>Source Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="entryFuncs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="infcache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Common\IntToString.cpp">
+      <Filter>7-zip\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\common\MyString.cpp">
+      <Filter>7-zip\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\common\MyVector.cpp">
+      <Filter>7-zip\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Common\StdInStream.cpp">
+      <Filter>7-zip\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Common\StdOutStream.cpp">
+      <Filter>7-zip\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\7zip\Common\StreamUtils.cpp">
+      <Filter>7-zip\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Common\StringConvert.cpp">
+      <Filter>7-zip\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Common\StringToInt.cpp">
+      <Filter>7-zip\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Common\Wildcard.cpp">
+      <Filter>7-zip\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\7zip\Bundles\ax7z\bridge.cpp">
+      <Filter>7-zip\bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\7zip\Bundles\ax7z\ExtractCallback.cpp">
+      <Filter>7-zip\bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\7zip\Bundles\ax7z\OpenCallback.cpp">
+      <Filter>7-zip\bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\7zip\Bundles\ax7z\PasswordManager.cpp">
+      <Filter>7-zip\bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\7zip\Bundles\ax7z\SolidArchiveExtractCallback.cpp">
+      <Filter>7-zip\bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\7zip\Common\FileStreams.cpp">
+      <Filter>7-zip\7-zip Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Windows\DLL.cpp">
+      <Filter>7-zip\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Windows\FileDir.cpp">
+      <Filter>7-zip\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Windows\FileFind.cpp">
+      <Filter>7-zip\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Windows\FileIO.cpp">
+      <Filter>7-zip\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Windows\FileName.cpp">
+      <Filter>7-zip\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Windows\PropVariant.cpp">
+      <Filter>7-zip\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Windows\PropVariantConversions.cpp">
+      <Filter>7-zip\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\Windows\Registry.cpp">
+      <Filter>7-zip\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\7zip\Ui\Common\ArchiveOpenCallback.cpp">
+      <Filter>7-zip\UI Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\7zip\Ui\Common\DefaultName.cpp">
+      <Filter>7-zip\UI Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\7zip\ui\common\LoadCodecs.cpp">
+      <Filter>7-zip\UI Common</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\7zip\Ui\Common\OpenArchive.cpp">
+      <Filter>7-zip\UI Common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="critsect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="entryFuncs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="infcache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Common\IntToString.h">
+      <Filter>7-zip\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Common\MyCom.h">
+      <Filter>7-zip\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\common\MyString.h">
+      <Filter>7-zip\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\common\MyVector.h">
+      <Filter>7-zip\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Common\StdInStream.h">
+      <Filter>7-zip\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Common\StdOutStream.h">
+      <Filter>7-zip\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\7zip\Common\StreamUtils.h">
+      <Filter>7-zip\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Common\StringConvert.h">
+      <Filter>7-zip\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Common\StringToInt.h">
+      <Filter>7-zip\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Common\Wildcard.h">
+      <Filter>7-zip\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\7zip\Bundles\ax7z\ExtractCallback.h">
+      <Filter>7-zip\bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\7zip\Bundles\ax7z\OpenCallback.h">
+      <Filter>7-zip\bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\7zip\Bundles\ax7z\PasswordManager.h">
+      <Filter>7-zip\bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\7zip\Bundles\ax7z\SolidArchiveExtractCallback.h">
+      <Filter>7-zip\bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\7zip\Common\FileStreams.h">
+      <Filter>7-zip\7-zip Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Windows\DLL.h">
+      <Filter>7-zip\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Windows\FileDir.h">
+      <Filter>7-zip\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Windows\FileFind.h">
+      <Filter>7-zip\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Windows\FileIO.h">
+      <Filter>7-zip\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Windows\FileName.h">
+      <Filter>7-zip\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Windows\PropVariant.h">
+      <Filter>7-zip\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Windows\PropVariantConversions.h">
+      <Filter>7-zip\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\Windows\Registry.h">
+      <Filter>7-zip\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\7zip\Ui\Common\ArchiveOpenCallback.h">
+      <Filter>7-zip\UI Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\7zip\Ui\Common\DefaultName.h">
+      <Filter>7-zip\UI Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\7zip\ui\common\LoadCodecs.h">
+      <Filter>7-zip\UI Common</Filter>
+    </ClInclude>
+    <ClInclude Include="7z\7zip\Ui\Common\OpenArchive.h">
+      <Filter>7-zip\UI Common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ax7z.txt" />
+  </ItemGroup>
+</Project>
