@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
+    <RootNamespace>00am</RootNamespace>
     <SccProjectName>"$/Hamana/00am", FHBAAAAA</SccProjectName>
     <SccAuxPath />
     <SccLocalPath>..</SccLocalPath>
@@ -62,6 +63,7 @@
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader />
       <PrecompiledHeaderOutputFile>.\Release/00am.pch</PrecompiledHeaderOutputFile>
@@ -73,8 +75,8 @@
       <CompileAs>Default</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>Release/ax7z.spi</OutputFile>
+      <AdditionalDependencies>comctl32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>Release/ax7z_s.spi</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Library\boost\boost_1_54_0\lib32-msvc-11.0;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>.\ax7z.def</ModuleDefinitionFile>
@@ -98,10 +100,11 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.;7z;C:\Program Files\Library\boost\boost_1_54_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;7z;C:\Program Files (x86)\Library\boost\boost_1_54_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MY00AM_EXPORTS;EXTERNAL_CODECS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader />
       <PrecompiledHeaderOutputFile>.\Debug/00am.pch</PrecompiledHeaderOutputFile>
@@ -115,10 +118,10 @@
       <CompileAs>Default</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)ax7z.spi</OutputFile>
+      <AdditionalDependencies>comctl32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)ax7z_s.spi</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>C:\Program Files\Library\boost\boost_1_54_0\lib32-msvc-11.0;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\Library\boost\boost_1_54_0\lib32-msvc-11.0;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>.\ax7z.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>.\Debug/ax7z.pdb</ProgramDatabaseFile>
@@ -269,6 +272,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="7z\7zip\Bundles\ax7z\SolidCache.cpp" />
+    <ClCompile Include="7z\7zip\Bundles\ax7z\SolidCacheDisk.cpp" />
     <ClCompile Include="7z\7zip\Common\FileStreams.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
       </PrecompiledHeader>
@@ -360,6 +365,10 @@
       </PrecompiledHeader>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="sqlite3\sqlite3.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">SQLITE_THREADSAFE;_WIN32_WINNT=0x500;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">SQLITE_THREADSAFE;_WIN32_WINNT=0x500;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="critsect.h" />
@@ -380,6 +389,7 @@
     <ClInclude Include="7z\7zip\Bundles\ax7z\OpenCallback.h" />
     <ClInclude Include="7z\7zip\Bundles\ax7z\PasswordManager.h" />
     <ClInclude Include="7z\7zip\Bundles\ax7z\SolidArchiveExtractCallback.h" />
+    <ClInclude Include="7z\7zip\Bundles\ax7z\SolidCache.h" />
     <ClInclude Include="7z\7zip\Common\FileStreams.h" />
     <ClInclude Include="7z\Windows\DLL.h" />
     <ClInclude Include="7z\Windows\FileDir.h" />
@@ -393,6 +403,8 @@
     <ClInclude Include="7z\7zip\Ui\Common\DefaultName.h" />
     <ClInclude Include="7z\7zip\ui\common\LoadCodecs.h" />
     <ClInclude Include="7z\7zip\Ui\Common\OpenArchive.h" />
+    <ClInclude Include="sqlite3\sqlite3.h" />
+    <ClInclude Include="sqlite3\sqlite3helper.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ax7z.txt" />

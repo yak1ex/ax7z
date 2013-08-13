@@ -2,34 +2,37 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{bc81bfe4-18f5-4499-af81-2506eec4439c}</UniqueIdentifier>
+      <UniqueIdentifier>{1a96980a-a03d-4668-8860-37aa154d89dc}</UniqueIdentifier>
       <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
     </Filter>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{7d9bb849-91e9-46c2-8099-a8e73c05be34}</UniqueIdentifier>
+      <UniqueIdentifier>{a24b5a2c-f87e-4506-b293-cbd4225e91c8}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl</Extensions>
     </Filter>
     <Filter Include="7-zip">
-      <UniqueIdentifier>{d55998b6-8860-4d8b-9d36-6c2717f54c32}</UniqueIdentifier>
+      <UniqueIdentifier>{c22458e7-7223-4e81-bafc-eeebda33ce82}</UniqueIdentifier>
     </Filter>
     <Filter Include="7-zip\Common">
-      <UniqueIdentifier>{7210fb95-299b-46ef-b4d2-527e3dba152f}</UniqueIdentifier>
+      <UniqueIdentifier>{261cec54-8ae9-4e70-b362-6f6156c839c8}</UniqueIdentifier>
     </Filter>
     <Filter Include="7-zip\bridge">
-      <UniqueIdentifier>{6b27c23d-b4c5-441b-8650-f2535e4a95ca}</UniqueIdentifier>
+      <UniqueIdentifier>{a176f517-0023-4015-9202-2e24e81305ff}</UniqueIdentifier>
     </Filter>
     <Filter Include="7-zip\7-zip Common">
-      <UniqueIdentifier>{6a767c8f-d844-4595-a3d9-3edccc019ad0}</UniqueIdentifier>
+      <UniqueIdentifier>{b6f8533a-d893-47eb-b9fb-a8a86609c854}</UniqueIdentifier>
     </Filter>
     <Filter Include="7-zip\Windows">
-      <UniqueIdentifier>{35a9db38-e1c7-46b0-99d6-608967e2fcdb}</UniqueIdentifier>
+      <UniqueIdentifier>{eb818b1b-32cb-4ab5-ac05-e92ed3c33631}</UniqueIdentifier>
     </Filter>
     <Filter Include="7-zip\UI Common">
-      <UniqueIdentifier>{ecb11459-0174-44a6-8c63-16a8fc696184}</UniqueIdentifier>
+      <UniqueIdentifier>{08784d0c-10b8-4903-84aa-ccc39ea26c47}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resource Files">
-      <UniqueIdentifier>{03e9e4d5-0f3f-4d0a-91ca-fa43d0ee3a85}</UniqueIdentifier>
+      <UniqueIdentifier>{09374d5a-8ff3-45a5-858d-f651e6e22f79}</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+    <Filter Include="sqlite3">
+      <UniqueIdentifier>{1c076c8e-2708-48ae-aa5b-3c508db1d41e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -91,6 +94,12 @@
     <ClCompile Include="7z\7zip\Bundles\ax7z\SolidArchiveExtractCallback.cpp">
       <Filter>7-zip\bridge</Filter>
     </ClCompile>
+    <ClCompile Include="7z\7zip\Bundles\ax7z\SolidCache.cpp">
+      <Filter>7-zip\bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="7z\7zip\Bundles\ax7z\SolidCacheDisk.cpp">
+      <Filter>7-zip\bridge</Filter>
+    </ClCompile>
     <ClCompile Include="7z\7zip\Common\FileStreams.cpp">
       <Filter>7-zip\7-zip Common</Filter>
     </ClCompile>
@@ -129,6 +138,9 @@
     </ClCompile>
     <ClCompile Include="7z\7zip\Ui\Common\OpenArchive.cpp">
       <Filter>7-zip\UI Common</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3\sqlite3.c">
+      <Filter>sqlite3</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -186,6 +198,9 @@
     <ClInclude Include="7z\7zip\Bundles\ax7z\SolidArchiveExtractCallback.h">
       <Filter>7-zip\bridge</Filter>
     </ClInclude>
+    <ClInclude Include="7z\7zip\Bundles\ax7z\SolidCache.h">
+      <Filter>7-zip\bridge</Filter>
+    </ClInclude>
     <ClInclude Include="7z\7zip\Common\FileStreams.h">
       <Filter>7-zip\7-zip Common</Filter>
     </ClInclude>
@@ -224,6 +239,12 @@
     </ClInclude>
     <ClInclude Include="7z\7zip\Ui\Common\OpenArchive.h">
       <Filter>7-zip\UI Common</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3\sqlite3.h">
+      <Filter>sqlite3</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3\sqlite3helper.h">
+      <Filter>sqlite3</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
