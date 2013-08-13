@@ -58,7 +58,7 @@ boost::uint64_t SolidFileCacheMemory::ReduceSize_(boost::uint64_t uiSize, void(*
 
 SolidCacheMemory::Key SolidCacheMemory::MakeKey(const std::string &sArchive)
 {
-	__stat64 st;
+	struct __stat64 st;
 // TODO: error check
 	_stat64(sArchive.c_str(), &st);
 	return boost::make_tuple(sArchive, st.st_mtime, st.st_size);
@@ -118,7 +118,7 @@ boost::uint64_t SolidCacheMemory::ReduceSize_(boost::uint64_t uiSize, void(*fCal
 
 Queue::Key Queue::MakeKey(const std::string &sArchive) const
 {
-	__stat64 st;
+	struct __stat64 st;
 // TODO: error check
 	_stat64(sArchive.c_str(), &st);
 	return boost::make_tuple(sArchive, st.st_mtime, st.st_size);

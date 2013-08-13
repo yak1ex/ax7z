@@ -95,7 +95,7 @@ void SolidCacheDisk::CheckDB_()
 	Statement stmt(m_db, "SELECT idx, path, mtime, size FROM archive");
 	while(stmt()) {
 		if(stmt.get_int64(2) == 0 && stmt.get_int64(3) == 0) continue;
-		__stat64 st;
+		struct __stat64 st;
 		if(!_stat64(stmt.get_text(1), &st) && st.st_mtime == stmt.get_int64(2) && st.st_size == stmt.get_int64(3))
 			continue;
 		Statement stmt2(m_db, "SELECT rowid FROM entry WHERE aidx = ?");
@@ -119,7 +119,7 @@ std::string SolidCacheDisk::GetFileName(__int64 id) const
 
 bool SolidCacheDisk::ExistsArchive_(const char* archive) const
 {
-	__stat64 st;
+	struct __stat64 st;
 	if(!_stat64(archive, &st)) {
 		Statement stmt(m_db, "SELECT COUNT(*) FROM archive WHERE path = ? AND mtime = ? AND size = ?");
 		stmt.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size);
@@ -134,7 +134,7 @@ bool SolidCacheDisk::ExistsArchive_(const char* archive) const
 
 void SolidCacheDisk::AddArchive_(const char* archive)
 {
-	__stat64 st;
+	struct __stat64 st;
 	if(!_stat64(archive, &st)) {
 		Statement(m_db, "INSERT INTO archive (path, atime, mtime, size) VALUES (?, 0, ?, ?)")
 			.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size)();
@@ -147,7 +147,7 @@ void SolidCacheDisk::AddArchive_(const char* archive)
 
 unsigned int SolidCacheDisk::GetArchiveIdx_(const char* archive) const
 {
-	__stat64 st;
+	struct __stat64 st;
 	if(!_stat64(archive, &st)) {
 		Statement stmt(m_db, "SELECT idx FROM archive WHERE path = ? AND mtime = ? AND size = ?");
 		bool success = stmt.bind(1, archive).bind(2, st.st_mtime).bind(3, st.st_size)();
