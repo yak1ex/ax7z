@@ -2,6 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by ax7z.rc
 //
+#define IDV_VERSIONINFO                 1
 #define IDC_BROWSE_BUTTON               3
 #define IDD_CONFIG_DIALOG               101
 #define IDD_ABOUT_DIALOG                102
@@ -37,6 +38,7 @@
 #define IDC_SKIP_BUTTON                 1029
 #define IDC_GUIDE_STATIC                1030
 #define IDC_TOPMOST_CHECK               1031
+#define IDC_7ZVERSION                   1032
 #define IDM_TOPMOST                     40000
 
 // Next default values for new objects
@@ -45,7 +47,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        106
 #define _APS_NEXT_COMMAND_VALUE         40002
-#define _APS_NEXT_CONTROL_VALUE         1032
+#define _APS_NEXT_CONTROL_VALUE         1033
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
