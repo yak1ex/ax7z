@@ -73,7 +73,7 @@
       <CompileAs>Default</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>Release/ax7z.spi</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Library\boost\boost_1_54_0\lib32-msvc-11.0;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -115,7 +115,7 @@
       <CompileAs>Default</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)ax7z.spi</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files\Library\boost\boost_1_54_0\lib32-msvc-11.0;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
