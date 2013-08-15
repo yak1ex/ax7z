@@ -293,10 +293,6 @@ void SetIniFileName(HANDLE hModule)
     std::vector<char> vModulePath(1024);
     size_t nLen = GetModuleFileName((HMODULE)hModule, &vModulePath[0], (DWORD)vModulePath.size());
     vModulePath.resize(nLen + 1);
-    // 本来は2バイト文字対策が必要だが、プラグイン名に日本語はないと判断して手抜き
-    while (!vModulePath.empty() && vModulePath.back() != '\\') {
-        vModulePath.pop_back();
-    }
 
     g_sIniFileName = &vModulePath[0];
     g_sIniFileName +=".ini";
