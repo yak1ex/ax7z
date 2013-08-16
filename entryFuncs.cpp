@@ -20,6 +20,8 @@ ax7z entry funcs
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include "version.hpp"
+#include <sys/types.h>
+#include <sys/stat.h>
 
 struct NoCaseLess
 {
@@ -288,18 +290,81 @@ void SaveToIni()
 	WritePrivateProfileString(ExtManager::SECTION_NAME, "topmost", PasswordManager::Get().GetTopMost() ? "true" : "false", sIniFileName.c_str());
 }
 
-void SetIniFileName(HANDLE hModule)
+std::string GetSharedIniFileName(HANDLE hModule)
 {
     std::vector<char> vModulePath(1024);
     size_t nLen = GetModuleFileName((HMODULE)hModule, &vModulePath[0], (DWORD)vModulePath.size());
     vModulePath.resize(nLen + 1);
-    // 本来は2バイト文字対策が必要だが、プラグイン名に日本語はないと判断して手抜き
-    while (!vModulePath.empty() && vModulePath.back() != '\\') {
-        vModulePath.pop_back();
-    }
 
-    g_sIniFileName = &vModulePath[0];
-    g_sIniFileName +=".ini";
+    std::string sResult(&vModulePath[0]);
+    sResult += ".ini";
+    return sResult;
+}
+
+void MakePersonalIniFolder()
+{
+    char p[MAX_PATH];
+    SHGetFolderPath(0, CSIDL_APPDATA, 0, SHGFP_TYPE_CURRENT, p);
+    std::string s(p);
+    s += "\\ax7z";
+    CreateDirectory(s.c_str(), 0);
+}
+
+std::string GetPersonalIniFileName(HANDLE hModule)
+{
+    char p[MAX_PATH];
+    SHGetFolderPath(0, CSIDL_APPDATA, 0, SHGFP_TYPE_CURRENT, p);
+    std::string s(p);
+    s += "\\ax7z";
+    std::vector<char> vModulePath(1024);
+    size_t nLen = GetModuleFileName((HMODULE)hModule, &vModulePath[0], (DWORD)vModulePath.size());
+    vModulePath.resize(nLen + 1);
+    std::vector<char>::reverse_iterator it = find(vModulePath.rbegin(), vModulePath.rend(), '\\');
+    s += "\\";
+    s += std::string(&*it.base());
+    s += ".ini";
+    return s;
+}
+
+void SetIniFileName(HANDLE hModule)
+{
+    std::string sPersonal(GetPersonalIniFileName(hModule));
+    struct __stat64 st;
+    if(!_stat64(sPersonal.c_str(), &st)) { // If personal ini file found, always used
+        g_sIniFileName = sPersonal;
+        return;
+    }
+    std::string sShared(GetSharedIniFileName(hModule));
+    if(!_stat64(sShared.c_str(), &st)) { // Found
+        int nShared = GetPrivateProfileInt(ExtManager::SECTION_NAME, "shared", 0, sShared.c_str());
+        if(nShared) {
+            g_sIniFileName = sShared;
+            return;
+        }
+        int nRet = MessageBox(NULL,
+            "The ini file is found where the spi file exists.\n"
+            "To support multiple users, the default place of the ini file is changed to AppData folder.\n"
+            "\n"
+            "Do you want to move the ini file to AppData folder?\n"
+            "If you can not understand what it is, please select NO",
+            ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_YESNO);
+        if(nRet == IDNO) {
+            WritePrivateProfileString(ExtManager::SECTION_NAME, "shared", "1", sShared.c_str());
+            g_sIniFileName = sShared;
+            return;
+        } else {
+            MakePersonalIniFolder();
+            if(!CopyFile(sShared.c_str(), sPersonal.c_str(), TRUE)) {
+                MessageBox(NULL, "Copy of the ini file is failed. Use the old ini file.", ExtManager::SECTION_NAME, MB_ICONWARNING | MB_OK);
+                g_sIniFileName = sShared;
+                return;
+            }
+            if(!DeleteFile(sShared.c_str())) {
+                MessageBox(NULL, "Delete of the old ini file is failed. Leave as it is.", ExtManager::SECTION_NAME, MB_ICONWARNING | MB_OK);
+            }
+        }
+    }
+    g_sIniFileName = sPersonal;
 }
 
 /* エントリポイント */
