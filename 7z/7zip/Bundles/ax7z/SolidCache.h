@@ -33,6 +33,7 @@
 #include <boost/preprocessor/repetition/enum_params.hpp>
 #include <boost/preprocessor/repetition/enum_trailing.hpp>
 
+#define BOOST_THREAD_VERSION 2
 #include <boost/thread.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/thread/shared_mutex.hpp>
@@ -500,9 +501,9 @@ class Queue
 	{
 OutputDebugPrintf("Queue::CleanupAll(): Cleanup %d", threads.size());
 		for(ThreadMap::iterator mi = threads.begin(), mie = threads.end(); mi != mie;) {
-			if(!mi->second->joinable() || mi->second->timed_join(boost::posix_time::seconds(0))) {
-				Cleanup(mi->first);
+			if(mi->second->get_id() != boost::this_thread::get_id() && (!mi->second->joinable() || mi->second->timed_join(boost::posix_time::seconds(0)))) {
 OutputDebugPrintf("Queue::CleanupAll(): Cleanup thread for %s", mi->first.get<0>().c_str());
+				Cleanup(mi->first);
 				mi = threads.erase(mi);
 			} else ++mi;
 		}
@@ -539,6 +540,7 @@ OutputDebugPrintf("Queue::Invoke(): s: %s", s.c_str());
 	{
 OutputDebugPrintf("Queue::ExistsCondVar(): %s %d [%d]", s.c_str(), index, int(cvs.count(make_pair(MakeKey(s), index)) != 0));
 		CleanupAll();
+OutputDebugPrintf("Queue::ExistsCondVar(): after %s %d [%d]", s.c_str(), index, int(cvs.count(make_pair(MakeKey(s), index)) != 0));
 		return cvs.count(make_pair(MakeKey(s), index)) != 0;
 	}
 	boost::shared_ptr<boost::condition_variable_any> GetCondVar(const std::string &s, unsigned int index)
