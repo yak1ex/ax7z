@@ -33,7 +33,7 @@
 #include <boost/preprocessor/repetition/enum_params.hpp>
 #include <boost/preprocessor/repetition/enum_trailing.hpp>
 
-#define BOOST_THREAD_VERSION 3
+#define BOOST_THREAD_VERSION 4
 #include <boost/thread.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/thread/shared_mutex.hpp>
@@ -501,7 +501,7 @@ class Queue
 	{
 OutputDebugPrintf("Queue::CleanupAll(): Cleanup %d", threads.size());
 		for(ThreadMap::iterator mi = threads.begin(), mie = threads.end(); mi != mie;) {
-			if(mi->second->get_id() != boost::this_thread::get_id() && (!mi->second->joinable() || mi->second->timed_join(boost::posix_time::seconds(0)))) {
+			if(mi->second->get_id() != boost::this_thread::get_id() && (!mi->second->joinable() || mi->second->try_join_for(boost::chrono::seconds(0)))) {
 OutputDebugPrintf("Queue::CleanupAll(): Cleanup thread for %s", mi->first.get<0>().c_str());
 				Cleanup(mi->first);
 				mi = threads.erase(mi);
@@ -718,7 +718,7 @@ public:
 			}
 			bool signaled = false;
 			while(!signaled && !IsCached_(index) && /* Defensive to avoid deadlock */ m_sc.GetQueue().IsQueued(m_sArchive)) {
-				signaled = cv->timed_wait(lock, boost::posix_time::milliseconds(500));
+				signaled = cv->wait_for(lock, boost::chrono::milliseconds(500)) != boost::cv_status::timeout;
 				lock.unlock();
 				boost::this_thread::yield();
 				MSG msg;
