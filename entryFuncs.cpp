@@ -352,12 +352,15 @@ void SetIniFileName(HANDLE hModule)
             g_fSharedConf = true;
             return;
         }
-        int nRet = MessageBox(NULL,
-            "The ini file is found where the spi file exists.\n"
-            "To support multiple users, the default place of the ini file is changed to AppData folder.\n"
+        char buf[1024];
+        wsprintf(buf,
+            "The %s.spi.ini file is found where the %s.spi file exists.\n"
+            "To support multiple users, the default place of the %s.spi.ini file is changed to your AppData folder.\n"
             "\n"
-            "Do you want to move the ini file to AppData folder?\n"
-            "If you can not understand what it is, please select NO",
+            "Do you want to move the %s.spi.ini file to your AppData folder?\n"
+            "If you can not understand what it is, please select NO.",
+            ExtManager::SECTION_NAME, ExtManager::SECTION_NAME, ExtManager::SECTION_NAME, ExtManager::SECTION_NAME);
+        int nRet = MessageBox(NULL, buf,
             ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_YESNO);
         if(nRet == IDNO) {
             WritePrivateProfileString(ExtManager::SECTION_NAME, "shared", "1", sShared.c_str());
