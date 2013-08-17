@@ -367,13 +367,13 @@ void SetIniFileName(HANDLE hModule)
         } else {
             MakePersonalIniFolder();
             if(!CopyFile(sShared.c_str(), sPersonal.c_str(), TRUE)) {
-                MessageBox(NULL, "Copy of the ini file is failed. Use the old ini file.", ExtManager::SECTION_NAME, MB_ICONWARNING | MB_OK);
+                MessageBox(NULL, "Copy of the ini file is failed. Use the old ini file.", ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_OK);
                 g_sIniFileName = sShared;
                 g_fSharedConf = true;
                 return;
             }
             if(!DeleteFile(sShared.c_str())) {
-                MessageBox(NULL, "Delete of the old ini file is failed. Leave as it is.", ExtManager::SECTION_NAME, MB_ICONWARNING | MB_OK);
+                MessageBox(NULL, "Delete of the old ini file is failed. Leave as it is.", ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_OK);
             }
         }
     }
