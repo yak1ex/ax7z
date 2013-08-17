@@ -237,6 +237,7 @@ static InfoCache infocache; //アーカイブ情報キャッシュクラス
 static InfoCacheW infocacheW; //アーカイブ情報キャッシュクラス
 static std::string g_sIniFileName; // ini ファイル名
 static ExtManager g_extManager;
+static bool g_fSharedConf;
 HINSTANCE g_hInstance;
 
 #ifndef _UNICODE
@@ -255,6 +256,7 @@ void SetParamDefault()
 {
 	g_extManager.SetDefault();
 	g_extManager.SetUserExtensions(ExtManager::DEFAULT_EXTENSIONS);
+    g_fSharedConf = false;
 }
 
 std::string GetIniFileName()
@@ -279,15 +281,22 @@ void LoadFromIni()
 	} while(dwSize == vBuf.size() - 1);
 	std::string sResult(&vBuf[0]);
 	PasswordManager::Get().SetTopMost(sResult == "true");
+    int nShared = GetPrivateProfileInt(ExtManager::SECTION_NAME, "shared", -1, sIniFileName.c_str());
+    if(nShared != -1) g_fSharedConf = nShared;
 }
 
-void SaveToIni()
+bool SaveToIni()
 {
     std::string sIniFileName = GetIniFileName();
 
 	g_extManager.Save(sIniFileName);
 
-	WritePrivateProfileString(ExtManager::SECTION_NAME, "topmost", PasswordManager::Get().GetTopMost() ? "true" : "false", sIniFileName.c_str());
+    int nResult = 1;
+	nResult &= WritePrivateProfileString(ExtManager::SECTION_NAME, "topmost", PasswordManager::Get().GetTopMost() ? "true" : "false", sIniFileName.c_str());
+    if(g_fSharedConf)
+        nResult &= WritePrivateProfileString(ExtManager::SECTION_NAME, "shared", "1", sIniFileName.c_str());
+
+    return nResult;
 }
 
 std::string GetSharedIniFileName(HANDLE hModule)
@@ -332,39 +341,47 @@ void SetIniFileName(HANDLE hModule)
     struct __stat64 st;
     if(!_stat64(sPersonal.c_str(), &st)) { // If personal ini file found, always used
         g_sIniFileName = sPersonal;
+        g_fSharedConf = false;
         return;
     }
     std::string sShared(GetSharedIniFileName(hModule));
     if(!_stat64(sShared.c_str(), &st)) { // Found
-        int nShared = GetPrivateProfileInt(ExtManager::SECTION_NAME, "shared", 0, sShared.c_str());
-        if(nShared) {
+        int nShared = GetPrivateProfileInt(ExtManager::SECTION_NAME, "shared", -1, sShared.c_str());
+        if(nShared == 1) {
             g_sIniFileName = sShared;
+            g_fSharedConf = true;
             return;
         }
-        int nRet = MessageBox(NULL,
-            "The ini file is found where the spi file exists.\n"
-            "To support multiple users, the default place of the ini file is changed to AppData folder.\n"
+        char buf[1024];
+        wsprintf(buf,
+            "The %s.spi.ini file is found where the %s.spi file exists.\n"
+            "To support multiple users, the default place of the %s.spi.ini file is changed to your AppData folder.\n"
             "\n"
-            "Do you want to move the ini file to AppData folder?\n"
-            "If you can not understand what it is, please select NO",
+            "Do you want to move the %s.spi.ini file to your AppData folder?\n"
+            "If you can not understand what it is, please select NO.",
+            ExtManager::SECTION_NAME, ExtManager::SECTION_NAME, ExtManager::SECTION_NAME, ExtManager::SECTION_NAME);
+        int nRet = MessageBox(NULL, buf,
             ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_YESNO);
         if(nRet == IDNO) {
             WritePrivateProfileString(ExtManager::SECTION_NAME, "shared", "1", sShared.c_str());
             g_sIniFileName = sShared;
+            g_fSharedConf = true;
             return;
         } else {
             MakePersonalIniFolder();
             if(!CopyFile(sShared.c_str(), sPersonal.c_str(), TRUE)) {
-                MessageBox(NULL, "Copy of the ini file is failed. Use the old ini file.", ExtManager::SECTION_NAME, MB_ICONWARNING | MB_OK);
+                MessageBox(NULL, "Copy of the ini file is failed. Use the old ini file.", ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_OK);
                 g_sIniFileName = sShared;
+                g_fSharedConf = true;
                 return;
             }
             if(!DeleteFile(sShared.c_str())) {
-                MessageBox(NULL, "Delete of the old ini file is failed. Leave as it is.", ExtManager::SECTION_NAME, MB_ICONWARNING | MB_OK);
+                MessageBox(NULL, "Delete of the old ini file is failed. Leave as it is.", ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_OK);
             }
         }
     }
     g_sIniFileName = sPersonal;
+    g_fSharedConf = false;
 }
 
 /* エントリポイント */
@@ -778,6 +795,8 @@ void UpdateDialogItem(HWND hDlgWnd)
 	SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_EDIT, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(static_cast<const void*>(g_extManager.GetUserExtensions().c_str())));
 
 	SendDlgItemMessage(hDlgWnd, IDC_TOPMOST_CHECK, BM_SETCHECK, PasswordManager::Get().GetTopMost() ? BST_CHECKED : BST_UNCHECKED, 0);
+
+    SendDlgItemMessage(hDlgWnd, IDC_PERUSERCONF_CHECK, BM_SETCHECK, !g_fSharedConf ? BST_CHECKED : BST_UNCHECKED, 0);
 }
 
 bool UpdateValue(HWND hDlgWnd)
@@ -795,6 +814,26 @@ bool UpdateValue(HWND hDlgWnd)
 	g_extManager.SetUserExtensions(&vBuf[0]);
 
 	PasswordManager::Get().SetTopMost(SendDlgItemMessage(hDlgWnd, IDC_TOPMOST_CHECK, BM_GETCHECK, 0, 0) == BST_CHECKED);
+
+    bool fSharedConf = g_fSharedConf;
+    std::string sIniFileName = g_sIniFileName;
+    if(SendDlgItemMessage(hDlgWnd, IDC_PERUSERCONF_CHECK, BM_GETCHECK, 0, 0) == BST_CHECKED) {
+        g_fSharedConf = false;
+        g_sIniFileName = GetPersonalIniFileName(g_hInstance);
+        MakePersonalIniFolder();
+    } else {
+        g_fSharedConf = true;
+        g_sIniFileName = GetSharedIniFileName(g_hInstance);
+    }
+    if(fSharedConf != g_fSharedConf) {
+        if(SaveToIni()) {
+            DeleteFile(sIniFileName.c_str());
+        } else {
+            MessageBox(NULL, "Writing ini file is failed. Keep the old ini file location.", ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_OK);
+            g_fSharedConf = fSharedConf;
+            g_sIniFileName = sIniFileName;
+        }
+    }
 
     return true;
 }
