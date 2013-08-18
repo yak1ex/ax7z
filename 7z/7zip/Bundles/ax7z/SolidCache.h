@@ -533,6 +533,7 @@ OutputDebugPrintf("Queue::Invoke(): s: %s", s.c_str());
 			OutputDebugPrintf("Queue::Invoke(): thread for %s already invoked", s.c_str());
 		} else {
 			boost::shared_ptr<boost::thread> ptr(new boost::thread(c));
+			OutputDebugPrintf("Queue::Invoke(): thread for %s %d", s.c_str(), ptr->get_id());
 			threads[MakeKey(s)].swap(ptr);
 		}
 	}
@@ -565,6 +566,16 @@ OutputDebugPrintf("Queue::NotifyCondVar(): %s %d [%d]", s.c_str(), index, int(cv
 OutputDebugPrintf("Queue::Cleanup(): %s", sArchive.c_str());
 		Cleanup(MakeKey(sArchive));
 //		threads.erase(MakeKey(sArchive));  // Not sure but seems to cause application error
+	}
+	~Queue() {
+OutputDebugPrintf("Queue::~Queue(): thread %d", threads.size());
+		for(ThreadMap::iterator mi = threads.begin(), mie = threads.end(); mi != mie; ++mi) {
+			if(mi->second->joinable()) {
+OutputDebugPrintf("Queue::~Queue(): joinable thread %d is the current %s", mi->second->get_id(), mi->second->get_id() == boost::this_thread::get_id() ? "true" : "false");
+				mi->second->join();
+			}
+		}
+OutputDebugPrintf("Queue::~Queue(): end");
 	}
 };
 
