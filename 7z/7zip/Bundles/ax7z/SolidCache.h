@@ -71,6 +71,7 @@ private:
 #include BOOST_PP_ITERATE()
 
 // private:
+	bool OpenDB_();
 	void InitDB_();
 	void CheckDB_();
 	bool ExistsArchive_(const char* archive) const;

@@ -52,6 +52,16 @@ SolidCacheDisk::~SolidCacheDisk()
 	sqlite3_close(m_db);
 }
 
+bool SolidCacheDisk::OpenDB_()
+{
+	std::string sDB = GetCacheFolder() + "ax7z_s.db";
+	UString us(GetUnicodeString(sDB.c_str()));
+	int nLen = WideCharToMultiByte(CP_UTF8, 0, us.GetBuffer(0), -1, 0, 0, 0, 0);
+	std::vector<char> vBuf(nLen);
+	WideCharToMultiByte(CP_UTF8, 0, us.GetBuffer(0), -1, &vBuf[0], vBuf.size(), 0, 0);
+	return sqlite3_open(&vBuf[0], &m_db) == SQLITE_OK;
+}
+
 void SolidCacheDisk::InitDB_()
 {
 	sqlite3_exec(m_db, "PRAGMA journal_mode = OFF", NULL, NULL, NULL);
@@ -462,7 +472,7 @@ void SolidCacheDisk::Clear_()
 		} while(FindNextFile(hFind, &find));
 		CloseHandle(hFind);
 	}
-	if(sqlite3_open(sDB.c_str(), &m_db) != SQLITE_OK) {
+	if(!OpenDB_()) {
 		OutputDebugPrintf("SolidCache::Clear: sqlite3_open for %s failed by %s\n", sDB.c_str(), sqlite3_errmsg(m_db));
 	}
 	InitDB_();
@@ -497,8 +507,7 @@ std::string SolidCacheDisk::SetCacheFolder(std::string sNew)
 			}
 		}
 		std::swap(sNew, m_sCacheFolder);
-		UString us = GetUnicodeString(sNewDB.c_str());
-		if(sqlite3_open16(us.GetBuffer(0), &m_db) != SQLITE_OK) {
+		if(!OpenDB_()) {
 			OutputDebugPrintf("SetCacheFolder: sqlite3_open for %s failed by %s\n", sNewDB.c_str(), sqlite3_errmsg(m_db));
 		}
 		InitDB_();
