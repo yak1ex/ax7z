@@ -501,7 +501,7 @@ class Queue
 	{
 OutputDebugPrintf("Queue::CleanupAll(): Cleanup %d", threads.size());
 		for(ThreadMap::iterator mi = threads.begin(), mie = threads.end(); mi != mie;) {
-			if(mi->second->get_id() != boost::this_thread::get_id() && (!mi->second->joinable() || mi->second->try_join_for(boost::chrono::seconds(0)))) {
+			if(mi->second->get_id() != boost::this_thread::get_id() && (!mi->second->joinable() || mi->second->try_join_until(boost::chrono::system_clock::now() + boost::chrono::milliseconds(1)))) {
 OutputDebugPrintf("Queue::CleanupAll(): Cleanup thread for %s", mi->first.get<0>().c_str());
 				Cleanup(mi->first);
 				mi = threads.erase(mi);
