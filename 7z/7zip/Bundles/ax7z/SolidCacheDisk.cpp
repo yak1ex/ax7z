@@ -64,6 +64,20 @@ bool SolidCacheDisk::OpenDB_()
 
 void SolidCacheDisk::InitDB_()
 {
+	Statement stmt_enc(m_db, "pragma encoding");
+	if(stmt_enc()) {
+		std::string sEnc(stmt.get_text(0));
+		if(sEnc != "UTF-8") {
+			OutputDebugPrintf("SolidCacheDisk::InitDB: encoding is not UTF-8, recreating DB\n");
+			sqlite3_close(m_db);
+			std::string sDB = GetCacheFolder() + "ax7z_s.db";
+			DeleteFile(sDB.c_str());
+			if(!OpenDB_()) {
+				OutputDebugPrintf("SolidCache::InitDB: sqlite3_open for %s failed by %s\n", sDB.c_str(), sqlite3_errmsg(m_db));
+			}
+			sqlite3_exec(m_db, "PRAGMA encoding = \"UTF-8\"", NULL, NULL, NULL);
+		}
+	}
 	sqlite3_exec(m_db, "PRAGMA journal_mode = OFF", NULL, NULL, NULL);
 	sqlite3_exec(m_db, "PRAGMA synchronous = OFF", NULL, NULL, NULL); // very effective
 	sqlite3_exec(m_db, "PRAGMA temp_store = MEMORY", NULL, NULL, NULL);
