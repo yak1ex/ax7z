@@ -66,7 +66,7 @@ void SolidCacheDisk::InitDB_()
 {
 	Statement stmt_enc(m_db, "pragma encoding");
 	if(stmt_enc()) {
-		std::string sEnc(stmt.get_text(0));
+		std::string sEnc(stmt_enc.get_text(0));
 		if(sEnc != "UTF-8") {
 			OutputDebugPrintf("SolidCacheDisk::InitDB: encoding is not UTF-8, recreating DB\n");
 			sqlite3_close(m_db);
