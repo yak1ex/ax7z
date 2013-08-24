@@ -9,4 +9,4 @@ EXPORTS
 	GetFileInfoW
 	GetFileW
 	ConfigurationDlg
-    ExtractSolidArchive
+	ExtractSolidArchive

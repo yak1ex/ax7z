@@ -172,7 +172,7 @@ void ExtManager::SetPluginInfo(std::vector<std::string> &vsPluginInfo) const
 
 	vsPluginInfo.clear();
 	vsPluginInfo.push_back("00AM");
-    vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ s_y4a1 (C) Makito Miyano / enhanced by Yak!"); 
+	vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ s_y4a1 (C) Makito Miyano / enhanced by Yak!"); 
 
 	std::map<std::string, std::string>::const_iterator ci2, ciEnd2 = mResmap.end();
 	for(ci2 = mResmap.begin(); ci2 != ciEnd2; ++ci2) {
@@ -229,11 +229,11 @@ int g_nSolidEnableRar = 1;
 bool g_IsNT = false;
 static inline bool IsItWindowsNT()
 {
-    OSVERSIONINFO versionInfo;
-    versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
-    if (!::GetVersionEx(&versionInfo)) 
-        return false;
-    return (versionInfo.dwPlatformId == VER_PLATFORM_WIN32_NT);
+	OSVERSIONINFO versionInfo;
+	versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
+	if (!::GetVersionEx(&versionInfo)) 
+		return false;
+	return (versionInfo.dwPlatformId == VER_PLATFORM_WIN32_NT);
 }
 #endif
 
@@ -241,9 +241,8 @@ void SetParamDefault()
 {
 	g_extManager.SetDefault();
 	g_extManager.SetUserExtensions(ExtManager::DEFAULT_EXTENSIONS);
-
-    g_nSolidEnable7z = 1;
-    g_nSolidEnableRar = 1;
+	g_nSolidEnable7z = 1;
+	g_nSolidEnableRar = 1;
 
 	SolidCache& sc = SolidCache::GetInstance();
 
@@ -252,39 +251,39 @@ void SetParamDefault()
 	sc.SetMaxDisk(1024);
 	sc.SetPurgeMemory(10);
 	sc.SetPurgeDisk(10);
-//    char buf[2048];
-//    GetTempPath(sizeof(buf), buf);
+//	char buf[2048];
+//	GetTempPath(sizeof(buf), buf);
 //	sc.SetCacheFolder(buf);
 
-    g_fSharedConf = false;
+	g_fSharedConf = false;
 }
 
 std::string GetIniFileName()
 {
-    return g_sIniFileName;
+	return g_sIniFileName;
 }
 
 void LoadFromIni()
 {
-    SetParamDefault();
+	SetParamDefault();
 
-    std::string sIniFileName = GetIniFileName();
+	std::string sIniFileName = GetIniFileName();
 
 	g_extManager.Load(sIniFileName);
 
 	SolidCache& sc = SolidCache::GetInstance();
 
-    g_nSolidEnable7z = GetPrivateProfileInt(ExtManager::SECTION_NAME, "solid7z", g_nSolidEnable7z, sIniFileName.c_str());
-    g_nSolidEnableRar = GetPrivateProfileInt(ExtManager::SECTION_NAME, "solidrar", g_nSolidEnableRar, sIniFileName.c_str());
+	g_nSolidEnable7z = GetPrivateProfileInt(ExtManager::SECTION_NAME, "solid7z", g_nSolidEnable7z, sIniFileName.c_str());
+	g_nSolidEnableRar = GetPrivateProfileInt(ExtManager::SECTION_NAME, "solidrar", g_nSolidEnableRar, sIniFileName.c_str());
 	sc.SetMaxLookAhead(GetPrivateProfileInt(ExtManager::SECTION_NAME, "lookahead", sc.GetMaxLookAhead(), sIniFileName.c_str()));
-    sc.SetMaxMemory(GetPrivateProfileInt(ExtManager::SECTION_NAME, "memory", sc.GetMaxMemory(), sIniFileName.c_str()));
-    sc.SetMaxDisk(GetPrivateProfileInt(ExtManager::SECTION_NAME, "disk", sc.GetMaxDisk(), sIniFileName.c_str()));
-    sc.SetPurgeMemory(GetPrivateProfileInt(ExtManager::SECTION_NAME, "purge_memory", sc.GetPurgeMemory(), sIniFileName.c_str()));
-    sc.SetPurgeDisk(GetPrivateProfileInt(ExtManager::SECTION_NAME, "purge_disk", sc.GetPurgeDisk(), sIniFileName.c_str()));
-    char buf[2048], buf2[2048];
-    GetTempPath(sizeof(buf2), buf2);
-    GetPrivateProfileString(ExtManager::SECTION_NAME, "folder", buf2, buf, sizeof(buf), sIniFileName.c_str());
-    sc.SetCacheFolder(buf);
+	sc.SetMaxMemory(GetPrivateProfileInt(ExtManager::SECTION_NAME, "memory", sc.GetMaxMemory(), sIniFileName.c_str()));
+	sc.SetMaxDisk(GetPrivateProfileInt(ExtManager::SECTION_NAME, "disk", sc.GetMaxDisk(), sIniFileName.c_str()));
+	sc.SetPurgeMemory(GetPrivateProfileInt(ExtManager::SECTION_NAME, "purge_memory", sc.GetPurgeMemory(), sIniFileName.c_str()));
+	sc.SetPurgeDisk(GetPrivateProfileInt(ExtManager::SECTION_NAME, "purge_disk", sc.GetPurgeDisk(), sIniFileName.c_str()));
+	char buf[2048], buf2[2048];
+	GetTempPath(sizeof(buf2), buf2);
+	GetPrivateProfileString(ExtManager::SECTION_NAME, "folder", buf2, buf, sizeof(buf), sIniFileName.c_str());
+	sc.SetCacheFolder(buf);
 
 	std::vector<char> vBuf(1024);
 
@@ -295,179 +294,179 @@ void LoadFromIni()
 	} while(dwSize == vBuf.size() - 1);
 	std::string sResult(&vBuf[0]);
 	PasswordManager::Get().SetTopMost(sResult == "true");
-    int nShared = GetPrivateProfileInt(ExtManager::SECTION_NAME, "shared", -1, sIniFileName.c_str());
-    if(nShared != -1) g_fSharedConf = nShared;
+	int nShared = GetPrivateProfileInt(ExtManager::SECTION_NAME, "shared", -1, sIniFileName.c_str());
+	if(nShared != -1) g_fSharedConf = nShared;
 }
 
 bool SaveToIni()
 {
-    std::string sIniFileName = GetIniFileName();
+	std::string sIniFileName = GetIniFileName();
 
 	g_extManager.Save(sIniFileName);
 
-    char buf[2048];
-    WritePrivateProfileString(ExtManager::SECTION_NAME, "solid7z", g_nSolidEnable7z ? "1" : "0", sIniFileName.c_str());
-    WritePrivateProfileString(ExtManager::SECTION_NAME, "solidrar", g_nSolidEnableRar ? "1" : "0", sIniFileName.c_str());
+	char buf[2048];
+	WritePrivateProfileString(ExtManager::SECTION_NAME, "solid7z", g_nSolidEnable7z ? "1" : "0", sIniFileName.c_str());
+	WritePrivateProfileString(ExtManager::SECTION_NAME, "solidrar", g_nSolidEnableRar ? "1" : "0", sIniFileName.c_str());
 
 	SolidCache& sc = SolidCache::GetInstance();
 	wsprintf(buf, "%d", sc.GetMaxLookAhead());
-    WritePrivateProfileString(ExtManager::SECTION_NAME, "lookahead", buf, sIniFileName.c_str());
-    wsprintf(buf, "%d", sc.GetMaxMemory());
-    WritePrivateProfileString(ExtManager::SECTION_NAME, "memory", buf, sIniFileName.c_str());
-    wsprintf(buf, "%d", sc.GetMaxDisk());
-    WritePrivateProfileString(ExtManager::SECTION_NAME, "disk", buf, sIniFileName.c_str());
-    wsprintf(buf, "%d", sc.GetPurgeMemory());
-    WritePrivateProfileString(ExtManager::SECTION_NAME, "purge_memory", buf, sIniFileName.c_str());
-    wsprintf(buf, "%d", sc.GetPurgeDisk());
-    WritePrivateProfileString(ExtManager::SECTION_NAME, "purge_disk", buf, sIniFileName.c_str());
-    WritePrivateProfileString(ExtManager::SECTION_NAME, "folder", sc.GetCacheFolder().c_str(), sIniFileName.c_str());
+	WritePrivateProfileString(ExtManager::SECTION_NAME, "lookahead", buf, sIniFileName.c_str());
+	wsprintf(buf, "%d", sc.GetMaxMemory());
+	WritePrivateProfileString(ExtManager::SECTION_NAME, "memory", buf, sIniFileName.c_str());
+	wsprintf(buf, "%d", sc.GetMaxDisk());
+	WritePrivateProfileString(ExtManager::SECTION_NAME, "disk", buf, sIniFileName.c_str());
+	wsprintf(buf, "%d", sc.GetPurgeMemory());
+	WritePrivateProfileString(ExtManager::SECTION_NAME, "purge_memory", buf, sIniFileName.c_str());
+	wsprintf(buf, "%d", sc.GetPurgeDisk());
+	WritePrivateProfileString(ExtManager::SECTION_NAME, "purge_disk", buf, sIniFileName.c_str());
+	WritePrivateProfileString(ExtManager::SECTION_NAME, "folder", sc.GetCacheFolder().c_str(), sIniFileName.c_str());
 
 	WritePrivateProfileString(ExtManager::SECTION_NAME, "topmost", PasswordManager::Get().GetTopMost() ? "true" : "false", sIniFileName.c_str());
 
-    int nResult = 1;
+	int nResult = 1;
 	nResult &= WritePrivateProfileString(ExtManager::SECTION_NAME, "topmost", PasswordManager::Get().GetTopMost() ? "true" : "false", sIniFileName.c_str());
-    if(g_fSharedConf)
-        nResult &= WritePrivateProfileString(ExtManager::SECTION_NAME, "shared", "1", sIniFileName.c_str());
+	if(g_fSharedConf)
+		nResult &= WritePrivateProfileString(ExtManager::SECTION_NAME, "shared", "1", sIniFileName.c_str());
 
-    return nResult;
+	return nResult;
 }
 
 std::string GetSharedIniFileName(HANDLE hModule)
 {
-    std::vector<char> vModulePath(1024);
-    size_t nLen = GetModuleFileName((HMODULE)hModule, &vModulePath[0], (DWORD)vModulePath.size());
-    vModulePath.resize(nLen + 1);
+	std::vector<char> vModulePath(1024);
+	size_t nLen = GetModuleFileName((HMODULE)hModule, &vModulePath[0], (DWORD)vModulePath.size());
+	vModulePath.resize(nLen + 1);
 
-    std::string sResult(&vModulePath[0]);
-    sResult += ".ini";
-    return sResult;
+	std::string sResult(&vModulePath[0]);
+	sResult += ".ini";
+	return sResult;
 }
 
 void MakePersonalIniFolder()
 {
-    char p[MAX_PATH];
-    SHGetFolderPath(0, CSIDL_APPDATA, 0, SHGFP_TYPE_CURRENT, p);
-    std::string s(p);
-    s += "\\ax7z";
-    CreateDirectory(s.c_str(), 0);
+	char p[MAX_PATH];
+	SHGetFolderPath(0, CSIDL_APPDATA, 0, SHGFP_TYPE_CURRENT, p);
+	std::string s(p);
+	s += "\\ax7z";
+	CreateDirectory(s.c_str(), 0);
 }
 
 std::string GetPersonalIniFileName(HANDLE hModule)
 {
-    char p[MAX_PATH];
-    SHGetFolderPath(0, CSIDL_APPDATA, 0, SHGFP_TYPE_CURRENT, p);
-    std::string s(p);
-    s += "\\ax7z";
-    std::vector<char> vModulePath(1024);
-    size_t nLen = GetModuleFileName((HMODULE)hModule, &vModulePath[0], (DWORD)vModulePath.size());
-    vModulePath.resize(nLen + 1);
-    std::vector<char>::reverse_iterator it = find(vModulePath.rbegin(), vModulePath.rend(), '\\');
-    s += "\\";
-    s += std::string(&*it.base());
-    s += ".ini";
-    return s;
+	char p[MAX_PATH];
+	SHGetFolderPath(0, CSIDL_APPDATA, 0, SHGFP_TYPE_CURRENT, p);
+	std::string s(p);
+	s += "\\ax7z";
+	std::vector<char> vModulePath(1024);
+	size_t nLen = GetModuleFileName((HMODULE)hModule, &vModulePath[0], (DWORD)vModulePath.size());
+	vModulePath.resize(nLen + 1);
+	std::vector<char>::reverse_iterator it = find(vModulePath.rbegin(), vModulePath.rend(), '\\');
+	s += "\\";
+	s += std::string(&*it.base());
+	s += ".ini";
+	return s;
 }
 
 void SetIniFileName(HANDLE hModule)
 {
-    std::string sPersonal(GetPersonalIniFileName(hModule));
-    struct __stat64 st;
-    if(!_stat64(sPersonal.c_str(), &st)) { // If personal ini file found, always used
-        g_sIniFileName = sPersonal;
-        g_fSharedConf = false;
-        return;
-    }
-    std::string sShared(GetSharedIniFileName(hModule));
-    if(!_stat64(sShared.c_str(), &st)) { // Found
-        int nShared = GetPrivateProfileInt(ExtManager::SECTION_NAME, "shared", -1, sShared.c_str());
-        if(nShared == 1) {
-            g_sIniFileName = sShared;
-            g_fSharedConf = true;
-            return;
-        }
-        char buf[1024];
-        wsprintf(buf,
-            "The %s.spi.ini file is found where the %s.spi file exists.\n"
-            "To support multiple users, the default place of the %s.spi.ini file is changed to your AppData folder.\n"
-            "\n"
-            "Do you want to move the %s.spi.ini file to your AppData folder?\n"
-            "If you can not understand what it is, please select NO.",
-            ExtManager::SECTION_NAME, ExtManager::SECTION_NAME, ExtManager::SECTION_NAME, ExtManager::SECTION_NAME);
-        int nRet = MessageBox(NULL, buf,
-            ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_YESNO);
-        if(nRet == IDNO) {
-            WritePrivateProfileString(ExtManager::SECTION_NAME, "shared", "1", sShared.c_str());
-            g_sIniFileName = sShared;
-            g_fSharedConf = true;
-            return;
-        } else {
-            MakePersonalIniFolder();
-            if(!CopyFile(sShared.c_str(), sPersonal.c_str(), TRUE)) {
-                MessageBox(NULL, "Copy of the ini file is failed. Use the old ini file.", ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_OK);
-                g_sIniFileName = sShared;
-                g_fSharedConf = true;
-                return;
-            }
-            if(!DeleteFile(sShared.c_str())) {
-                MessageBox(NULL, "Delete of the old ini file is failed. Leave as it is.", ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_OK);
-            }
-        }
-    }
-    g_sIniFileName = sPersonal;
-    g_fSharedConf = false;
+	std::string sPersonal(GetPersonalIniFileName(hModule));
+	struct __stat64 st;
+	if(!_stat64(sPersonal.c_str(), &st)) { // If personal ini file found, always used
+		g_sIniFileName = sPersonal;
+		g_fSharedConf = false;
+		return;
+	}
+	std::string sShared(GetSharedIniFileName(hModule));
+	if(!_stat64(sShared.c_str(), &st)) { // Found
+		int nShared = GetPrivateProfileInt(ExtManager::SECTION_NAME, "shared", -1, sShared.c_str());
+		if(nShared == 1) {
+			g_sIniFileName = sShared;
+			g_fSharedConf = true;
+			return;
+		}
+		char buf[1024];
+		wsprintf(buf,
+			"The %s.spi.ini file is found where the %s.spi file exists.\n"
+			"To support multiple users, the default place of the %s.spi.ini file is changed to your AppData folder.\n"
+			"\n"
+			"Do you want to move the %s.spi.ini file to your AppData folder?\n"
+			"If you can not understand what it is, please select NO.",
+			ExtManager::SECTION_NAME, ExtManager::SECTION_NAME, ExtManager::SECTION_NAME, ExtManager::SECTION_NAME);
+		int nRet = MessageBox(NULL, buf,
+			ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_YESNO);
+		if(nRet == IDNO) {
+			WritePrivateProfileString(ExtManager::SECTION_NAME, "shared", "1", sShared.c_str());
+			g_sIniFileName = sShared;
+			g_fSharedConf = true;
+			return;
+		} else {
+			MakePersonalIniFolder();
+			if(!CopyFile(sShared.c_str(), sPersonal.c_str(), TRUE)) {
+				MessageBox(NULL, "Copy of the ini file is failed. Use the old ini file.", ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_OK);
+				g_sIniFileName = sShared;
+				g_fSharedConf = true;
+				return;
+			}
+			if(!DeleteFile(sShared.c_str())) {
+				MessageBox(NULL, "Delete of the old ini file is failed. Leave as it is.", ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_OK);
+			}
+		}
+	}
+	g_sIniFileName = sPersonal;
+	g_fSharedConf = false;
 }
 
 /* エントリポイント */
 BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
-    bool bInitPath = false;
-    INITCOMMONCONTROLSEX ice = { sizeof(INITCOMMONCONTROLSEX), ICC_PROGRESS_CLASS };
-    switch (ul_reason_for_call) {
-        case DLL_PROCESS_ATTACH:
+	bool bInitPath = false;
+	INITCOMMONCONTROLSEX ice = { sizeof(INITCOMMONCONTROLSEX), ICC_PROGRESS_CLASS };
+	switch (ul_reason_for_call) {
+		case DLL_PROCESS_ATTACH:
 #ifndef _UNICODE
-            g_IsNT = IsItWindowsNT();
+			g_IsNT = IsItWindowsNT();
 #endif
-            CoInitialize(NULL);
-            InitCommonControlsEx(&ice);
+			CoInitialize(NULL);
+			InitCommonControlsEx(&ice);
 		{
 			extern void GetFormats(ExtManager::Conf &res);
 			ExtManager::Conf v;
 			GetFormats(v);
 			g_extManager.Init(v);
 		}
-            SetIniFileName(hModule);
-            LoadFromIni();
-            bInitPath = true;
+			SetIniFileName(hModule);
+			LoadFromIni();
+			bInitPath = true;
 			break;
 		case DLL_THREAD_ATTACH:
-            CoInitialize(NULL);
-            SetIniFileName(hModule);
-            LoadFromIni();
-            break;
-        case DLL_THREAD_DETACH:
-            CoUninitialize();
-            break;
-        case DLL_PROCESS_DETACH:
-            CoUninitialize();
-            break;
-    }
+			CoInitialize(NULL);
+			SetIniFileName(hModule);
+			LoadFromIni();
+			break;
+		case DLL_THREAD_DETACH:
+			CoUninitialize();
+			break;
+		case DLL_PROCESS_DETACH:
+			CoUninitialize();
+			break;
+	}
 
-    return TRUE;
+	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 /* エントリポイント */
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
-    int a = sizeof(fileInfoW);
-    switch (ul_reason_for_call) {
-        case DLL_PROCESS_DETACH:
-            infocache.Clear();
-            infocacheW.Clear();
-            break;
-    }
-    g_hInstance = (HINSTANCE)hModule;
-    return SpiEntryPoint(hModule, ul_reason_for_call, lpReserved);
+	int a = sizeof(fileInfoW);
+	switch (ul_reason_for_call) {
+		case DLL_PROCESS_DETACH:
+			infocache.Clear();
+			infocacheW.Clear();
+			break;
+	}
+	g_hInstance = (HINSTANCE)hModule;
+	return SpiEntryPoint(hModule, ul_reason_for_call, lpReserved);
 }
 
 /***************************************************************************
@@ -476,252 +475,252 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserve
 //---------------------------------------------------------------------------
 int __stdcall GetPluginInfo(int infono, LPSTR buf, int buflen)
 {
-    std::vector<std::string> vsPluginInfo;
+	std::vector<std::string> vsPluginInfo;
 
 	g_extManager.SetPluginInfo(vsPluginInfo);
 
 	if (infono < 0 || infono >= (int)vsPluginInfo.size()) {
-        return 0;
-    }
+		return 0;
+	}
 
-    lstrcpyn(buf, vsPluginInfo[infono].c_str(), buflen);
+	lstrcpyn(buf, vsPluginInfo[infono].c_str(), buflen);
 
-    return lstrlen(buf);
+	return lstrlen(buf);
 }
 
 static bool CheckFileExtension(const char* pFileName, const char* pExtension)
 {
-    int nExtensionLen = strlen(pExtension);
-    int nFileNameLen = strlen(pFileName);
+	int nExtensionLen = strlen(pExtension);
+	int nFileNameLen = strlen(pFileName);
 
-    // ピリオドを入れてファイル名本体が存在するか?
-    if (nFileNameLen <= nExtensionLen + 1) {
-        return false;
-    }
+	// ピリオドを入れてファイル名本体が存在するか?
+	if (nFileNameLen <= nExtensionLen + 1) {
+		return false;
+	}
 
-    return (strnicmp(pFileName + nFileNameLen - nExtensionLen, pExtension, nExtensionLen) == 0);
+	return (strnicmp(pFileName + nFileNameLen - nExtensionLen, pExtension, nExtensionLen) == 0);
 }
 static bool CheckFileExtensionW(const wchar_t* pFileName, const wchar_t* pExtension)
 {
-    int nExtensionLen = wcslen(pExtension);
-    int nFileNameLen = wcslen(pFileName);
+	int nExtensionLen = wcslen(pExtension);
+	int nFileNameLen = wcslen(pFileName);
 
-    // ピリオドを入れてファイル名本体が存在するか?
-    if (nFileNameLen <= nExtensionLen + 1) {
-        return false;
-    }
+	// ピリオドを入れてファイル名本体が存在するか?
+	if (nFileNameLen <= nExtensionLen + 1) {
+		return false;
+	}
 
-    return (wcsnicmp(pFileName + nFileNameLen - nExtensionLen, pExtension, nExtensionLen) == 0);
+	return (wcsnicmp(pFileName + nFileNameLen - nExtensionLen, pExtension, nExtensionLen) == 0);
 }
 
 //---------------------------------------------------------------------------
 int __stdcall IsSupported(LPSTR filename, DWORD dw)
 {
-    // 現時点では名前のみで判断
+	// 現時点では名前のみで判断
 	return g_extManager.IsEnable(filename);
 }
 
 int __stdcall IsSupportedW(LPWSTR filename, DWORD dw)
 {
-    // Unicode 未サポート
-    return 0;
+	// Unicode 未サポート
+	return 0;
 }
 
 //---------------------------------------------------------------------------
 //アーカイブ情報をキャッシュする
 int GetArchiveInfoCache(char *filename, long len, HLOCAL *phinfo, fileInfo *pinfo)
 {
-    int ret = infocache.Dupli(filename, phinfo, pinfo);
-    if (ret != SPI_NO_FUNCTION) return ret;
+	int ret = infocache.Dupli(filename, phinfo, pinfo);
+	if (ret != SPI_NO_FUNCTION) return ret;
 
-    //キャッシュに無い
-    HLOCAL hinfo;
-    ret = GetArchiveInfoEx(filename, len, &hinfo);
-    if (ret != SPI_ALL_RIGHT) return ret;
+	//キャッシュに無い
+	HLOCAL hinfo;
+	ret = GetArchiveInfoEx(filename, len, &hinfo);
+	if (ret != SPI_ALL_RIGHT) return ret;
 
-    //キャッシュ
-    infocache.Add(filename, &hinfo);
+	//キャッシュ
+	infocache.Add(filename, &hinfo);
 
-    if (phinfo != NULL) {
-        UINT size = LocalSize(hinfo);
-        /* 出力用のメモリの割り当て */
-        *phinfo = LocalAlloc(LMEM_FIXED, size);
-        if (*phinfo == NULL) {
-            return SPI_NO_MEMORY;
-        }
+	if (phinfo != NULL) {
+		UINT size = LocalSize(hinfo);
+		/* 出力用のメモリの割り当て */
+		*phinfo = LocalAlloc(LMEM_FIXED, size);
+		if (*phinfo == NULL) {
+			return SPI_NO_MEMORY;
+		}
 
-        memcpy(*phinfo, (void*)hinfo, size);
-    } else {
-        fileInfo *ptmp = (fileInfo *)hinfo;
-        if (pinfo->filename[0] != '\0') {
-            for (;;) {
-                if (ptmp->method[0] == '\0') return SPI_NO_FUNCTION;
-                // complete path relative to archive root
-                char path[sizeof(ptmp->path)+sizeof(ptmp->filename)];
-                strcpy(path, ptmp->path);
-                size_t len = strlen(path);
-                if(len && path[len-1] != '/' && path[len-1] != '\\') // need delimiter
-                    strcat(path, "\\");
-                strcat(path, ptmp->filename);
-                if (lstrcmpi(path, pinfo->filename) == 0) break;
-                ptmp++;
-            }
-        } else {
-            for (;;) {
-                if (ptmp->method[0] == '\0') return SPI_NO_FUNCTION;
-                if (ptmp->position == pinfo->position) break;
-                ptmp++;
-            }
-        }
-        *pinfo = *ptmp;
-    }
-    return SPI_ALL_RIGHT;
+		memcpy(*phinfo, (void*)hinfo, size);
+	} else {
+		fileInfo *ptmp = (fileInfo *)hinfo;
+		if (pinfo->filename[0] != '\0') {
+			for (;;) {
+				if (ptmp->method[0] == '\0') return SPI_NO_FUNCTION;
+				// complete path relative to archive root
+				char path[sizeof(ptmp->path)+sizeof(ptmp->filename)];
+				strcpy(path, ptmp->path);
+				size_t len = strlen(path);
+				if(len && path[len-1] != '/' && path[len-1] != '\\') // need delimiter
+					strcat(path, "\\");
+				strcat(path, ptmp->filename);
+				if (lstrcmpi(path, pinfo->filename) == 0) break;
+				ptmp++;
+			}
+		} else {
+			for (;;) {
+				if (ptmp->method[0] == '\0') return SPI_NO_FUNCTION;
+				if (ptmp->position == pinfo->position) break;
+				ptmp++;
+			}
+		}
+		*pinfo = *ptmp;
+	}
+	return SPI_ALL_RIGHT;
 }
 int GetArchiveInfoCacheW(wchar_t *filename, long len, HLOCAL *phinfo, fileInfoW *pinfo)
 {
-    int ret = infocacheW.Dupli(filename, phinfo, pinfo);
-    if (ret != SPI_NO_FUNCTION) return ret;
+	int ret = infocacheW.Dupli(filename, phinfo, pinfo);
+	if (ret != SPI_NO_FUNCTION) return ret;
 
-    //キャッシュに無い
-    HLOCAL hinfo;
-    ret = GetArchiveInfoWEx(filename, len, &hinfo);
-    if (ret != SPI_ALL_RIGHT) return ret;
+	//キャッシュに無い
+	HLOCAL hinfo;
+	ret = GetArchiveInfoWEx(filename, len, &hinfo);
+	if (ret != SPI_ALL_RIGHT) return ret;
 
-    //キャッシュ
-    infocacheW.Add(filename, &hinfo);
+	//キャッシュ
+	infocacheW.Add(filename, &hinfo);
 
-    if (phinfo != NULL) {
-        UINT size = LocalSize(hinfo);
-        /* 出力用のメモリの割り当て */
-        *phinfo = LocalAlloc(LMEM_FIXED, size);
-        if (*phinfo == NULL) {
-            return SPI_NO_MEMORY;
-        }
+	if (phinfo != NULL) {
+		UINT size = LocalSize(hinfo);
+		/* 出力用のメモリの割り当て */
+		*phinfo = LocalAlloc(LMEM_FIXED, size);
+		if (*phinfo == NULL) {
+			return SPI_NO_MEMORY;
+		}
 
-        memcpy(*phinfo, (void*)hinfo, size);
-    } else {
-        fileInfoW *ptmp = (fileInfoW *)hinfo;
-        if (pinfo->filename[0] != L'\0') {
-            for (;;) {
-                if (ptmp->method[0] == '\0') return SPI_NO_FUNCTION;
-                // complete path relative to archive root
-                wchar_t path[sizeof(ptmp->path)+sizeof(ptmp->filename)];
-                wcscpy(path, ptmp->path);
-                size_t len = wcslen(path);
-                if(len && path[len-1] != L'/' && path[len-1] != L'\\') // need delimiter
-                    wcscat(path, L"\\");
-                wcscat(path, ptmp->filename);
-                if (wcsicmp(path, pinfo->filename) == 0) break;
-                ptmp++;
-            }
-        } else {
-            for (;;) {
-                if (ptmp->method[0] == '\0') return SPI_NO_FUNCTION;
-                if (ptmp->position == pinfo->position) break;
-                ptmp++;
-            }
-        }
-        *pinfo = *ptmp;
-    }
-    return SPI_ALL_RIGHT;
+		memcpy(*phinfo, (void*)hinfo, size);
+	} else {
+		fileInfoW *ptmp = (fileInfoW *)hinfo;
+		if (pinfo->filename[0] != L'\0') {
+			for (;;) {
+				if (ptmp->method[0] == '\0') return SPI_NO_FUNCTION;
+				// complete path relative to archive root
+				wchar_t path[sizeof(ptmp->path)+sizeof(ptmp->filename)];
+				wcscpy(path, ptmp->path);
+				size_t len = wcslen(path);
+				if(len && path[len-1] != L'/' && path[len-1] != L'\\') // need delimiter
+					wcscat(path, L"\\");
+				wcscat(path, ptmp->filename);
+				if (wcsicmp(path, pinfo->filename) == 0) break;
+				ptmp++;
+			}
+		} else {
+			for (;;) {
+				if (ptmp->method[0] == '\0') return SPI_NO_FUNCTION;
+				if (ptmp->position == pinfo->position) break;
+				ptmp++;
+			}
+		}
+		*pinfo = *ptmp;
+	}
+	return SPI_ALL_RIGHT;
 }
 //---------------------------------------------------------------------------
 int __stdcall GetArchiveInfo(LPSTR buf, long len, unsigned int flag, HLOCAL *lphInf)
 {
-    //メモリ入力には対応しない
-    if ((flag & 7) != 0) return SPI_NO_FUNCTION;
+	//メモリ入力には対応しない
+	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
-    *lphInf = NULL;
-    return GetArchiveInfoCache(buf, len, lphInf, NULL);
+	*lphInf = NULL;
+	return GetArchiveInfoCache(buf, len, lphInf, NULL);
 }
 int __stdcall GetArchiveInfoW(LPWSTR buf, long len, unsigned int flag, HLOCAL *lphInf)
 {
-    //メモリ入力には対応しない
-    if ((flag & 7) != 0) return SPI_NO_FUNCTION;
+	//メモリ入力には対応しない
+	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
-    *lphInf = NULL;
-    return GetArchiveInfoCacheW(buf, len, lphInf, NULL);
+	*lphInf = NULL;
+	return GetArchiveInfoCacheW(buf, len, lphInf, NULL);
 }
 
 //---------------------------------------------------------------------------
 int __stdcall GetFileInfo
 (LPSTR buf, long len, LPSTR filename, unsigned int flag, struct fileInfo *lpInfo)
 {
-    //メモリ入力には対応しない
-    if ((flag & 7) != 0) return SPI_NO_FUNCTION;
+	//メモリ入力には対応しない
+	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
-    lstrcpy(lpInfo->filename, filename);
+	lstrcpy(lpInfo->filename, filename);
 
-    return GetArchiveInfoCache(buf, len, NULL, lpInfo);
+	return GetArchiveInfoCache(buf, len, NULL, lpInfo);
 }
 int __stdcall GetFileInfoW
 (LPWSTR buf, long len, LPWSTR filename, unsigned int flag, struct fileInfoW *lpInfo)
 {
-    //メモリ入力には対応しない
-    if ((flag & 7) != 0) return SPI_NO_FUNCTION;
+	//メモリ入力には対応しない
+	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
-    wcscpy(lpInfo->filename, filename);
+	wcscpy(lpInfo->filename, filename);
 
-    return GetArchiveInfoCacheW(buf, len, NULL, lpInfo);
+	return GetArchiveInfoCacheW(buf, len, NULL, lpInfo);
 }
 //---------------------------------------------------------------------------
 int __stdcall GetFile(LPSTR src, long len,
-               LPSTR dest, unsigned int flag,
-               SPI_PROGRESS lpPrgressCallback, long lData)
+			   LPSTR dest, unsigned int flag,
+			   SPI_PROGRESS lpPrgressCallback, long lData)
 {
-    //メモリ入力には対応しない
-    if ((flag & 7) != 0) return SPI_NO_FUNCTION;
+	//メモリ入力には対応しない
+	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
-    fileInfo info;
-    info.filename[0] = '\0';
-    info.position = len;
-    int ret = GetArchiveInfoCache(src, 0, NULL, &info);
-    if (ret != SPI_ALL_RIGHT) {
-        CoUninitialize();
-        return ret;
-    }
+	fileInfo info;
+	info.filename[0] = '\0';
+	info.position = len;
+	int ret = GetArchiveInfoCache(src, 0, NULL, &info);
+	if (ret != SPI_ALL_RIGHT) {
+		CoUninitialize();
+		return ret;
+	}
 
-    int nRet;
-    if ((flag & 0x700) == 0) {
-        //ファイルへの出力の場合
-        std::string s = dest;
-        s += "\\";
-        s += info.filename;
-        nRet = GetFileEx(src, NULL, s.c_str(), &info, lpPrgressCallback, lData);
-    } else {
-        // メモリへの出力の場合
-        nRet = GetFileEx(src, (HLOCAL *)dest, NULL, &info, lpPrgressCallback, lData);
-    }
-    return nRet;
+	int nRet;
+	if ((flag & 0x700) == 0) {
+		//ファイルへの出力の場合
+		std::string s = dest;
+		s += "\\";
+		s += info.filename;
+		nRet = GetFileEx(src, NULL, s.c_str(), &info, lpPrgressCallback, lData);
+	} else {
+		// メモリへの出力の場合
+		nRet = GetFileEx(src, (HLOCAL *)dest, NULL, &info, lpPrgressCallback, lData);
+	}
+	return nRet;
 }
 int __stdcall GetFileW(LPWSTR src, long len,
-               LPWSTR dest, unsigned int flag,
-               SPI_PROGRESS lpPrgressCallback, long lData)
+			   LPWSTR dest, unsigned int flag,
+			   SPI_PROGRESS lpPrgressCallback, long lData)
 {
-    //メモリ入力には対応しない
-    if ((flag & 7) != 0) return SPI_NO_FUNCTION;
+	//メモリ入力には対応しない
+	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
-    fileInfoW info;
-    info.filename[0] = L'\0';
-    info.position = len;
-    int ret = GetArchiveInfoCacheW(src, 0, NULL, &info);
-    if (ret != SPI_ALL_RIGHT) {
-        CoUninitialize();
-        return ret;
-    }
+	fileInfoW info;
+	info.filename[0] = L'\0';
+	info.position = len;
+	int ret = GetArchiveInfoCacheW(src, 0, NULL, &info);
+	if (ret != SPI_ALL_RIGHT) {
+		CoUninitialize();
+		return ret;
+	}
 
-    int nRet;
-    if ((flag & 0x700) == 0) {
-        //ファイルへの出力の場合
-        std::wstring s = dest;
-        s += L"\\";
-        s += info.filename;
-        nRet = GetFileWEx(src, NULL, s.c_str(), &info, lpPrgressCallback, lData);
-    } else {
-        // メモリへの出力の場合
-        nRet = GetFileWEx(src, (HLOCAL *)dest, NULL, &info, lpPrgressCallback, lData);
-    }
-    return nRet;
+	int nRet;
+	if ((flag & 0x700) == 0) {
+		//ファイルへの出力の場合
+		std::wstring s = dest;
+		s += L"\\";
+		s += info.filename;
+		nRet = GetFileWEx(src, NULL, s.c_str(), &info, lpPrgressCallback, lData);
+	} else {
+		// メモリへの出力の場合
+		nRet = GetFileWEx(src, (HLOCAL *)dest, NULL, &info, lpPrgressCallback, lData);
+	}
+	return nRet;
 }
 static std::string Get7zPath(HKEY hkParent)
 {
@@ -762,95 +761,95 @@ static std::string Find7zPath()
 //---------------------------------------------------------------------------
 LRESULT CALLBACK AboutDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
-    switch (msg) {
-        case WM_INITDIALOG:
-        {
+	switch (msg) {
+		case WM_INITDIALOG:
+		{
 OutputDebugString(Find7zPath().c_str());
 			yak::util::windows::VersionResource vr(Find7zPath().c_str());
 			std::string s = vr.GetValue(yak::util::windows::VersionResource::FILE_VERSION);
 OutputDebugString(s.c_str());
-            SendDlgItemMessage(hDlgWnd, IDC_7ZVERSION, WM_SETTEXT, 0, (LPARAM)s.c_str());
-            return FALSE;
-        }
-        case WM_COMMAND:
-            switch (LOWORD(wp)) {
-                case IDOK:
-                    EndDialog(hDlgWnd, IDOK);
-                    break;
-                case IDCANCEL:
-                    EndDialog(hDlgWnd, IDCANCEL);
-                    break;
-                default:
-                    return FALSE;
-            }
-        default:
-            return FALSE;
-    }
-    return TRUE;
+			SendDlgItemMessage(hDlgWnd, IDC_7ZVERSION, WM_SETTEXT, 0, (LPARAM)s.c_str());
+			return FALSE;
+		}
+		case WM_COMMAND:
+			switch (LOWORD(wp)) {
+				case IDOK:
+					EndDialog(hDlgWnd, IDOK);
+					break;
+				case IDCANCEL:
+					EndDialog(hDlgWnd, IDCANCEL);
+					break;
+				default:
+					return FALSE;
+			}
+		default:
+			return FALSE;
+	}
+	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 static void UpdateSolidDialogItem(HWND hDlgWnd)
 {
-    SendDlgItemMessage(hDlgWnd, IDC_SOLID_7Z_CHECK, BM_SETCHECK, (WPARAM)g_nSolidEnable7z, 0L);
-    SendDlgItemMessage(hDlgWnd, IDC_SOLID_RAR_CHECK, BM_SETCHECK, (WPARAM)g_nSolidEnableRar, 0L);
+	SendDlgItemMessage(hDlgWnd, IDC_SOLID_7Z_CHECK, BM_SETCHECK, (WPARAM)g_nSolidEnable7z, 0L);
+	SendDlgItemMessage(hDlgWnd, IDC_SOLID_RAR_CHECK, BM_SETCHECK, (WPARAM)g_nSolidEnableRar, 0L);
 
 	SolidCache& sc = SolidCache::GetInstance();
-    char buf[2048];
-    wsprintf(buf, "%d", sc.GetMaxLookAhead());
-    SendDlgItemMessage(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    wsprintf(buf, "%d", sc.GetMaxMemory());
-    SendDlgItemMessage(hDlgWnd, IDC_MAX_MEMORY_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    wsprintf(buf, "%d", sc.GetMaxDisk());
-    SendDlgItemMessage(hDlgWnd, IDC_MAX_DISK_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    wsprintf(buf, "%d", sc.GetPurgeMemory());
-    SendDlgItemMessage(hDlgWnd, IDC_PURGE_MEMORY_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    wsprintf(buf, "%d", sc.GetPurgeDisk());
-    SendDlgItemMessage(hDlgWnd, IDC_PURGE_DISK_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
-    SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_SETTEXT, 0, (LPARAM)sc.GetCacheFolder().c_str());
+	char buf[2048];
+	wsprintf(buf, "%d", sc.GetMaxLookAhead());
+	SendDlgItemMessage(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
+	wsprintf(buf, "%d", sc.GetMaxMemory());
+	SendDlgItemMessage(hDlgWnd, IDC_MAX_MEMORY_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
+	wsprintf(buf, "%d", sc.GetMaxDisk());
+	SendDlgItemMessage(hDlgWnd, IDC_MAX_DISK_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
+	wsprintf(buf, "%d", sc.GetPurgeMemory());
+	SendDlgItemMessage(hDlgWnd, IDC_PURGE_MEMORY_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
+	wsprintf(buf, "%d", sc.GetPurgeDisk());
+	SendDlgItemMessage(hDlgWnd, IDC_PURGE_DISK_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
+	SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_SETTEXT, 0, (LPARAM)sc.GetCacheFolder().c_str());
 }
 
 static bool IsChecked2(HWND hDlgWnd, int nID, int &nVar)
 {
-    int nOldVar = nVar;
-    if (IsDlgButtonChecked(hDlgWnd, nID) == BST_CHECKED) {
-        nVar = 1;
-    } else {
-        nVar = 0;
-    }
-    return (nVar != nOldVar);
+	int nOldVar = nVar;
+	if (IsDlgButtonChecked(hDlgWnd, nID) == BST_CHECKED) {
+		nVar = 1;
+	} else {
+		nVar = 0;
+	}
+	return (nVar != nOldVar);
 }
 
 static bool GetIntValue(HWND hDlgWnd, int nID, int (SolidCache::*mfGetter)() const, int (SolidCache::*mfSetter)(int))
 {
-    char buf[2048];
-    SendDlgItemMessage(hDlgWnd, nID, WM_GETTEXT, sizeof(buf), (LPARAM)buf);
-    int nTempVar = atoi(buf);
+	char buf[2048];
+	SendDlgItemMessage(hDlgWnd, nID, WM_GETTEXT, sizeof(buf), (LPARAM)buf);
+	int nTempVar = atoi(buf);
 	if(nTempVar != (SolidCache::GetInstance().*mfGetter)()) {
 		(SolidCache::GetInstance().*mfSetter)(nTempVar);
-        return true;
-    }
-    return false;
+		return true;
+	}
+	return false;
 }
 
 static bool UpdateSolidValue(HWND hDlgWnd)
 {
-    bool fChanged = false;
-    fChanged |= IsChecked2(hDlgWnd, IDC_SOLID_7Z_CHECK, g_nSolidEnable7z);
-    fChanged |= IsChecked2(hDlgWnd, IDC_SOLID_RAR_CHECK, g_nSolidEnableRar);
+	bool fChanged = false;
+	fChanged |= IsChecked2(hDlgWnd, IDC_SOLID_7Z_CHECK, g_nSolidEnable7z);
+	fChanged |= IsChecked2(hDlgWnd, IDC_SOLID_RAR_CHECK, g_nSolidEnableRar);
 	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT, &SolidCache::GetMaxLookAhead, &SolidCache::SetMaxLookAhead);
 	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_MEMORY_EDIT, &SolidCache::GetMaxMemory, &SolidCache::SetMaxMemory);
 	fChanged |= GetIntValue(hDlgWnd, IDC_MAX_DISK_EDIT, &SolidCache::GetMaxDisk, &SolidCache::SetMaxDisk);
 	fChanged |= GetIntValue(hDlgWnd, IDC_PURGE_MEMORY_EDIT, &SolidCache::GetPurgeMemory, &SolidCache::SetPurgeMemory);
 	fChanged |= GetIntValue(hDlgWnd, IDC_PURGE_DISK_EDIT, &SolidCache::GetPurgeDisk, &SolidCache::SetPurgeDisk);
-    char buf[2048];
-    SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_GETTEXT, sizeof(buf), (LPARAM)buf);
+	char buf[2048];
+	SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_GETTEXT, sizeof(buf), (LPARAM)buf);
 	if(lstrcmp(buf, SolidCache::GetInstance().GetCacheFolder().c_str())) {
-        fChanged = true;
+		fChanged = true;
 		SolidCache::GetInstance().SetCacheFolder(buf);
-    }
+	}
 
-    return fChanged;
+	return fChanged;
 }
 
 static bool IsExistentFolder(HWND hwnd, const std::string &sPath)
@@ -879,16 +878,16 @@ static bool IsExistentFolder(HWND hwnd, const std::string &sPath)
 
 LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
-    switch (msg) {
-        case WM_INITDIALOG:
-            UpdateSolidDialogItem(hDlgWnd);
+	switch (msg) {
+		case WM_INITDIALOG:
+			UpdateSolidDialogItem(hDlgWnd);
 			EnableWindow(GetDlgItem(hDlgWnd, IDC_MAX_LOOKAHEAD_EDIT), FALSE);
-            return FALSE;
-        case WM_COMMAND:
-            switch (LOWORD(wp)) {
-                case IDOK:
+			return FALSE;
+		case WM_COMMAND:
+			switch (LOWORD(wp)) {
+				case IDOK:
 				{
-				    char buf[2048];
+					char buf[2048];
 					SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_GETTEXT, sizeof(buf), (LPARAM)buf);
 					if (IsExistentFolder(hDlgWnd, buf)) {
 						if (UpdateSolidValue(hDlgWnd)) {
@@ -898,9 +897,9 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
 					}
 					break;
 				}
-                case IDCANCEL:
-                    EndDialog(hDlgWnd, IDCANCEL);
-                    break;
+				case IDCANCEL:
+					EndDialog(hDlgWnd, IDCANCEL);
+					break;
 				case IDC_BROWSE_BUTTON:
 				{
 					char buf[MAX_PATH];
@@ -912,16 +911,16 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
 						CoTaskMemFree(piid);
 					}
 				}
-                    break;
+					break;
 				case IDC_CLEAR_BUTTON:
 					if(MessageBox(hDlgWnd, "Do you want to clear cache contents?", "ax7z_s.spi confirmation", MB_YESNO) == IDYES)
 						SolidCache::GetInstance().Clear();
 					break;
-                default:
-                    return FALSE;
-            }
-    }
-    return FALSE;
+				default:
+					return FALSE;
+			}
+	}
+	return FALSE;
 }
 
 //---------------------------------------------------------------------------
@@ -966,7 +965,7 @@ void UpdateDialogItem(HWND hDlgWnd)
 
 	SendDlgItemMessage(hDlgWnd, IDC_TOPMOST_CHECK, BM_SETCHECK, PasswordManager::Get().GetTopMost() ? BST_CHECKED : BST_UNCHECKED, 0);
 
-    SendDlgItemMessage(hDlgWnd, IDC_PERUSERCONF_CHECK, BM_SETCHECK, !g_fSharedConf ? BST_CHECKED : BST_UNCHECKED, 0);
+	SendDlgItemMessage(hDlgWnd, IDC_PERUSERCONF_CHECK, BM_SETCHECK, !g_fSharedConf ? BST_CHECKED : BST_UNCHECKED, 0);
 }
 
 bool UpdateValue(HWND hDlgWnd)
@@ -985,82 +984,82 @@ bool UpdateValue(HWND hDlgWnd)
 
 	PasswordManager::Get().SetTopMost(SendDlgItemMessage(hDlgWnd, IDC_TOPMOST_CHECK, BM_GETCHECK, 0, 0) == BST_CHECKED);
 
-    bool fSharedConf = g_fSharedConf;
-    std::string sIniFileName = g_sIniFileName;
-    if(SendDlgItemMessage(hDlgWnd, IDC_PERUSERCONF_CHECK, BM_GETCHECK, 0, 0) == BST_CHECKED) {
-        g_fSharedConf = false;
-        g_sIniFileName = GetPersonalIniFileName(g_hInstance);
-        MakePersonalIniFolder();
-    } else {
-        g_fSharedConf = true;
-        g_sIniFileName = GetSharedIniFileName(g_hInstance);
-    }
-    if(fSharedConf != g_fSharedConf) {
-        if(SaveToIni()) {
-            DeleteFile(sIniFileName.c_str());
-        } else {
-            MessageBox(NULL, "Writing ini file is failed. Keep the old ini file location.", ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_OK);
-            g_fSharedConf = fSharedConf;
-            g_sIniFileName = sIniFileName;
-        }
-    }
+	bool fSharedConf = g_fSharedConf;
+	std::string sIniFileName = g_sIniFileName;
+	if(SendDlgItemMessage(hDlgWnd, IDC_PERUSERCONF_CHECK, BM_GETCHECK, 0, 0) == BST_CHECKED) {
+		g_fSharedConf = false;
+		g_sIniFileName = GetPersonalIniFileName(g_hInstance);
+		MakePersonalIniFolder();
+	} else {
+		g_fSharedConf = true;
+		g_sIniFileName = GetSharedIniFileName(g_hInstance);
+	}
+	if(fSharedConf != g_fSharedConf) {
+		if(SaveToIni()) {
+			DeleteFile(sIniFileName.c_str());
+		} else {
+			MessageBox(NULL, "Writing ini file is failed. Keep the old ini file location.", ExtManager::SECTION_NAME, MB_TASKMODAL | MB_ICONWARNING | MB_OK);
+			g_fSharedConf = fSharedConf;
+			g_sIniFileName = sIniFileName;
+		}
+	}
 
-    return true;
+	return true;
 }
 
 LRESULT CALLBACK ConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
-    switch (msg) {
-        case WM_INITDIALOG:
+	switch (msg) {
+		case WM_INITDIALOG:
 			SetWindowLongPtr(hDlgWnd, DWLP_USER, lp);
-            UpdateDialogItem(hDlgWnd);
-            return TRUE;
-        case WM_COMMAND:
-            switch (LOWORD(wp)) {
-                case IDOK:
-                    if (UpdateValue(hDlgWnd)) {
-                        SaveToIni();
-                        EndDialog(hDlgWnd, IDOK);
-                    }
-                    break;
-                case IDCANCEL:
-                    EndDialog(hDlgWnd, IDCANCEL);
-                    break;
-                case IDC_DEFAULT_BUTTON:
-                    SetParamDefault();
-                    UpdateDialogItem(hDlgWnd);
-                    break;
-                case IDC_SOLID_BUTTON:
-                    DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_SOLID_CONFIG_DIALOG), hDlgWnd, (DLGPROC)SolidConfigDlgProc);
-                    break;
+			UpdateDialogItem(hDlgWnd);
+			return TRUE;
+		case WM_COMMAND:
+			switch (LOWORD(wp)) {
+				case IDOK:
+					if (UpdateValue(hDlgWnd)) {
+						SaveToIni();
+						EndDialog(hDlgWnd, IDOK);
+					}
+					break;
+				case IDCANCEL:
+					EndDialog(hDlgWnd, IDCANCEL);
+					break;
+				case IDC_DEFAULT_BUTTON:
+					SetParamDefault();
+					UpdateDialogItem(hDlgWnd);
+					break;
+				case IDC_SOLID_BUTTON:
+					DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_SOLID_CONFIG_DIALOG), hDlgWnd, (DLGPROC)SolidConfigDlgProc);
+					break;
 				case IDC_SELECT_ALL_BUTTON:
 					SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_SELITEMRANGE, TRUE, MAKELPARAM(0, 0xFFFFU));
 					break;
 				case IDC_UNSELECT_ALL_BUTTON:
 					SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_SELITEMRANGE, FALSE, MAKELPARAM(0, 0xFFFFU));
 					break;
-                default:
-                    return FALSE;
-            }
-        default:
-            return FALSE;
-    }
-    return TRUE;
+				default:
+					return FALSE;
+			}
+		default:
+			return FALSE;
+	}
+	return TRUE;
 }
 
 int __stdcall ConfigurationDlg(HWND parent, int fnc)
 {
-    if (fnc == 0) {
-        //about
-        DialogBox((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_ABOUT_DIALOG), parent, (DLGPROC)AboutDlgProc);
-    } else {
+	if (fnc == 0) {
+		//about
+		DialogBox((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_ABOUT_DIALOG), parent, (DLGPROC)AboutDlgProc);
+	} else {
 		std::vector<std::string> vMap;
-        DialogBoxParam((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), parent, (DLGPROC)ConfigDlgProc, reinterpret_cast<LPARAM>(static_cast<void*>(&vMap)));
-    }
-    return 0;
+		DialogBoxParam((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), parent, (DLGPROC)ConfigDlgProc, reinterpret_cast<LPARAM>(static_cast<void*>(&vMap)));
+	}
+	return 0;
 }
 
 int __stdcall ExtractSolidArchive(LPCWSTR filename, SPI_OnWriteCallback pCallback)
 {
-    return ExtractSolidArchiveEx(filename, pCallback);
+	return ExtractSolidArchiveEx(filename, pCallback);
 }
