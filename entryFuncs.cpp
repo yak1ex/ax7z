@@ -23,6 +23,20 @@ ax7z entry funcs
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef NDEBUG
+#define OutputDebugPrintf (void)
+#else
+static void OutputDebugPrintf(char* format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	char buf[2048];
+	std::vsprintf(buf, format, ap);
+	OutputDebugString(buf);
+	va_end(ap);
+}
+#endif
+
 struct NoCaseLess
 {
 	bool operator()(const std::string &s1, const std::string &s2) const
