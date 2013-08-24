@@ -808,10 +808,10 @@ LRESULT CALLBACK AboutDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
 		switch (msg) {
 			case WM_INITDIALOG:
 			{
-OutputDebugString(Find7zPath().c_str());
+OutputDebugPrintf("AboutDlgProc: 7z DLL path %s", Find7zPath().c_str());
 				yak::util::windows::VersionResource vr(Find7zPath().c_str());
 				std::string s = vr.GetValue(yak::util::windows::VersionResource::FILE_VERSION);
-OutputDebugString(s.c_str());
+OutputDebugPrintf("AboutDlgProc: 7z DLL version %s", s.c_str());
 				SendDlgItemMessage(hDlgWnd, IDC_7ZVERSION, WM_SETTEXT, 0, (LPARAM)s.c_str());
 				return FALSE;
 			}
