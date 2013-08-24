@@ -14,6 +14,7 @@ private:
 	Statement& operator=(const Statement&);
 	Statement(const Statement&);
 public:
+	Statement() : m_stmt(0) {}
 	Statement(sqlite3 *db, const char* sql)
 	{
 		sqlite3_prepare_v2(db, sql, -1, &m_stmt, NULL);
@@ -26,7 +27,14 @@ public:
 	}
 	Statement& reset()
 	{
+		if(!m_stmt) throw std::logic_error("not prepared");
 		sqlite3_reset(m_stmt);
+		return *this;
+	}
+	Statement& finalize()
+	{
+		sqlite3_finalize(m_stmt);
+		m_stmt = 0;
 		return *this;
 	}
 	~Statement()
@@ -35,31 +43,37 @@ public:
 	}
 	Statement& bind(int idx, int value)
 	{
+		if(!m_stmt) throw std::logic_error("not prepared");
 		sqlite3_bind_int(m_stmt, idx, value);
 		return *this;
 	}
 	Statement& bind(int idx, unsigned int value)
 	{
+		if(!m_stmt) throw std::logic_error("not prepared");
 		sqlite3_bind_int64(m_stmt, idx, value);
 		return *this;
 	}
 	Statement& bind(int idx, sqlite3_int64 value)
 	{
+		if(!m_stmt) throw std::logic_error("not prepared");
 		sqlite3_bind_int64(m_stmt, idx, value);
 		return *this;
 	}
 	Statement& bind(int idx, const char* value)
 	{
+		if(!m_stmt) throw std::logic_error("not prepared");
 		sqlite3_bind_text(m_stmt, idx, value, -1, SQLITE_TRANSIENT);
 		return *this;
 	}
 	Statement& bind(int idx, const void* value, int size, void (*func)(void*) = SQLITE_TRANSIENT)
 	{
+		if(!m_stmt) throw std::logic_error("not prepared");
 		sqlite3_bind_blob(m_stmt, idx, value, size, func);
 		return *this;
 	}
 	bool operator()()
 	{
+		if(!m_stmt) throw std::logic_error("not prepared");
 // TODO: catch error on prepare()
 		return sqlite3_step(m_stmt) == SQLITE_ROW;
 	}
