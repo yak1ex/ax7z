@@ -76,8 +76,8 @@ extern "C" {
 	int __declspec(dllexport) __stdcall GetFileW(LPWSTR src,long len,
 			   LPWSTR dest, unsigned int flag,
 			   SPI_PROGRESS prgressCallback, long lData);
-    int __declspec(dllexport) __stdcall ConfigurationDlg(HWND parent, int fnc);
-    int __declspec(dllexport) __stdcall ExtractSolidArchive(LPCWSTR filename, SPI_OnWriteCallback pCallback);
+	int __declspec(dllexport) __stdcall ConfigurationDlg(HWND parent, int fnc);
+	int __declspec(dllexport) __stdcall ExtractSolidArchive(LPCWSTR filename, SPI_OnWriteCallback pCallback);
 }
 
 int GetArchiveInfoEx(LPSTR filename, long len, HLOCAL *lphInf);

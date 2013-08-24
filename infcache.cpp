@@ -64,8 +64,8 @@ bool InfoCache::GetCache(char *filepath, HLOCAL *ph)
 //キャッシュにあればコピー
 //ph:アーカイブ情報を受け取るハンドルへのポインタ
 //pinfo:アーカイブのファイル情報を受け取るポインタ
-//      あらかじめ pinfo に filename か position をセットしておく。
-//      キャッシュがあれば filename(position) の一致する情報を返す。
+//		あらかじめ pinfo に filename か position をセットしておく。
+//		キャッシュがあれば filename(position) の一致する情報を返す。
 //キャッシュになければ、SPI_NO_FUNCTION が返る。
 //キャッシュにあれば SPI_ALL_RIGHT が返る。
 //アーカイブ情報はキャッシュにあるが、filename(position) が一致しない場合は
@@ -192,8 +192,8 @@ bool InfoCacheW::GetCache(wchar_t *filepath, HLOCAL *ph)
 //キャッシュにあればコピー
 //ph:アーカイブ情報を受け取るハンドルへのポインタ
 //pinfo:アーカイブのファイル情報を受け取るポインタ
-//      あらかじめ pinfo に filename か position をセットしておく。
-//      キャッシュがあれば filename(position) の一致する情報を返す。
+//		あらかじめ pinfo に filename か position をセットしておく。
+//		キャッシュがあれば filename(position) の一致する情報を返す。
 //キャッシュになければ、SPI_NO_FUNCTION が返る。
 //キャッシュにあれば SPI_ALL_RIGHT が返る。
 //アーカイブ情報はキャッシュにあるが、filename(position) が一致しない場合は
@@ -204,25 +204,25 @@ int InfoCacheW::Dupli(wchar_t *filepath, HLOCAL *ph, fileInfoW *pinfo)
 	HLOCAL hinfo;
 	int ret = GetCache(filepath, &hinfo);
 
-    if (ret) {
-        ret = SPI_ALL_RIGHT;
-        if (ph != NULL) {
-            UINT size = LocalSize(hinfo);
-            /* 出力用のメモリの割り当て */
-            *ph = LocalAlloc(LMEM_FIXED, size);
-            if (*ph == NULL) {
-                ret = SPI_NO_MEMORY;
-            } else {
-                memcpy(*ph, (void*)hinfo, size);
-            }
-        } else {
-            fileInfoW *ptmp = (fileInfoW *)hinfo;
-            if (pinfo->filename[0] != L'\0') {
-                for (;;) {
-                    if (ptmp->method[0] == '\0') {
-                        ret = SPI_NOT_SUPPORT;
-                        break;
-                    }
+	if (ret) {
+		ret = SPI_ALL_RIGHT;
+		if (ph != NULL) {
+			UINT size = LocalSize(hinfo);
+			/* 出力用のメモリの割り当て */
+			*ph = LocalAlloc(LMEM_FIXED, size);
+			if (*ph == NULL) {
+				ret = SPI_NO_MEMORY;
+			} else {
+				memcpy(*ph, (void*)hinfo, size);
+			}
+		} else {
+			fileInfoW *ptmp = (fileInfoW *)hinfo;
+			if (pinfo->filename[0] != L'\0') {
+				for (;;) {
+					if (ptmp->method[0] == '\0') {
+						ret = SPI_NOT_SUPPORT;
+						break;
+					}
 					// complete path relative to archive root
 					wchar_t path[sizeof(ptmp->path)+sizeof(ptmp->filename)];
 					wcscpy(path, ptmp->path);
@@ -231,23 +231,23 @@ int InfoCacheW::Dupli(wchar_t *filepath, HLOCAL *ph, fileInfoW *pinfo)
 						wcscat(path, L"\\");
 					wcscat(path, ptmp->filename);
 					if (wcsicmp(path, pinfo->filename) == 0) break;
-                    ptmp++;
-                }
-            } else {
-                for (;;) {
-                    if (ptmp->method[0] == '\0') {
-                        ret = SPI_NOT_SUPPORT;
-                        break;
-                    }
-                    if (ptmp->position == pinfo->position) break;
-                    ptmp++;
-                }
-            }
-            if (ret == SPI_ALL_RIGHT) *pinfo = *ptmp;
-        }
-    } else {
-        ret = SPI_NO_FUNCTION;
-    }
+					ptmp++;
+				}
+			} else {
+				for (;;) {
+					if (ptmp->method[0] == '\0') {
+						ret = SPI_NOT_SUPPORT;
+						break;
+					}
+					if (ptmp->position == pinfo->position) break;
+					ptmp++;
+				}
+			}
+			if (ret == SPI_ALL_RIGHT) *pinfo = *ptmp;
+		}
+	} else {
+		ret = SPI_NO_FUNCTION;
+	}
 
 	cs.Leave();
 	return ret;
