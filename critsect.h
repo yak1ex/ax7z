@@ -14,24 +14,24 @@
 class CriticalSection
 {
 public:
-    CriticalSection()
-    {
-        InitializeCriticalSection(&crit_sect);
-    };
-    ~CriticalSection()
-    {
-        DeleteCriticalSection(&crit_sect);
-    };
-    void Enter()
-    {
-        EnterCriticalSection(&crit_sect);
-    };
-    void Leave()
-    {
-        LeaveCriticalSection(&crit_sect);
-    };
+	CriticalSection()
+	{
+		InitializeCriticalSection(&crit_sect);
+	};
+	~CriticalSection()
+	{
+		DeleteCriticalSection(&crit_sect);
+	};
+	void Enter()
+	{
+		EnterCriticalSection(&crit_sect);
+	};
+	void Leave()
+	{
+		LeaveCriticalSection(&crit_sect);
+	};
 private:
-    CRITICAL_SECTION crit_sect;
+	CRITICAL_SECTION crit_sect;
 };
 
 #endif
