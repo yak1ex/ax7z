@@ -23,6 +23,20 @@ ax7z entry funcs
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef NDEBUG
+#define OutputDebugPrintf (void)
+#else
+static void OutputDebugPrintf(char* format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	char buf[2048];
+	std::vsprintf(buf, format, ap);
+	OutputDebugString(buf);
+	va_end(ap);
+}
+#endif
+
 struct NoCaseLess
 {
 	bool operator()(const std::string &s1, const std::string &s2) const
@@ -384,37 +398,53 @@ void SetIniFileName(HANDLE hModule)
 	g_fSharedConf = false;
 }
 
+void handle_exception(const std::string &s)
+{
+	try {
+		throw;
+	} catch (std::exception &e) {
+		OutputDebugPrintf("%s: exception %s thrown", s.c_str(), e.what());
+	} catch (...) {
+		OutputDebugPrintf("%s: unknown exception thrown", s.c_str());
+	}
+}
+
 /* エントリポイント */
 BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
-	bool bInitPath = false;
-	switch (ul_reason_for_call) {
-		case DLL_PROCESS_ATTACH:
+	try {
+		bool bInitPath = false;
+		switch (ul_reason_for_call) {
+			case DLL_PROCESS_ATTACH:
 #ifndef _UNICODE
-			g_IsNT = IsItWindowsNT();
+				g_IsNT = IsItWindowsNT();
 #endif
-			CoInitialize(NULL);
-		{
-			extern void GetFormats(ExtManager::Conf &res);
-			ExtManager::Conf v;
-			GetFormats(v);
-			g_extManager.Init(v);
+				CoInitialize(NULL);
+			{
+				extern void GetFormats(ExtManager::Conf &res);
+				ExtManager::Conf v;
+				GetFormats(v);
+				g_extManager.Init(v);
+			}
+				SetIniFileName(hModule);
+				LoadFromIni();
+				bInitPath = true;
+				break;
+			case DLL_THREAD_ATTACH:
+				CoInitialize(NULL);
+				SetIniFileName(hModule);
+				LoadFromIni();
+				break;
+			case DLL_THREAD_DETACH:
+				CoUninitialize();
+				break;
+			case DLL_PROCESS_DETACH:
+				CoUninitialize();
+				break;
 		}
-			SetIniFileName(hModule);
-			LoadFromIni();
-			bInitPath = true;
-			break;
-		case DLL_THREAD_ATTACH:
-			CoInitialize(NULL);
-			SetIniFileName(hModule);
-			LoadFromIni();
-			break;
-		case DLL_THREAD_DETACH:
-			CoUninitialize();
-			break;
-		case DLL_PROCESS_DETACH:
-			CoUninitialize();
-			break;
+	} catch (...) {
+		handle_exception(__FUNCTION__);
+		return FALSE;
 	}
 
 	return TRUE;
@@ -441,17 +471,22 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserve
 //---------------------------------------------------------------------------
 int __stdcall GetPluginInfo(int infono, LPSTR buf, int buflen)
 {
-	std::vector<std::string> vsPluginInfo;
+	try {
+		std::vector<std::string> vsPluginInfo;
 
-	g_extManager.SetPluginInfo(vsPluginInfo);
+		g_extManager.SetPluginInfo(vsPluginInfo);
 
-	if (infono < 0 || infono >= (int)vsPluginInfo.size()) {
+		if (infono < 0 || infono >= (int)vsPluginInfo.size()) {
+			return 0;
+		}
+
+		lstrcpyn(buf, vsPluginInfo[infono].c_str(), buflen);
+
+		return lstrlen(buf);
+	} catch (...) {
+		handle_exception(__FUNCTION__);
 		return 0;
 	}
-
-	lstrcpyn(buf, vsPluginInfo[infono].c_str(), buflen);
-
-	return lstrlen(buf);
 }
 
 static bool CheckFileExtension(const char* pFileName, const char* pExtension)
@@ -482,14 +517,24 @@ static bool CheckFileExtensionW(const wchar_t* pFileName, const wchar_t* pExtens
 //---------------------------------------------------------------------------
 int __stdcall IsSupported(LPSTR filename, DWORD dw)
 {
-	// 現時点では名前のみで判断
-	return g_extManager.IsEnable(filename);
+	try {
+		// 現時点では名前のみで判断
+		return g_extManager.IsEnable(filename);
+	} catch(...) {
+		handle_exception(__FUNCTION__);
+		return 0;
+	}
 }
 
 int __stdcall IsSupportedW(LPWSTR filename, DWORD dw)
 {
-	// 現時点では名前のみで判断
-	return g_extManager.IsEnable(filename);
+	try {
+		// 現時点では名前のみで判断
+		return g_extManager.IsEnable(filename);
+	} catch(...) {
+		handle_exception(__FUNCTION__);
+		return 0;
+	}
 }
 
 //---------------------------------------------------------------------------
@@ -593,101 +638,133 @@ int GetArchiveInfoCacheW(wchar_t *filename, long len, HLOCAL *phinfo, fileInfoW 
 //---------------------------------------------------------------------------
 int __stdcall GetArchiveInfo(LPSTR buf, long len, unsigned int flag, HLOCAL *lphInf)
 {
-	//メモリ入力には対応しない
-	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
+	try {
+		//メモリ入力には対応しない
+		if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
-	*lphInf = NULL;
-	return GetArchiveInfoCache(buf, len, lphInf, NULL);
+		*lphInf = NULL;
+		return GetArchiveInfoCache(buf, len, lphInf, NULL);
+	} catch(...) {
+		handle_exception(__FUNCTION__);
+		return SPI_OTHER_ERROR;
+	}
 }
 int __stdcall GetArchiveInfoW(LPWSTR buf, long len, unsigned int flag, HLOCAL *lphInf)
 {
-	//メモリ入力には対応しない
-	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
+	try {
+		//メモリ入力には対応しない
+		if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
-	*lphInf = NULL;
-	return GetArchiveInfoCacheW(buf, len, lphInf, NULL);
+		*lphInf = NULL;
+		return GetArchiveInfoCacheW(buf, len, lphInf, NULL);
+	} catch(...) {
+		handle_exception(__FUNCTION__);
+		return SPI_OTHER_ERROR;
+	}
 }
 
 //---------------------------------------------------------------------------
 int __stdcall GetFileInfo
 (LPSTR buf, long len, LPSTR filename, unsigned int flag, struct fileInfo *lpInfo)
 {
-	//メモリ入力には対応しない
-	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
+	try {
+		//メモリ入力には対応しない
+		if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
-	lstrcpy(lpInfo->filename, filename);
+		lstrcpy(lpInfo->filename, filename);
 
-	return GetArchiveInfoCache(buf, len, NULL, lpInfo);
+		return GetArchiveInfoCache(buf, len, NULL, lpInfo);
+	} catch(...) {
+		handle_exception(__FUNCTION__);
+		return SPI_OTHER_ERROR;
+	}
 }
+
 int __stdcall GetFileInfoW
 (LPWSTR buf, long len, LPWSTR filename, unsigned int flag, struct fileInfoW *lpInfo)
 {
-	//メモリ入力には対応しない
-	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
+	try {
+		//メモリ入力には対応しない
+		if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
-	wcscpy(lpInfo->filename, filename);
+		wcscpy(lpInfo->filename, filename);
 
-	return GetArchiveInfoCacheW(buf, len, NULL, lpInfo);
+		return GetArchiveInfoCacheW(buf, len, NULL, lpInfo);
+	} catch(...) {
+		handle_exception(__FUNCTION__);
+		return SPI_OTHER_ERROR;
+	}
 }
 //---------------------------------------------------------------------------
 int __stdcall GetFile(LPSTR src, long len,
 			   LPSTR dest, unsigned int flag,
 			   SPI_PROGRESS lpPrgressCallback, long lData)
 {
-	//メモリ入力には対応しない
-	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
+	try {
+		//メモリ入力には対応しない
+		if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
-	fileInfo info;
-	info.filename[0] = '\0';
-	info.position = len;
-	int ret = GetArchiveInfoCache(src, 0, NULL, &info);
-	if (ret != SPI_ALL_RIGHT) {
-		CoUninitialize();
-		return ret;
-	}
+		fileInfo info;
+		info.filename[0] = '\0';
+		info.position = len;
+		int ret = GetArchiveInfoCache(src, 0, NULL, &info);
+		if (ret != SPI_ALL_RIGHT) {
+			CoUninitialize();
+			return ret;
+		}
 
-	int nRet;
-	if ((flag & 0x700) == 0) {
-		//ファイルへの出力の場合
-		std::string s = dest;
-		s += "\\";
-		s += info.filename;
-		nRet = GetFileEx(src, NULL, s.c_str(), &info, lpPrgressCallback, lData);
-	} else {
-		// メモリへの出力の場合
-		nRet = GetFileEx(src, (HLOCAL *)dest, NULL, &info, lpPrgressCallback, lData);
+		int nRet;
+		if ((flag & 0x700) == 0) {
+			//ファイルへの出力の場合
+			std::string s = dest;
+			s += "\\";
+			s += info.filename;
+			nRet = GetFileEx(src, NULL, s.c_str(), &info, lpPrgressCallback, lData);
+		} else {
+			// メモリへの出力の場合
+			nRet = GetFileEx(src, (HLOCAL *)dest, NULL, &info, lpPrgressCallback, lData);
+		}
+		return nRet;
+	} catch(...) {
+		handle_exception(__FUNCTION__);
+		return SPI_OTHER_ERROR;
 	}
-	return nRet;
 }
 int __stdcall GetFileW(LPWSTR src, long len,
 			   LPWSTR dest, unsigned int flag,
 			   SPI_PROGRESS lpPrgressCallback, long lData)
 {
-	//メモリ入力には対応しない
-	if ((flag & 7) != 0) return SPI_NO_FUNCTION;
+	try {
+		//メモリ入力には対応しない
+		if ((flag & 7) != 0) return SPI_NO_FUNCTION;
 
-	fileInfoW info;
-	info.filename[0] = L'\0';
-	info.position = len;
-	int ret = GetArchiveInfoCacheW(src, 0, NULL, &info);
-	if (ret != SPI_ALL_RIGHT) {
-		CoUninitialize();
-		return ret;
-	}
+		fileInfoW info;
+		info.filename[0] = L'\0';
+		info.position = len;
+		int ret = GetArchiveInfoCacheW(src, 0, NULL, &info);
+		if (ret != SPI_ALL_RIGHT) {
+			CoUninitialize();
+			return ret;
+		}
 
-	int nRet;
-	if ((flag & 0x700) == 0) {
-		//ファイルへの出力の場合
-		std::wstring s = dest;
-		s += L"\\";
-		s += info.filename;
-		nRet = GetFileWEx(src, NULL, s.c_str(), &info, lpPrgressCallback, lData);
-	} else {
-		// メモリへの出力の場合
-		nRet = GetFileWEx(src, (HLOCAL *)dest, NULL, &info, lpPrgressCallback, lData);
+		int nRet;
+		if ((flag & 0x700) == 0) {
+			//ファイルへの出力の場合
+			std::wstring s = dest;
+			s += L"\\";
+			s += info.filename;
+			nRet = GetFileWEx(src, NULL, s.c_str(), &info, lpPrgressCallback, lData);
+		} else {
+			// メモリへの出力の場合
+			nRet = GetFileWEx(src, (HLOCAL *)dest, NULL, &info, lpPrgressCallback, lData);
+		}
+		return nRet;
+	} catch(...) {
+		handle_exception(__FUNCTION__);
+		return SPI_OTHER_ERROR;
 	}
-	return nRet;
 }
+
 static std::string Get7zPath(HKEY hkParent)
 {
 	HKEY hkey;
@@ -727,31 +804,36 @@ static std::string Find7zPath()
 //---------------------------------------------------------------------------
 LRESULT CALLBACK AboutDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
-	switch (msg) {
-		case WM_INITDIALOG:
-		{
-OutputDebugString(Find7zPath().c_str());
-			yak::util::windows::VersionResource vr(Find7zPath().c_str());
-			std::string s = vr.GetValue(yak::util::windows::VersionResource::FILE_VERSION);
-OutputDebugString(s.c_str());
-			SendDlgItemMessage(hDlgWnd, IDC_7ZVERSION, WM_SETTEXT, 0, (LPARAM)s.c_str());
-			return FALSE;
-		}
-		case WM_COMMAND:
-			switch (LOWORD(wp)) {
-				case IDOK:
-					EndDialog(hDlgWnd, IDOK);
-					break;
-				case IDCANCEL:
-					EndDialog(hDlgWnd, IDCANCEL);
-					break;
-				default:
-					return FALSE;
+	try {
+		switch (msg) {
+			case WM_INITDIALOG:
+			{
+OutputDebugPrintf("AboutDlgProc: 7z DLL path %s", Find7zPath().c_str());
+				yak::util::windows::VersionResource vr(Find7zPath().c_str());
+				std::string s = vr.GetValue(yak::util::windows::VersionResource::FILE_VERSION);
+OutputDebugPrintf("AboutDlgProc: 7z DLL version %s", s.c_str());
+				SendDlgItemMessage(hDlgWnd, IDC_7ZVERSION, WM_SETTEXT, 0, (LPARAM)s.c_str());
+				return FALSE;
 			}
-		default:
-			return FALSE;
+			case WM_COMMAND:
+				switch (LOWORD(wp)) {
+					case IDOK:
+						EndDialog(hDlgWnd, IDOK);
+						break;
+					case IDCANCEL:
+						EndDialog(hDlgWnd, IDCANCEL);
+						break;
+					default:
+						return FALSE;
+				}
+			default:
+				return FALSE;
+		}
+		return TRUE;
+	} catch(...) {
+		handle_exception(__FUNCTION__);
+		return SPI_OTHER_ERROR;
 	}
-	return TRUE;
 }
 
 //---------------------------------------------------------------------------
@@ -840,54 +922,69 @@ bool UpdateValue(HWND hDlgWnd)
 
 LRESULT CALLBACK ConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
-	switch (msg) {
-		case WM_INITDIALOG:
-			SetWindowLongPtr(hDlgWnd, DWLP_USER, lp);
-			UpdateDialogItem(hDlgWnd);
-			return TRUE;
-		case WM_COMMAND:
-			switch (LOWORD(wp)) {
-				case IDOK:
-					if (UpdateValue(hDlgWnd)) {
-						SaveToIni();
-						EndDialog(hDlgWnd, IDOK);
-					}
-					break;
-				case IDCANCEL:
-					EndDialog(hDlgWnd, IDCANCEL);
-					break;
-				case IDC_DEFAULT_BUTTON:
-					SetParamDefault();
-					UpdateDialogItem(hDlgWnd);
-					break;
-				case IDC_SELECT_ALL_BUTTON:
-					SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_SELITEMRANGE, TRUE, MAKELPARAM(0, 0xFFFFU));
-					break;
-				case IDC_UNSELECT_ALL_BUTTON:
-					SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_SELITEMRANGE, FALSE, MAKELPARAM(0, 0xFFFFU));
-					break;
-				default:
-					return FALSE;
-			}
-		default:
-			return FALSE;
+	try {
+		switch (msg) {
+			case WM_INITDIALOG:
+				SetWindowLongPtr(hDlgWnd, DWLP_USER, lp);
+				UpdateDialogItem(hDlgWnd);
+				return TRUE;
+			case WM_COMMAND:
+				switch (LOWORD(wp)) {
+					case IDOK:
+						if (UpdateValue(hDlgWnd)) {
+							SaveToIni();
+							EndDialog(hDlgWnd, IDOK);
+						}
+						break;
+					case IDCANCEL:
+						EndDialog(hDlgWnd, IDCANCEL);
+						break;
+					case IDC_DEFAULT_BUTTON:
+						SetParamDefault();
+						UpdateDialogItem(hDlgWnd);
+						break;
+					case IDC_SELECT_ALL_BUTTON:
+						SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_SELITEMRANGE, TRUE, MAKELPARAM(0, 0xFFFFU));
+						break;
+					case IDC_UNSELECT_ALL_BUTTON:
+						SendDlgItemMessage(hDlgWnd, IDC_EXTENSION_LIST, LB_SELITEMRANGE, FALSE, MAKELPARAM(0, 0xFFFFU));
+						break;
+					default:
+						return FALSE;
+				}
+			default:
+				return FALSE;
+		}
+		return TRUE;
+	} catch(...) {
+		handle_exception(__FUNCTION__);
+		return SPI_OTHER_ERROR;
 	}
-	return TRUE;
 }
 
 int __stdcall ConfigurationDlg(HWND parent, int fnc)
 {
-	if (fnc == 0) {
-		//about
-		DialogBox((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_ABOUT_DIALOG), parent, (DLGPROC)AboutDlgProc);
-	} else {
-		std::vector<std::string> vMap;
-		DialogBoxParam((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), parent, (DLGPROC)ConfigDlgProc, reinterpret_cast<LPARAM>(static_cast<void*>(&vMap)));
+	try {
+		if (fnc == 0) {
+			//about
+			DialogBox((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_ABOUT_DIALOG), parent, (DLGPROC)AboutDlgProc);
+		} else {
+			std::vector<std::string> vMap;
+			DialogBoxParam((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), parent, (DLGPROC)ConfigDlgProc, reinterpret_cast<LPARAM>(static_cast<void*>(&vMap)));
+		}
+		return 0;
+	} catch(...) {
+		handle_exception(__FUNCTION__);
+		return 0;
 	}
-	return 0;
 }
 
 int __stdcall ExtractSolidArchive(LPCWSTR filename, SPI_OnWriteCallback pCallback)
 {
-	return ExtractSolidArchiveEx(filename, pCallback);
+	try {
+		return ExtractSolidArchiveEx(filename, pCallback);
+	} catch(...) {
+		handle_exception(__FUNCTION__);
+		return SPI_OTHER_ERROR;
+	}
 }
