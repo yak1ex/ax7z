@@ -69,9 +69,14 @@ void SolidCacheDisk::InitDB_()
 		std::string sEnc(stmt_enc.get_text(0));
 		if(sEnc != "UTF-8") {
 			OutputDebugPrintf("SolidCacheDisk::InitDB: encoding is not UTF-8, recreating DB\n");
-			sqlite3_close(m_db);
+			stmt_enc.finalize();
 			std::string sDB = GetCacheFolder() + "ax7z_s.db";
-			DeleteFile(sDB.c_str());
+			if(sqlite3_close(m_db) != SQLITE_OK) {
+				OutputDebugPrintf("SolidCache::InitDB: sqlite3_close for %s failed by %s\n", sDB.c_str(), sqlite3_errmsg(m_db));
+			}
+			if(!DeleteFile(sDB.c_str())) {
+				OutputDebugPrintf("SolidCache::InitDB: deleting %s failed %d\n", sDB.c_str(), GetLastError());
+			}
 			if(!OpenDB_()) {
 				OutputDebugPrintf("SolidCache::InitDB: sqlite3_open for %s failed by %s\n", sDB.c_str(), sqlite3_errmsg(m_db));
 			}
