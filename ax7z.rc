@@ -101,7 +101,7 @@ BEGIN
     LTEXT           "ax7z_s.spi  v0.7",IDC_STATIC,7,7,62,10
     LTEXT           "7Z/RAR/CBR/CAB/ARJ etc. plug-in using 7z",IDC_STATIC,7,28,151,12
     LTEXT           "(c) Makito Miyano",IDC_STATIC,98,7,62,12
-    LTEXT           "for 7-zip 4.57+ s_y4a2",IDC_STATIC,14,17,86,10
+    LTEXT           "for 7-zip 4.57+ s_y4b3",IDC_STATIC,14,17,86,10
     LTEXT           "Enhanced by Yak!",IDC_STATIC,98,17,62,12
     LTEXT           "Using 7z.dll version",IDC_STATIC,27,40,62,8
     LTEXT           "",IDC_7ZVERSION,92,40,70,8
@@ -159,8 +159,8 @@ END
 //
 
 IDV_VERSIONINFO VERSIONINFO
- FILEVERSION 0,7,4,2
- PRODUCTVERSION 0,7,4,2
+ FILEVERSION 0,7,4,3
+ PRODUCTVERSION 0,7,4,3
  FILEFLAGSMASK 0x0L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -177,12 +177,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Yak!"
             VALUE "FileDescription", "ax7z_s.spi - 7Z/RAR/CBR/CAB/ARJ etc. plug-in using 7z with solid cache"
-            VALUE "FileVersion", "v0.7 s_y4a2"
+            VALUE "FileVersion", "v0.7 s_y4b3"
             VALUE "InternalName", "ax7z_s.spi"
             VALUE "LegalCopyright", "(c) Makito Miyano, enhanced by Yak!"
             VALUE "OriginalFilename", "ax7z_s.spi"
             VALUE "ProductName", "ax7z_s.spi"
-            VALUE "ProductVersion", "v0.7 s_y4a2"
+            VALUE "ProductVersion", "v0.7 s_y4b3"
         END
     END
     BLOCK "VarFileInfo"
