@@ -13,9 +13,15 @@ dist: mkpatch
 	rm -rf $(DIR)
 	
 build:
+	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Build Release
+
+rebuild:
 	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Rebuild Release
 
 dbuild:
+	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Build Debug
+
+drebuild:
 	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Rebuild Debug
 
 mkpatch:
@@ -25,14 +31,10 @@ mkpatch:
 	-env LANG=C diff -u /var/tmp/ax7z_src-orig/7z/7zip/UI/Common/LoadCodecs.cpp 7z/7zip/UI/Common/LoadCodecs.cpp >> $(DIR).patch
 
 tag:
-	svn copy . https://yak.myhome.cx/repos/source/ax7z/tags/$(DIR)
-
-gtag:
-	git svn tag $(DIR)
+	git tag $(DIR)
 
 retag:
-	svn remove https://yak.myhome.cx/repos/source/ax7z/tags/$(DIR)
-	svn copy . https://yak.myhome.cx/repos/source/ax7z/tags/$(DIR)
+	git tag -f $(DIR)
 
 sqlite3/sqlite3.o: sqlite3/sqlite3.c
 
