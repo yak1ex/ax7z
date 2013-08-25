@@ -31,14 +31,10 @@ mkpatch:
 	-env LANG=C diff -u /var/tmp/ax7z_src-orig/7z/7zip/UI/Common/LoadCodecs.cpp 7z/7zip/UI/Common/LoadCodecs.cpp >> $(DIR).patch
 
 tag:
-	svn copy . https://yak.myhome.cx/repos/source/ax7z/tags/$(DIR)
-
-gtag:
-	git svn tag $(DIR)
+	git tag $(DIR)
 
 retag:
-	svn remove https://yak.myhome.cx/repos/source/ax7z/tags/$(DIR)
-	svn copy . https://yak.myhome.cx/repos/source/ax7z/tags/$(DIR)
+	git tag -f $(DIR)
 
 sqlite3/sqlite3.o: sqlite3/sqlite3.c
 
