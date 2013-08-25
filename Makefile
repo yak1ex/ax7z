@@ -13,9 +13,15 @@ dist: mkpatch
 	rm -rf $(DIR)
 	
 build:
+	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Build Release
+
+rebuild:
 	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Rebuild Release
 
 dbuild:
+	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Build Debug
+
+drebuild:
 	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Rebuild Debug
 
 mkpatch:
