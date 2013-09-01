@@ -130,12 +130,12 @@ BEGIN
         BLOCK "040904E4"
         BEGIN
             VALUE "CompanyName", "Yak!"
-            VALUE "FileDescription", "ax7z.spi - 7Z/RAR/CBR/CAB/ARJ etc. plug-in using 7z with solid cache"
+            VALUE "FileDescription", "ax7z.spi - 7Z/RAR/CBR/CAB/ARJ etc. plug-in using 7z"
             VALUE "FileVersion", "v0.7 y3b1"
             VALUE "InternalName", "ax7z.spi"
             VALUE "LegalCopyright", "(c) Makito Miyano, enhanced by Yak!"
             VALUE "OriginalFilename", "ax7z.spi"
-            VALUE "ProductName", "ax7z_s.spi"
+            VALUE "ProductName", "ax7z.spi"
             VALUE "ProductVersion", "v0.7 y3b1"
         END
     END
