@@ -1,9 +1,15 @@
-VER = 0.7-457y3b5
+PMAJOR = 3
+PMINOR = 5
+REL = y$(PMAJOR)b$(PMINOR)
+VER = 0.7-457$(REL)
 DIR = ax7z-$(VER)
 
 .PHONY: release dist build mkpatch tag gtag retag test
 
 release: build dist
+
+release.h: Makefile release.h.in
+	sed -e 's/@PMAJOR@/$(PMAJOR)/;s/@PMINOR@/$(PMINOR)/;s/@REL@/$(REL)/' release.h.in > release.h
 
 dist: mkpatch
 	rm -rf $(DIR)
@@ -12,16 +18,16 @@ dist: mkpatch
 	(cd $(DIR); zip ../$(DIR).zip *)
 	rm -rf $(DIR)
 	
-build:
+build: release.h
 	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Build Release
 
-rebuild:
+rebuild: release.h
 	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Rebuild Release
 
-dbuild:
+dbuild: release.h
 	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Build Debug
 
-drebuild:
+drebuild: release.h
 	/cygdrive/c/Program\ Files\ \(x86\)/Application/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE/devenv.exe ./00am.sln /Rebuild Debug
 
 mkpatch:

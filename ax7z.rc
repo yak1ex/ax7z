@@ -1,6 +1,7 @@
 // Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
+#include "release.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -88,7 +89,7 @@ BEGIN
     LTEXT           "ax7z.spi  v0.7",IDC_STATIC,7,7,62,10
     LTEXT           "7Z/RAR/CBR/CAB/ARJ etc. plug-in using 7z",IDC_STATIC,7,28,151,12
     LTEXT           "(c) Makito Miyano",IDC_STATIC,98,7,62,12
-    LTEXT           "for 7-zip 4.57+ y3b5",IDC_STATIC,22,17,74,10
+    LTEXT           RELEASE_LONG_STR,IDC_STATIC,22,17,74,10
     LTEXT           "Enhanced by Yak!",IDC_STATIC,98,17,62,12
     LTEXT           "Using 7z.dll version",IDC_STATIC,27,40,62,8
     LTEXT           "",IDC_7ZVERSION,92,40,70,8
@@ -113,8 +114,8 @@ END
 //
 
 IDV_VERSIONINFO VERSIONINFO
- FILEVERSION 0,7,3,5
- PRODUCTVERSION 0,7,3,5
+ FILEVERSION 0,7,PATCH_MAJOR,PATCH_MINOR
+ PRODUCTVERSION 0,7,PATCH_MAJOR,PATCH_MINOR
  FILEFLAGSMASK 0x0L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -130,13 +131,13 @@ BEGIN
         BLOCK "040904E4"
         BEGIN
             VALUE "CompanyName", "Yak!"
-            VALUE "FileDescription", "ax7z.spi - 7Z/RAR/CBR/CAB/ARJ etc. plug-in using 7z with solid cache"
-            VALUE "FileVersion", "v0.7 y3b5"
+            VALUE "FileDescription", "ax7z.spi - 7Z/RAR/CBR/CAB/ARJ etc. plug-in using 7z"
+            VALUE "FileVersion", "v0.7 " RELEASE_STR
             VALUE "InternalName", "ax7z.spi"
             VALUE "LegalCopyright", "(c) Makito Miyano, enhanced by Yak!"
             VALUE "OriginalFilename", "ax7z.spi"
-            VALUE "ProductName", "ax7z_s.spi"
-            VALUE "ProductVersion", "v0.7 y3b5"
+            VALUE "ProductName", "ax7z.spi"
+            VALUE "ProductVersion", "v0.7 " RELEASE_STR
         END
     END
     BLOCK "VarFileInfo"
