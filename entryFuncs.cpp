@@ -22,6 +22,7 @@ ax7z entry funcs
 #include "version.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "release.h"
 
 #ifdef NDEBUG
 #define OutputDebugPrintf (void)
@@ -203,7 +204,7 @@ void ExtManager::SetPluginInfo(std::vector<std::string> &vsPluginInfo) const
 
 	vsPluginInfo.clear();
 	vsPluginInfo.push_back("00AM");
-	vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ y3b1 (C) Makito Miyano / enhanced by Yak!"); 
+	vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ " RELEASE_STR " (C) Makito Miyano / enhanced by Yak!"); 
 
 	std::map<std::string, std::string>::const_iterator ci2, ciEnd2 = mResmap.end();
 	for(ci2 = mResmap.begin(); ci2 != ciEnd2; ++ci2) {
