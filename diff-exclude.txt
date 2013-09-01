@@ -45,4 +45,5 @@ test.cpp
 test.sh
 test.db
 *.iso
+release.h.in
 temp

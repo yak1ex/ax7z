@@ -1,0 +1,9 @@
+#ifndef RELEASE_H
+#define RELEASE_H
+
+#define RELEASE_STR "@REL@"
+#define RELEASE_LONG_STR "for 7-zip 4.57+ @REL@"
+#define PATCH_MAJOR @PMAJOR@
+#define PATCH_MINOR @PMINOR@
+
+#endif

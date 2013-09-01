@@ -20,11 +20,10 @@ ax7z entry funcs
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include "7z/7zip/Bundles/ax7z/SolidCache.h"
-
 #include "version.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include "release.h"
 #include "7z/Windows/FileDir.h"
 
 struct NoCaseLess
@@ -172,7 +171,7 @@ void ExtManager::SetPluginInfo(std::vector<std::string> &vsPluginInfo) const
 
 	vsPluginInfo.clear();
 	vsPluginInfo.push_back("00AM");
-	vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ s_y4a1 (C) Makito Miyano / enhanced by Yak!"); 
+	vsPluginInfo.push_back("7z extract library v0.7 for 7-zip 4.57+ " RELEASE_STR " (C) Makito Miyano / enhanced by Yak!"); 
 
 	std::map<std::string, std::string>::const_iterator ci2, ciEnd2 = mResmap.end();
 	for(ci2 = mResmap.begin(); ci2 != ciEnd2; ++ci2) {

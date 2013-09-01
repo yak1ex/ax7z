@@ -16,3 +16,4 @@
 .gitbranch
 *.spi
 /test
+release.h
