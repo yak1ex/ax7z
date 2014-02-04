@@ -25,7 +25,7 @@ public:
 		sqlite3_prepare_v2(db, sql, -1, &m_stmt, NULL);
 		return *this;
 	}
-	Statement& reset()
+	const Statement& reset() const
 	{
 		if(!m_stmt) throw std::logic_error("not prepared");
 		sqlite3_reset(m_stmt);
@@ -41,75 +41,75 @@ public:
 	{
 		sqlite3_finalize(m_stmt);
 	}
-	Statement& bind(int idx, int value)
+	const Statement& bind(int idx, int value) const
 	{
 		if(!m_stmt) throw std::logic_error("not prepared");
 		sqlite3_bind_int(m_stmt, idx, value);
 		return *this;
 	}
-	Statement& bind(int idx, unsigned int value)
+	const Statement& bind(int idx, unsigned int value) const
 	{
 		if(!m_stmt) throw std::logic_error("not prepared");
 		sqlite3_bind_int64(m_stmt, idx, value);
 		return *this;
 	}
-	Statement& bind(int idx, sqlite3_int64 value)
+	const Statement& bind(int idx, sqlite3_int64 value) const
 	{
 		if(!m_stmt) throw std::logic_error("not prepared");
 		sqlite3_bind_int64(m_stmt, idx, value);
 		return *this;
 	}
-	Statement& bind(int idx, const char* value)
+	const Statement& bind(int idx, const char* value) const
 	{
 		if(!m_stmt) throw std::logic_error("not prepared");
 		sqlite3_bind_text(m_stmt, idx, value, -1, SQLITE_TRANSIENT);
 		return *this;
 	}
-	Statement& bind(int idx, const void* value, int size, void (*func)(void*) = SQLITE_TRANSIENT)
+	const Statement& bind(int idx, const void* value, int size, void (*func)(void*) = SQLITE_TRANSIENT) const
 	{
 		if(!m_stmt) throw std::logic_error("not prepared");
 		sqlite3_bind_blob(m_stmt, idx, value, size, func);
 		return *this;
 	}
-	bool operator()()
+	bool operator()() const
 	{
 		if(!m_stmt) throw std::logic_error("not prepared");
 // TODO: catch error on prepare()
 		return sqlite3_step(m_stmt) == SQLITE_ROW;
 	}
-	int get_int(int idx)
+	int get_int(int idx) const
 	{
 		return sqlite3_column_int(m_stmt, idx);
 	}
-	sqlite3_int64 get_int64(int idx)
+	sqlite3_int64 get_int64(int idx) const
 	{
 		return sqlite3_column_int64(m_stmt, idx);
 	}
-	double get_double(int idx)
+	double get_double(int idx) const
 	{
 		return sqlite3_column_double(m_stmt, idx);
 	}
-	const char* get_text(int idx)
+	const char* get_text(int idx) const
 	{
 		return static_cast<const char*>(static_cast<const void*>(sqlite3_column_text(m_stmt, idx)));
 	}
-	const void* get_blob(int idx)
+	const void* get_blob(int idx) const
 	{
 		return sqlite3_column_blob(m_stmt, idx);
 	}
-	int get_bytes(int idx)
+	int get_bytes(int idx) const
 	{
 		return sqlite3_column_bytes(m_stmt, idx);
 	}
-	const char* get_name(int idx)
+	const char* get_name(int idx) const
 	{
 		return sqlite3_column_name(m_stmt, idx);
 	}
-	int get_type(int idx)
+	int get_type(int idx) const
 	{
 		return sqlite3_column_type(m_stmt, idx);
 	}
-	int get_count()
+	int get_count() const
 	{
 		return sqlite3_column_count(m_stmt);
 	}
