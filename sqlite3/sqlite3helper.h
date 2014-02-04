@@ -1,10 +1,62 @@
 #ifndef SQLITE3HELPER_H
 #define SQLITE3HELPER_H
 
+#include <stdexcept>
 #include "sqlite3.h"
 
 namespace yak {
 namespace sqlite {
+
+struct sqlite_error : std::runtime_error
+{
+	sqlite_error(const char* msg) : std::runtime_error(msg) {}
+};
+
+// TODO: Move support
+
+// Tiny wrapper to sqlite3
+#define CHECK(exp) do { if((exp) != SQLITE_OK) { throw sqlite_error(this->errmsg()); } } while(0)
+class Database
+{
+private:
+	sqlite3* m_db;
+	Database& operator=(const Database&);
+	Database(const Database&);
+public:
+	Database() : m_db(0) {}
+	Database(const char* dbfile)
+	{
+		CHECK(sqlite3_open(dbfile, &m_db));
+	}
+	Database& reopen(const char* dbfile)
+	{
+		// TODO: check return value
+		CHECK(sqlite3_close(m_db));
+		CHECK(sqlite3_open(dbfile, &m_db));
+		return *this;
+	}
+	~Database()
+	{
+		sqlite3_close(m_db); // no throw
+	}
+	void close()
+	{
+		CHECK(sqlite3_close(m_db));
+		m_db = 0;
+	}
+	const Database& exec(const char* sql) const
+	{
+		CHECK(sqlite3_exec(m_db, sql, 0, 0, 0));
+		return *this;
+	}
+	const char* errmsg() const
+	{
+		return sqlite3_errmsg(m_db);
+	}
+	operator sqlite3*() { return m_db; }
+	operator const sqlite3*() const { return m_db; }
+};
+#undef CHECK
 
 // Tiny wrapper to sqlite3_stmt
 class Statement
