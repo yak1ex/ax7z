@@ -41,8 +41,7 @@ inline const char* Database::errmsg() const
 {
 	return sqlite3_errmsg(m_db);
 }
-inline Database::operator sqlite3*() { return m_db; }
-inline Database::operator const sqlite3*() const { return m_db; }
+inline Database::operator sqlite3*() const { return m_db; }
 #undef CHECK
 
 // Tiny wrapper to sqlite3_stmt

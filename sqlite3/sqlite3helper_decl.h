@@ -30,8 +30,7 @@ public:
 	void close();
 	const Database& exec(const char* sql) const;
 	const char* errmsg() const;
-	operator sqlite3*();
-	operator const sqlite3*() const;
+	operator sqlite3*() const;
 };
 
 // Tiny wrapper to sqlite3_stmt
