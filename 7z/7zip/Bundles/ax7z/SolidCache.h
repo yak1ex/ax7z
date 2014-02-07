@@ -42,7 +42,7 @@
 #ifdef NDEBUG
 #define OutputDebugPrintf (void)
 #else
-static void OutputDebugPrintf(char* format, ...)
+static void OutputDebugPrintf(const char* format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
