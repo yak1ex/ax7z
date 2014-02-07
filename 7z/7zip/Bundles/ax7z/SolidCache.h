@@ -39,6 +39,8 @@
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 
+#include "sqlite3/sqlite3helper_decl.h"
+
 #ifdef NDEBUG
 #define OutputDebugPrintf (void)
 #else
@@ -53,8 +55,6 @@ static void OutputDebugPrintf(const char* format, ...)
 }
 #endif
 
-struct sqlite3;
-
 class SolidFileCacheDisk;
 
 class SolidCacheDisk
@@ -65,7 +65,7 @@ private:
 	int m_nMaxDisk;
 	int m_nPurgeDisk;
 	std::string m_sCacheFolder;
-	sqlite3* m_db;
+	yak::sqlite::Database m_db;
 
 #define BOOST_PP_ITERATION_PARAMS_1 (4, (0, 4, "Lock.h", 1))
 #include BOOST_PP_ITERATE()

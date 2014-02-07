@@ -49,17 +49,22 @@ void dump_table(sqlite3 *db, char *name)
 
 SolidCacheDisk::~SolidCacheDisk()
 {
-	sqlite3_close(m_db);
+	m_db.close();
 }
 
 bool SolidCacheDisk::OpenDB_()
 {
-	std::string sDB = GetCacheFolder() + "ax7z_s.db";
-	UString us(GetUnicodeString(sDB.c_str()));
-	int nLen = WideCharToMultiByte(CP_UTF8, 0, us.GetBuffer(0), -1, 0, 0, 0, 0);
-	std::vector<char> vBuf(nLen);
-	WideCharToMultiByte(CP_UTF8, 0, us.GetBuffer(0), -1, &vBuf[0], vBuf.size(), 0, 0);
-	return sqlite3_open(&vBuf[0], &m_db) == SQLITE_OK;
+	try {
+		std::string sDB = GetCacheFolder() + "ax7z_s.db";
+		UString us(GetUnicodeString(sDB.c_str()));
+		int nLen = WideCharToMultiByte(CP_UTF8, 0, us.GetBuffer(0), -1, 0, 0, 0, 0);
+		std::vector<char> vBuf(nLen);
+		WideCharToMultiByte(CP_UTF8, 0, us.GetBuffer(0), -1, &vBuf[0], vBuf.size(), 0, 0);
+		m_db.reopen(&vBuf[0]);
+	} catch(yak::sqlite::sqlite_error &e) {
+		return false;
+	}
+	return true;
 }
 
 void SolidCacheDisk::InitDB_()
@@ -71,7 +76,9 @@ void SolidCacheDisk::InitDB_()
 			OutputDebugPrintf("SolidCacheDisk::InitDB: encoding is not UTF-8, recreating DB\n");
 			stmt_enc.finalize();
 			std::string sDB = GetCacheFolder() + "ax7z_s.db";
-			if(sqlite3_close(m_db) != SQLITE_OK) {
+			try {
+				m_db.close();
+			} catch (yak::sqlite::sqlite_error &e) {
 				OutputDebugPrintf("SolidCache::InitDB: sqlite3_close for %s failed by %s\n", sDB.c_str(), sqlite3_errmsg(m_db));
 			}
 			if(!DeleteFile(sDB.c_str())) {
@@ -83,16 +90,16 @@ void SolidCacheDisk::InitDB_()
 			sqlite3_exec(m_db, "PRAGMA encoding = \"UTF-8\"", NULL, NULL, NULL);
 		}
 	}
-	sqlite3_exec(m_db, "PRAGMA journal_mode = OFF", NULL, NULL, NULL);
-	sqlite3_exec(m_db, "PRAGMA synchronous = OFF", NULL, NULL, NULL); // very effective
-	sqlite3_exec(m_db, "PRAGMA temp_store = MEMORY", NULL, NULL, NULL);
+	m_db.exec("PRAGMA journal_mode = OFF");
+	m_db.exec("PRAGMA synchronous = OFF"); // very effective
+	m_db.exec("PRAGMA temp_store = MEMORY");
 	Statement stmt(m_db, "pragma user_version");
 	if(stmt() && stmt.get_int(0) > 0) {
 		switch(stmt.get_int(0)) {
 		case 1:
 			OutputDebugPrintf("SolidCacheDisk::InitDB: version 1 exists, need to update\n");
-			sqlite3_exec(m_db, "ALTER TABLE archive ADD COLUMN mtime INTEGER", NULL, NULL, NULL);
-			sqlite3_exec(m_db, "ALTER TABLE archive ADD COLUMN size INTEGER", NULL, NULL, NULL);
+			m_db.exec("ALTER TABLE archive ADD COLUMN mtime INTEGER");
+			m_db.exec("ALTER TABLE archive ADD COLUMN size INTEGER");
 			{
 				Statement stmt2(m_db, "SELECT rowid FROM entry WHERE completed <> 1");
 				while(stmt2()) {
@@ -100,9 +107,9 @@ void SolidCacheDisk::InitDB_()
 					DeleteFile(GetFileName(stmt2.get_int64(0)).c_str());
 				}
 			}
-			sqlite3_exec(m_db, "DELETE FROM entry WHERE completed <> 1", NULL, NULL, NULL);
-			sqlite3_exec(m_db, "UPDATE entry SET completed = 0", NULL, NULL, NULL);
-			sqlite3_exec(m_db, "PRAGMA user_version = 2", NULL, NULL, NULL);
+			m_db.exec("DELETE FROM entry WHERE completed <> 1");
+			m_db.exec("UPDATE entry SET completed = 0");
+			m_db.exec("PRAGMA user_version = 2");
 			break;
 		case 2:
 			OutputDebugPrintf("SolidCacheDisk::InitDB: version 2 exists, skip\n");
@@ -113,9 +120,9 @@ void SolidCacheDisk::InitDB_()
 		}
 	} else {
 		OutputDebugPrintf("SolidCacheDisk::InitDB: Create version 2\n");
-		sqlite3_exec(m_db, "PRAGMA user_version = 2", NULL, NULL, NULL);
-		sqlite3_exec(m_db, "CREATE TABLE archive (idx INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT, atime INTEGER, mtime INTEGER, size INTEGER)", NULL, NULL, NULL);
-		sqlite3_exec(m_db, "CREATE TABLE entry (aidx INTERGER, idx INTEGER, size INTEGER, completed INTEGER, CONSTRAINT pkey PRIMARY KEY (aidx, idx) )", NULL, NULL, NULL);
+		m_db.exec("PRAGMA user_version = 2");
+		m_db.exec("CREATE TABLE archive (idx INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT, atime INTEGER, mtime INTEGER, size INTEGER)");
+		m_db.exec("CREATE TABLE entry (aidx INTERGER, idx INTEGER, size INTEGER, completed INTEGER, CONSTRAINT pkey PRIMARY KEY (aidx, idx) )");
 	}
 }
 
@@ -274,7 +281,7 @@ void SolidCacheDisk::CachedVector_(const char* archive, std::vector<unsigned int
 void SolidCacheDisk::PurgeUnreferenced_()
 {
 	OutputDebugPrintf("SolidCacheDisk::PurgeUnreferenced()\n");
-	sqlite3_exec(m_db, "DELETE FROM archive WHERE idx NOT IN (SELECT aidx FROM entry)", NULL, NULL, NULL);
+	m_db.exec("DELETE FROM archive WHERE idx NOT IN (SELECT aidx FROM entry)");
 }
 
 void SolidCacheDisk::PurgeUnreferencedOther_(unsigned int aidx)
@@ -314,7 +321,7 @@ void SolidCacheDisk::PurgeUnmarkedAll_()
 		OutputDebugPrintf("SolidCacheDisk::PurgeUnmarkedAll(): DeleteFile %s\n", GetFileName(stmt.get_int64(0)).c_str());
 		DeleteFile(GetFileName(stmt.get_int64(0)).c_str());
 	}
-	sqlite3_exec(m_db, "DELETE FROM entry WHERE completed <> 0", NULL, NULL, NULL);
+	m_db.exec("DELETE FROM entry WHERE completed <> 0");
 	PurgeUnreferenced_();
 }
 
@@ -478,7 +485,7 @@ void SolidCacheDisk::Clear_()
 	std::string sDB = GetCacheFolder() + "ax7z_s.db";
 	std::string s;
 
-	sqlite3_close(m_db);
+	m_db.close();
 	DeleteFile(sDB.c_str());
 	s = GetCacheFolder() + "ax7z_s????????????????.tmp";
 	WIN32_FIND_DATA find;
@@ -507,7 +514,7 @@ std::string SolidCacheDisk::SetCacheFolder(std::string sNew)
 		if(*CharPrev(temp, temp2) != '\\') sNew += '\\';
 	}
 	if(sNew != m_sCacheFolder) {
-	    sqlite3_close(m_db);
+	    m_db.close();
 		std::string sNewDB = sNew + "ax7z_s.db";
 		if(m_sCacheFolder != "") {
 			std::string sOldDB = m_sCacheFolder + "ax7z_s.db";
