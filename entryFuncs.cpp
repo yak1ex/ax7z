@@ -420,7 +420,6 @@ BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpR
 #ifndef _UNICODE
 				g_IsNT = IsItWindowsNT();
 #endif
-				CoInitialize(NULL);
 			{
 				extern void GetFormats(ExtManager::Conf &res);
 				ExtManager::Conf v;
@@ -432,15 +431,12 @@ BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpR
 				bInitPath = true;
 				break;
 			case DLL_THREAD_ATTACH:
-				CoInitialize(NULL);
 				SetIniFileName(hModule);
 				LoadFromIni();
 				break;
 			case DLL_THREAD_DETACH:
-				CoUninitialize();
 				break;
 			case DLL_PROCESS_DETACH:
-				CoUninitialize();
 				break;
 		}
 	} catch (...) {
@@ -710,7 +706,6 @@ int __stdcall GetFile(LPSTR src, long len,
 		info.position = len;
 		int ret = GetArchiveInfoCache(src, 0, NULL, &info);
 		if (ret != SPI_ALL_RIGHT) {
-			CoUninitialize();
 			return ret;
 		}
 
@@ -744,7 +739,6 @@ int __stdcall GetFileW(LPWSTR src, long len,
 		info.position = len;
 		int ret = GetArchiveInfoCacheW(src, 0, NULL, &info);
 		if (ret != SPI_ALL_RIGHT) {
-			CoUninitialize();
 			return ret;
 		}
 
