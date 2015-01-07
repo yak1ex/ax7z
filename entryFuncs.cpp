@@ -433,33 +433,29 @@ BOOL APIENTRY SpiEntryPoint(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpR
 		bool bInitPath = false;
 		INITCOMMONCONTROLSEX ice = { sizeof(INITCOMMONCONTROLSEX), ICC_PROGRESS_CLASS };
 		switch (ul_reason_for_call) {
-			case DLL_PROCESS_ATTACH:
+		case DLL_PROCESS_ATTACH:
 #ifndef _UNICODE
-				g_IsNT = IsItWindowsNT();
+			g_IsNT = IsItWindowsNT();
 #endif
-				CoInitialize(NULL);
-				InitCommonControlsEx(&ice);
-				{
-					extern void GetFormats(ExtManager::Conf &res);
-					ExtManager::Conf v;
-					GetFormats(v);
-					g_extManager.Init(v);
-				}
-				SetIniFileName(hModule);
-				LoadFromIni();
-				bInitPath = true;
-				break;
-			case DLL_THREAD_ATTACH:
-				CoInitialize(NULL);
-				SetIniFileName(hModule);
-				LoadFromIni();
-				break;
-			case DLL_THREAD_DETACH:
-				CoUninitialize();
-				break;
-			case DLL_PROCESS_DETACH:
-				CoUninitialize();
-				break;
+			InitCommonControlsEx(&ice);
+			{
+				extern void GetFormats(ExtManager::Conf &res);
+				ExtManager::Conf v;
+				GetFormats(v);
+				g_extManager.Init(v);
+			}
+			SetIniFileName(hModule);
+			LoadFromIni();
+			bInitPath = true;
+			break;
+		case DLL_THREAD_ATTACH:
+			SetIniFileName(hModule);
+			LoadFromIni();
+			break;
+		case DLL_THREAD_DETACH:
+			break;
+		case DLL_PROCESS_DETACH:
+			break;
 		}
 	} catch (...) {
 		handle_exception(__FUNCTION__);
@@ -723,7 +719,6 @@ int __stdcall GetFile(LPSTR src, long len,
 		info.position = len;
 		int ret = GetArchiveInfoCache(src, 0, NULL, &info);
 		if (ret != SPI_ALL_RIGHT) {
-			CoUninitialize();
 			return ret;
 		}
 
@@ -757,7 +752,6 @@ int __stdcall GetFileW(LPWSTR src, long len,
 		info.position = len;
 		int ret = GetArchiveInfoCacheW(src, 0, NULL, &info);
 		if (ret != SPI_ALL_RIGHT) {
-			CoUninitialize();
 			return ret;
 		}
 
