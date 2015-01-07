@@ -959,6 +959,7 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
 				case IDC_BROWSE_BUTTON:
 				{
 					char buf[MAX_PATH];
+					HRESULT hr = CoInitialize(NULL);
 					BROWSEINFO bwi = { hDlgWnd, NULL, buf, "Specify cache folder", BIF_RETURNONLYFSDIRS };
 					LPITEMIDLIST piid = SHBrowseForFolder(&bwi);
 					if(piid) {
@@ -966,6 +967,7 @@ LRESULT CALLBACK SolidConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp
 						SendDlgItemMessage(hDlgWnd, IDC_CACHE_FOLDER_EDIT, WM_SETTEXT, 0, (LPARAM)buf);
 						CoTaskMemFree(piid);
 					}
+					if(SUCCEEDED(hr)) CoUninitialize();
 				}
 					break;
 				case IDC_CLEAR_BUTTON:
