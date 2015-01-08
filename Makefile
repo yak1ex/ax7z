@@ -1,5 +1,5 @@
 PMAJOR = 3
-PMINOR = 5
+PMINOR = 6
 REL = y$(PMAJOR)b$(PMINOR)
 VER = 0.7-457$(REL)
 DIR = ax7z-$(VER)
