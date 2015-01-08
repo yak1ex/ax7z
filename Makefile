@@ -1,5 +1,5 @@
 PMAJOR = 4
-PMINOR = 4
+PMINOR = 5
 REL = s_y$(PMAJOR)b$(PMINOR)
 VER = 0.7-457$(REL)
 DIR = ax7z-$(VER)
