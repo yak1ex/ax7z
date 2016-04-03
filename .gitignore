@@ -11,3 +11,6 @@
 /dist.sh
 *.BAK
 release.h
+/.vs
+*.VC.db
+*.opendb
